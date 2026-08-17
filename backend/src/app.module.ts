@@ -2,23 +2,37 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bullmq';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { TokenModule } from './token/token.module';
 import { RoomsModule } from './rooms/rooms.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { ReviewsModule } from './reviews/reviews.module';
-import { I18nModule, AcceptLanguageResolver, HeaderResolver, QueryResolver } from 'nestjs-i18n';
+
+import {
+  I18nModule,
+  AcceptLanguageResolver,
+  HeaderResolver,
+  QueryResolver,
+} from 'nestjs-i18n';
 import * as path from 'path';
+
+const DEFAULT_THROTTLE_TTL = 60000;
+const DEFAULT_THROTTLE_LIMIT = 10;
 
 @Module({
   imports: [
-    // 1. Cấu hình ConfigModule toàn cục đọc tệp .env
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
     }),
 
-    // 2. Tích hợp TypeORM kết nối Neon PostgreSQL (Async Config)
+    ThrottlerModule.forRoot([{
+      ttl: DEFAULT_THROTTLE_TTL,
+      limit: DEFAULT_THROTTLE_LIMIT,
+    }]),
+
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -26,37 +40,35 @@ import * as path from 'path';
         type: 'postgres',
         url: configService.get<string>('DATABASE_URL'),
         ssl: {
-          rejectUnauthorized: false, // Bắt buộc cho Neon DB Serverless SSL
+          rejectUnauthorized: true,
         },
-        autoLoadEntities: true,    // Tự động nạp các Entity được khai báo ở các Module
-        synchronize: true,         // Tự động đồng bộ Schema DB (dùng cho môi trường Dev)
-        logging: false,            // Bật true nếu muốn in ra các câu lệnh SQL trong console
+        autoLoadEntities: true,
+        synchronize: true,
+        logging: false,
       }),
     }),
 
-    // 3. Cấu hình BullModule kết nối Redis cho Message Queue
     BullModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         connection: {
-          host: configService.get<string>('REDIS_HOST', 'localhost'),
-          port: configService.get<number>('REDIS_PORT', 6379),
+          host: configService.get<string>('REDIS_HOST'),
+          port: configService.get<number>('REDIS_PORT'),
         },
       }),
     }),
 
-    // 4. Cấu hình đa ngôn ngữ (i18n)
     I18nModule.forRoot({
-      fallbackLanguage: 'vi', // Ngôn ngữ mặc định là Tiếng Việt
+      fallbackLanguage: 'vi',
       loaderOptions: {
         path: path.join(__dirname, '/i18n/'),
-        watch: true, // Tự động cập nhật khi sửa file json
+        watch: true,
       },
       resolvers: [
-        { use: QueryResolver, options: ['lang'] }, // Lấy ngôn ngữ từ url (vd: ?lang=en)
-        AcceptLanguageResolver, // Lấy từ Header Accept-Language của Browser
-        new HeaderResolver(['x-lang']), // Lấy từ Custom Header
+        { use: QueryResolver, options: ['lang'] },
+        AcceptLanguageResolver,
+        new HeaderResolver(['x-lang']),
       ],
     }),
 
@@ -65,6 +77,7 @@ import * as path from 'path';
     RoomsModule,
     BookingsModule,
     ReviewsModule,
+    TokenModule,
   ],
   controllers: [],
   providers: [],

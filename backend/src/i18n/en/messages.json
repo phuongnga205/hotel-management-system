@@ -1,4 +1,19 @@
 {
-    "HELLO": "Hello",
-    "USER_NOT_FOUND": "User not found in the system."
+    "HELLO": "Xin chào",
+    "USER_NOT_FOUND": "Không tìm thấy người dùng trong hệ thống.",
+    "AUTH": {
+        "EMAIL_EXISTED": "Email này đã được đăng ký trong hệ thống.",
+        "INVALID_CREDENTIALS": "Email hoặc mật khẩu không chính xác.",
+        "REGISTER_SUCCESS": "Đăng ký tài khoản thành công.",
+        "LOGIN_SUCCESS": "Đăng nhập thành công.",
+        "LOGOUT_SUCCESS": "Đăng xuất thành công.",
+        "UNAUTHORIZED": "Phiên đăng nhập không hợp lệ hoặc đã hết hạn.",
+        "TOKEN_BLACKLISTED": "Token này đã bị vô hiệu hóa (đã đăng xuất)."
+    },
+    "VALIDATION": {
+        "IS_EMAIL": "Email format is invalid.",
+        "NOT_EMPTY": "{property} should not be empty.",
+        "MIN_LENGTH": "{property} must be longer than or equal to {constraints.0} characters.",
+        "IS_STRING": "{property} must be a string."
+    }
 }

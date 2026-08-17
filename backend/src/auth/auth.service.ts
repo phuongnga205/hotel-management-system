@@ -1,26 +1,78 @@
-import { Injectable } from '@nestjs/common';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { User } from '../users/entities/user.entity';
+import { JwtService } from '@nestjs/jwt';
+import { I18nService } from 'nestjs-i18n';
+import * as bcrypt from 'bcrypt';
+import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
-  create(createAuthDto: CreateAuthDto) {
-    return 'This action adds a new auth';
+  constructor(
+    @InjectRepository(User)
+    private userRepository: any,
+    private readonly jwtService: JwtService,
+    private readonly i18n: I18nService,
+  ) { }
+
+  async register(registerDto: RegisterDto) {
+    const { email, password, username, phone } = registerDto;
+
+    const existingUser = await this.userRepository.findOne({
+      where: { email },
+    });
+    if (existingUser) {
+      throw new ConflictException(this.i18n.t('messages.AUTH.EMAIL_EXISTED'));
+    }
+
+    const SALT_ROUNDS = 10;
+    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+
+    const user = this.userRepository.create({
+      email,
+      password: hashedPassword,
+      username,
+      phone,
+    });
+
+    await this.userRepository.save(user);
+
+    return {
+      message: this.i18n.t('messages.AUTH.REGISTER_SUCCESS'),
+      user,
+    };
   }
 
-  findAll() {
-    return `This action returns all auth`;
+  async login(loginDto: LoginDto) {
+    const { email, password } = loginDto;
+
+    const user = await this.userRepository.findOne({ where: { email } });
+    if (!user) {
+      throw new UnauthorizedException(
+        this.i18n.t('messages.AUTH.INVALID_CREDENTIALS'),
+      );
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password || '');
+    if (!isPasswordValid) {
+      throw new UnauthorizedException(
+        this.i18n.t('messages.AUTH.INVALID_CREDENTIALS'),
+      );
+    }
+
+    const payload = { sub: user.id, email: user.email, role: user.role };
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '1h' });
+
+    return {
+      message: this.i18n.t('messages.AUTH.LOGIN_SUCCESS'),
+      accessToken,
+      user,
+    };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} auth`;
-  }
-
-  update(id: number, updateAuthDto: UpdateAuthDto) {
-    return `This action updates a #${id} auth`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} auth`;
-  }
 }

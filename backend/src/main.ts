@@ -1,24 +1,25 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { I18nValidationExceptionFilter, I18nValidationPipe } from 'nestjs-i18n';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // 1. Gắn tiền tố api/v1 cho toàn bộ hệ thống
   app.setGlobalPrefix('api/v1');
+  app.useGlobalFilters(new I18nValidationExceptionFilter());
+  app.useGlobalPipes(
+    new I18nValidationPipe({ whitelist: true, transform: true }),
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+    }),
+  );
 
-  // 2. Bật Whitelist (Loại bỏ dữ liệu rác từ Frontend gửi lên)
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    transform: true,
-  }));
-
-  // 3. Cấu hình CORS để Frontend (ReactJS) có thể gọi API mà không bị chặn
   app.enableCors();
 
-  // 4. Khởi tạo giao diện Swagger API Documentation
+  const API_DOCS_PATH = 'api/docs';
   const config = new DocumentBuilder()
     .setTitle('Hotel API (Neon DB Sync)')
     .setDescription('Tài liệu API quản lý khách sạn')
@@ -26,7 +27,7 @@ async function bootstrap() {
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  SwaggerModule.setup(API_DOCS_PATH, app, document);
 
   await app.listen(process.env.PORT || 3000);
 }
