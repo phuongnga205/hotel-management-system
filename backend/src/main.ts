@@ -10,10 +10,12 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1');
 
   // 2. Bật Whitelist (Loại bỏ dữ liệu rác từ Frontend gửi lên)
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    transform: true,
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+    }),
+  );
 
   // 3. Cấu hình CORS để Frontend (ReactJS) có thể gọi API mà không bị chặn
   app.enableCors();
