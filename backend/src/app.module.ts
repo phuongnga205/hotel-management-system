@@ -8,6 +8,8 @@ import { RoomsModule } from './rooms/rooms.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { I18nModule, AcceptLanguageResolver, HeaderResolver, QueryResolver } from 'nestjs-i18n';
+import { AmenitiesModule } from './amenities/amenities.module';
+import { ImagesModule } from './images/images.module';
 import * as path from 'path';
 
 @Module({
@@ -65,6 +67,8 @@ import * as path from 'path';
     RoomsModule,
     BookingsModule,
     ReviewsModule,
+    AmenitiesModule,
+    ImagesModule,
   ],
   controllers: [],
   providers: [],
