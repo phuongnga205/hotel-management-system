@@ -8,6 +8,16 @@ import {
 import { User } from '../../users/entities/user.entity';
 import { Room } from '../../rooms/entities/room.entity';
 
+export enum BookingStatus {
+    PENDING = 'PENDING',
+    CONFIRMED = 'CONFIRMED',
+    CANCELLED = 'CANCELLED',
+}
+export enum PaymentStatus {
+    UNPAID = 'UNPAID',
+    PAID = 'PAID',
+    REFUNDED = 'REFUNDED',
+}
 @Entity('bookings')
 export class Booking {
     @PrimaryGeneratedColumn()
@@ -36,15 +46,15 @@ export class Booking {
     @Column({
         name: 'payment_status',
         length: 20,
-        default: 'UNPAID',
+        default: PaymentStatus.UNPAID,
     })
-    paymentStatus!: string;
+    paymentStatus!: PaymentStatus;
 
     @Column({
         length: 20,
-        default: 'PENDING',
+        default: BookingStatus.PENDING,
     })
-    status!: string;
+    status!: BookingStatus;
 
     @Column({
         type: 'text',
