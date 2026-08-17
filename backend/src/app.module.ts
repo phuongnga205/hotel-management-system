@@ -7,6 +7,8 @@ import { UsersModule } from './users/users.module';
 import { RoomsModule } from './rooms/rooms.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { I18nModule, AcceptLanguageResolver, HeaderResolver, QueryResolver } from 'nestjs-i18n';
+import * as path from 'path';
 
 @Module({
   imports: [
@@ -44,14 +46,24 @@ import { ReviewsModule } from './reviews/reviews.module';
       }),
     }),
 
+    // 4. Cấu hình đa ngôn ngữ (i18n)
+    I18nModule.forRoot({
+      fallbackLanguage: 'vi', // Ngôn ngữ mặc định là Tiếng Việt
+      loaderOptions: {
+        path: path.join(__dirname, '/i18n/'),
+        watch: true, // Tự động cập nhật khi sửa file json
+      },
+      resolvers: [
+        { use: QueryResolver, options: ['lang'] }, // Lấy ngôn ngữ từ url (vd: ?lang=en)
+        AcceptLanguageResolver, // Lấy từ Header Accept-Language của Browser
+        new HeaderResolver(['x-lang']), // Lấy từ Custom Header
+      ],
+    }),
+
     AuthModule,
-
     UsersModule,
-
     RoomsModule,
-
     BookingsModule,
-
     ReviewsModule,
   ],
   controllers: [],
