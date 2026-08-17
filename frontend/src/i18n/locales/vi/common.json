@@ -1,0 +1,18 @@
+{
+  "app": {
+    "name": "Hệ thống quản lý khách sạn"
+  },
+  "common": {
+    "save": "Lưu",
+    "cancel": "Huỷ",
+    "confirm": "Xác nhận",
+    "loading": "Đang tải...",
+    "search": "Tìm kiếm"
+  },
+  "auth": {
+    "login": "Đăng nhập",
+    "logout": "Đăng xuất",
+    "email": "Email",
+    "password": "Mật khẩu"
+  }
+}
