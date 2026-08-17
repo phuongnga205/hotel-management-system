@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { Workbook } from 'exceljs';
 import type { Worksheet } from 'exceljs';
-import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
+import type { FindManyOptions } from 'typeorm';
 import { ROOM_EXPORT } from './constants/room-export.constants';
 import { Room } from './entities/room.entity';
+
+interface RoomExportStore {
+  find(options?: FindManyOptions<Room>): Promise<Room[]>;
+}
 
 type ExcelCellValue = string | number | boolean | Date | null;
 
@@ -12,7 +16,7 @@ type ExcelCellValue = string | number | boolean | Date | null;
 export class RoomsExportService {
   constructor(
     @InjectRepository(Room)
-    private readonly roomRepository: Repository<Room>,
+    private readonly roomRepository: RoomExportStore,
   ) {}
 
   async exportToExcel(): Promise<Buffer> {
@@ -20,33 +24,47 @@ export class RoomsExportService {
     const worksheet = workbook.addWorksheet(ROOM_EXPORT.WORKSHEET_NAME, {
       views: [{ state: 'frozen', ySplit: 1 }],
     });
+    const columnNames = [
+      'id',
+      'roomNumber',
+      'name',
+      'description',
+      'viewType',
+      'price',
+      'capacity',
+      'status',
+      'createdAt',
+      'updatedAt',
+    ];
+    this.configureWorksheet(worksheet, columnNames);
 
     let offset = 0;
-    let columnNames: string[] = [];
-
     while (true) {
       const rooms = await this.findRoomBatch(offset);
+      if (rooms.length === 0) break;
 
-      if (rooms.length === 0) {
-        break;
-      }
+      const rows = rooms.map((r) => ({
+        id: r.id,
+        roomNumber: r.roomNumber,
+        name: r.name ?? '',
+        description: r.description ?? '',
+        viewType: r.viewType ?? '',
+        price: r.price ?? null,
+        capacity: r.capacity ?? null,
+        status: r.status,
+        createdAt: r.createdAt ?? null,
+        updatedAt: r.updatedAt ?? null,
+      }));
 
-      if (columnNames.length === 0) {
-        columnNames = Object.keys(rooms[0]);
-        this.configureWorksheet(worksheet, columnNames);
-      }
-
-      for (const room of rooms) {
+      for (const row of rows) {
+        const typedRow: Record<string, ExcelCellValue | null> = row;
         worksheet.addRow(
-          columnNames.map((columnName) => this.toExcelValue(room[columnName])),
+          columnNames.map((c) => this.toExcelValue(typedRow[c])),
         );
       }
 
       offset += rooms.length;
-
-      if (rooms.length < ROOM_EXPORT.BATCH_SIZE) {
-        break;
-      }
+      if (rooms.length < ROOM_EXPORT.BATCH_SIZE) break;
     }
 
     const excelBuffer = await workbook.xlsx.writeBuffer();
@@ -55,9 +73,21 @@ export class RoomsExportService {
 
   private findRoomBatch(offset: number): Promise<Room[]> {
     return this.roomRepository.find({
+      select: {
+        id: true,
+        roomNumber: true,
+        name: true,
+        description: true,
+        viewType: true,
+        price: true,
+        capacity: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      order: { id: 'ASC' },
       skip: offset,
       take: ROOM_EXPORT.BATCH_SIZE,
-      order: { id: 'ASC' },
     });
   }
 

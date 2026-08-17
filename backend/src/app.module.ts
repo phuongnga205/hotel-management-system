@@ -15,6 +15,8 @@ import {
   QueryResolver,
 } from 'nestjs-i18n';
 import * as path from 'path';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 
 const DEFAULT_REDIS_PORT = 6379;
 
@@ -32,9 +34,13 @@ const DEFAULT_REDIS_PORT = 6379;
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         // Determine synchronize behaviour from env or test mode. Default: enabled for tests, disabled otherwise.
-        const syncEnv = configService.get<string | undefined>('TYPEORM_SYNCHRONIZE');
+        const syncEnv = configService.get<string | undefined>(
+          'TYPEORM_SYNCHRONIZE',
+        );
         const synchronize =
-          syncEnv !== undefined ? syncEnv === 'true' : process.env.NODE_ENV === 'test';
+          syncEnv !== undefined
+            ? syncEnv === 'true'
+            : process.env.NODE_ENV === 'test';
 
         const common = {
           autoLoadEntities: true,
@@ -51,27 +57,29 @@ const DEFAULT_REDIS_PORT = 6379;
             ...common,
           } as unknown as TypeOrmModuleOptions;
         } else {
-        // Determine SSL certificate validation behavior.
-        // - Honor explicit `DATABASE_SSL_REJECT_UNAUTHORIZED` when provided.
-        // - If not set, try to auto-detect Neon (neon.tech) and disable strict validation by default.
-        const dbUrl = configService.get<string>('DATABASE_URL');
-        const rawSsl = configService.get<string | boolean | undefined>('DATABASE_SSL_REJECT_UNAUTHORIZED');
+          // Determine SSL certificate validation behavior.
+          // - Honor explicit `DATABASE_SSL_REJECT_UNAUTHORIZED` when provided.
+          // - If not set, try to auto-detect Neon (neon.tech) and disable strict validation by default.
+          const dbUrl = configService.get<string>('DATABASE_URL');
+          const rawSsl = configService.get<string | boolean | undefined>(
+            'DATABASE_SSL_REJECT_UNAUTHORIZED',
+          );
 
-        let sslReject: boolean;
-        if (rawSsl === undefined) {
-          sslReject = dbUrl ? dbUrl.includes('neon.tech') === false : true;
-        } else {
-          sslReject = rawSsl === true || rawSsl === 'true';
-        }
+          let sslReject: boolean;
+          if (rawSsl === undefined) {
+            sslReject = dbUrl ? dbUrl.includes('neon.tech') === false : true;
+          } else {
+            sslReject = rawSsl === true || rawSsl === 'true';
+          }
 
-        options = {
-          type: 'postgres',
-          url: dbUrl,
-          ssl: {
-            rejectUnauthorized: Boolean(sslReject),
-          },
-          ...common,
-        } as unknown as TypeOrmModuleOptions;
+          options = {
+            type: 'postgres',
+            url: dbUrl,
+            ssl: {
+              rejectUnauthorized: Boolean(sslReject),
+            },
+            ...common,
+          } as unknown as TypeOrmModuleOptions;
         }
 
         return options;
@@ -82,7 +90,7 @@ const DEFAULT_REDIS_PORT = 6379;
     BullModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-        useFactory: (configService: ConfigService) => ({
+      useFactory: (configService: ConfigService) => ({
         connection: {
           host: configService.get<string>('REDIS_HOST', 'localhost'),
           port: configService.get<number>('REDIS_PORT', DEFAULT_REDIS_PORT),
@@ -113,7 +121,7 @@ const DEFAULT_REDIS_PORT = 6379;
 
     ReviewsModule,
   ],
-  controllers: [],
-  providers: [],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}

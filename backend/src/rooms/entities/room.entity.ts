@@ -2,24 +2,33 @@ import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
 @Entity('rooms')
 export class Room {
-	@PrimaryGeneratedColumn()
-	id: number;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-	@Column({ type: 'varchar', length: 255, nullable: true })
-	name?: string;
+  @Column({ name: 'room_number', type: 'varchar', unique: true })
+  roomNumber: string;
 
-	@Column({ type: 'text', nullable: true })
-	description?: string | null;
+  @Column({ type: 'varchar', length: 255 })
+  name: string;
 
-	@Column({ type: 'numeric', nullable: true })
-	price?: number | null;
+  @Column({ type: 'text', nullable: true })
+  description?: string | null;
 
-	@Column({ type: 'int', nullable: true })
-	capacity?: number | null;
+  @Column({ name: 'view_type', type: 'varchar', nullable: true })
+  viewType?: string | null;
 
-	@Column({ type: 'timestamp', nullable: true })
-	createdAt?: Date | null;
+  @Column({ name: 'price_per_night', type: 'numeric' })
+  price: number;
 
-	@Column({ type: 'timestamp', nullable: true })
-	updatedAt?: Date | null;
+  @Column({ type: 'int' })
+  capacity: number;
+
+  @Column({ type: 'varchar', default: 'AVAILABLE' })
+  status: string;
+
+  @Column({ name: 'created_at', type: 'timestamp', nullable: true })
+  createdAt?: Date | null;
+
+  @Column({ name: 'updated_at', type: 'timestamp', nullable: true })
+  updatedAt?: Date | null;
 }

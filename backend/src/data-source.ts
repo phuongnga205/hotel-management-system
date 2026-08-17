@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { DataSource } from 'typeorm';
+import { DataSource, DataSourceOptions } from 'typeorm';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -13,7 +13,7 @@ const common = {
   entities: [__dirname + '/**/*.entity{.ts,.js}'],
 };
 
-let dataSourceOptions: any;
+let dataSourceOptions: DataSourceOptions;
 
 if (isTest) {
   dataSourceOptions = {

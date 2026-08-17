@@ -1,13 +1,20 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import AppDataSource from './data-source';
 
 async function run() {
   try {
     await AppDataSource.initialize();
     console.log({ message: 'DataSource initialized' });
-    const migrations = await AppDataSource.showMigrations();
-    console.log({ pendingMigrations: migrations });
-    const result = await AppDataSource.runMigrations();
-    console.log({ migrationsApplied: result.map((r) => r.name) });
+    const showMigrationsFn = AppDataSource.showMigrations.bind(
+      AppDataSource,
+    ) as unknown as () => Promise<unknown>;
+    const runMigrationsFn = AppDataSource.runMigrations.bind(
+      AppDataSource,
+    ) as unknown as () => Promise<unknown>;
+
+    console.log({ pendingMigrations: Boolean(await showMigrationsFn()) });
+    const rawResult = await runMigrationsFn();
+    console.log({ migrationsApplied: rawResult });
     await AppDataSource.destroy();
     process.exit(0);
   } catch (err) {
@@ -15,10 +22,13 @@ async function run() {
     try {
       await AppDataSource.destroy();
     } catch (destroyErr) {
-      console.error({ message: 'failed to destroy datasource', error: destroyErr });
+      console.error({
+        message: 'failed to destroy datasource',
+        error: destroyErr,
+      });
     }
     process.exit(1);
   }
 }
 
-run();
+void run();

@@ -4,8 +4,10 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
+  Query,
   StreamableFile,
 } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiProduces } from '@nestjs/swagger';
@@ -14,6 +16,7 @@ import { RoomsExportService } from './rooms-export.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { ROOM_EXPORT } from './constants/room-export.constants';
+import { ListRoomsDto } from './dto/list-rooms.dto';
 
 @Controller('rooms')
 export class RoomsController {
@@ -28,8 +31,8 @@ export class RoomsController {
   }
 
   @Get()
-  findAll() {
-    return this.roomsService.findAll();
+  findAll(@Query() query: ListRoomsDto) {
+    return this.roomsService.findAll(query);
   }
 
   @Get('export')
@@ -49,17 +52,20 @@ export class RoomsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.roomsService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.roomsService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateRoomDto: UpdateRoomDto) {
-    return this.roomsService.update(+id, updateRoomDto);
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateRoomDto: UpdateRoomDto,
+  ) {
+    return this.roomsService.update(id, updateRoomDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.roomsService.remove(+id);
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.roomsService.remove(id);
   }
 }
