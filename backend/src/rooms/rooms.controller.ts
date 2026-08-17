@@ -1,11 +1,26 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  StreamableFile,
+} from '@nestjs/common';
+import { ApiOkResponse, ApiOperation, ApiProduces } from '@nestjs/swagger';
 import { RoomsService } from './rooms.service';
+import { RoomsExportService } from './rooms-export.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
+import { ROOM_EXPORT } from './constants/room-export.constants';
 
 @Controller('rooms')
 export class RoomsController {
-  constructor(private readonly roomsService: RoomsService) {}
+  constructor(
+    private readonly roomsService: RoomsService,
+    private readonly roomsExportService: RoomsExportService,
+  ) {}
 
   @Post()
   create(@Body() createRoomDto: CreateRoomDto) {
@@ -15,6 +30,22 @@ export class RoomsController {
   @Get()
   findAll() {
     return this.roomsService.findAll();
+  }
+
+  @Get('export')
+  @ApiOperation({ summary: 'Export room list to an Excel file' })
+  @ApiProduces(ROOM_EXPORT.MIME_TYPE)
+  @ApiOkResponse({
+    description: 'Excel file containing the room list',
+    schema: { type: 'string', format: 'binary' },
+  })
+  async exportToExcel(): Promise<StreamableFile> {
+    const file = await this.roomsExportService.exportToExcel();
+
+    return new StreamableFile(file, {
+      type: ROOM_EXPORT.MIME_TYPE,
+      disposition: `attachment; filename="${ROOM_EXPORT.FILE_NAME}"`,
+    });
   }
 
   @Get(':id')
