@@ -1,4 +1,12 @@
-import { Check, Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Check,
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import {
   EMAIL_RECIPIENT_MAX_LENGTH,
   EMAIL_STATUS_MAX_LENGTH,
@@ -43,4 +51,10 @@ export class EmailLog {
   // Set the moment the SMTP send actually succeeds (distinct from queue time)
   @Column({ name: 'sent_at', type: 'timestamp', nullable: true })
   sentAt!: Date | null;
+
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
+  createdAt!: Date;
+
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
+  updatedAt!: Date;
 }

@@ -8,7 +8,7 @@ import type { Transporter } from 'nodemailer';
 import type SMTPTransport from 'nodemailer/lib/smtp-transport';
 import { Repository } from 'typeorm';
 import { EmailLog, EmailStatus } from './entities/email-log.entity';
-import { MAIL_QUEUE } from './mail.constants';
+import { DEFAULT_MAIL_PORT, MAIL_QUEUE } from './mail.constants';
 
 interface SendMailJobData {
   emailLogId: string;
@@ -45,7 +45,7 @@ export class MailProcessor extends WorkerHost {
     this.mailFrom = from;
     this.transporter = nodemailer.createTransport({
       host,
-      port: this.configService.get<number>('MAIL_PORT', 587),
+      port: this.configService.get<number>('MAIL_PORT', DEFAULT_MAIL_PORT),
       secure: false,
       auth: { user, pass },
     });

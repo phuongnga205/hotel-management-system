@@ -2,6 +2,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Queue } from 'bullmq';
+import { I18nService } from 'nestjs-i18n';
 import { Repository } from 'typeorm';
 import { EmailLogResponseDto } from './dto/email-log-response.dto';
 import { SendMailDto } from './dto/send-mail.dto';
@@ -20,6 +21,7 @@ export class MailService {
     private readonly emailLogRepository: Repository<EmailLog>,
     @InjectQueue(MAIL_QUEUE)
     private readonly mailQueue: Queue,
+    private readonly i18n: I18nService,
   ) {}
 
   async queueMail(dto: SendMailDto): Promise<EmailLogResponseDto> {
@@ -56,9 +58,9 @@ export class MailService {
   async getEmailLog(id: string): Promise<EmailLogResponseDto> {
     const emailLog = await this.emailLogRepository.findOneBy({ id });
     if (!emailLog) {
-      // TODO(i18n): nestjs-i18n is installed but not bootstrapped anywhere
-      // in the app yet — swap for an i18n key once I18nModule is set up.
-      throw new NotFoundException(`Email log ${id} not found`);
+      throw new NotFoundException(
+        this.i18n.t('messages.MAIL.LOG_NOT_FOUND', { args: { id } }),
+      );
     }
     return EmailLogResponseDto.fromEntity(emailLog);
   }
