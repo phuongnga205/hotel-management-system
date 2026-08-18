@@ -1,4 +1,7 @@
 {
     "HELLO": "Xin chào",
-    "USER_NOT_FOUND": "Không tìm thấy người dùng trong hệ thống."
+    "USER_NOT_FOUND": "Không tìm thấy người dùng trong hệ thống.",
+    "MAIL": {
+        "LOG_NOT_FOUND": "Không tìm thấy nhật ký email {id}."
+    }
 }
