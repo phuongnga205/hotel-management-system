@@ -4,32 +4,35 @@ import { RoomViewType } from '../enums/room-view-type.enum';
 
 export class RoomResponseDto {
   @Expose()
-  id: number;
+  id!: string;
 
   @Expose()
-  roomNumber: string;
+  roomNumber!: string;
 
   @Expose()
-  name: string;
+  name!: string;
 
   @Expose()
-  description: string | null;
+  roomType!: string | null;
 
   @Expose()
-  viewType: RoomViewType | null;
+  description!: string | null;
 
   @Expose()
-  price: number;
+  viewType!: RoomViewType | null;
 
   @Expose()
-  capacity: number;
+  pricePerNight!: number;
 
   @Expose()
-  status: RoomStatus;
+  capacity!: number;
 
   @Expose()
-  createdAt: Date;
+  status!: RoomStatus;
 
   @Expose()
-  updatedAt: Date;
+  createdAt!: Date;
+
+  @Expose()
+  updatedAt!: Date;
 }

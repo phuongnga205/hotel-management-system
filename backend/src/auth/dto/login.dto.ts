@@ -11,7 +11,7 @@ export class LoginDto {
   @IsNotEmpty({
     message: i18nValidationMessage('messages.VALIDATION.NOT_EMPTY'),
   })
-  email: string;
+  email!: string;
 
   @ApiProperty({ example: '123456', description: 'Mật khẩu' })
   @IsString({
@@ -20,5 +20,5 @@ export class LoginDto {
   @IsNotEmpty({
     message: i18nValidationMessage('messages.VALIDATION.NOT_EMPTY'),
   })
-  password: string;
+  password!: string;
 }

@@ -25,7 +25,7 @@ interface RoomStore {
   findOneBy(where: FindOptionsWhere<Room>): Promise<Room | null>;
   preload(entityLike: DeepPartial<Room>): Promise<Room | undefined>;
   save(entity: Room): Promise<Room>;
-  softDelete(id: number): Promise<UpdateResult>;
+  softDelete(id: string): Promise<UpdateResult>;
 }
 
 @Injectable()
@@ -82,14 +82,14 @@ export class RoomsService {
     };
   }
 
-  async findOne(id: number): Promise<RoomResponseDto> {
+  async findOne(id: string): Promise<RoomResponseDto> {
     const room = await this.repo.findOneBy({ id });
     if (!room) throw this.roomNotFoundException();
     return this.toResponse(room);
   }
 
   async update(
-    id: number,
+    id: string,
     updateRoomDto: UpdateRoomDto,
   ): Promise<RoomResponseDto> {
     const payload: Partial<Room> = updateRoomDto;
@@ -99,7 +99,7 @@ export class RoomsService {
     return this.toResponse(savedRoom);
   }
 
-  async remove(id: number): Promise<{ deleted: true }> {
+  async remove(id: string): Promise<{ deleted: true }> {
     const result = await this.repo.softDelete(id);
     if (!result.affected) throw this.roomNotFoundException();
     return { deleted: true };

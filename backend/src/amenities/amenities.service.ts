@@ -5,6 +5,7 @@ import { UpdateAmenityDto } from './dto/update-amenity.dto';
 @Injectable()
 export class AmenitiesService {
   create(createAmenityDto: CreateAmenityDto) {
+    void createAmenityDto;
     return 'This action adds a new amenity';
   }
 
@@ -17,6 +18,7 @@ export class AmenitiesService {
   }
 
   update(id: number, updateAmenityDto: UpdateAmenityDto) {
+    void updateAmenityDto;
     return `This action updates a #${id} amenity`;
   }
 

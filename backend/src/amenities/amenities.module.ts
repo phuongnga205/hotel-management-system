@@ -6,7 +6,7 @@ import { Amenity } from './entities/amenity.entity';
 import { RoomAmenity } from './entities/room-amenity.entity';
 
 @Module({
-  imports:[TypeOrmModule.forFeature([Amenity,RoomAmenity])],
+  imports: [TypeOrmModule.forFeature([Amenity, RoomAmenity])],
   controllers: [AmenitiesController],
   providers: [AmenitiesService],
 })

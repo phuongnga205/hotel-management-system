@@ -1,83 +1,90 @@
 import {
-    Column,
-    CreateDateColumn,
-    DeleteDateColumn,
-    Entity,
-    OneToMany,
-    PrimaryGeneratedColumn,
-    UpdateDateColumn,
+  Check,
+  Column,
+  CreateDateColumn,
+  DeleteDateColumn,
+  Entity,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { Booking } from '../../bookings/entities/booking.entity';
 import { RoomAmenity } from '../../amenities/entities/room-amenity.entity';
 import { Image } from '../../images/entities/image.entity';
+import { Review } from '../../reviews/entities/review.entity';
 import { RoomViewType } from '../enums/room-view-type.enum';
 import { RoomStatus } from '../enums/room-status.enum';
 
 @Entity('rooms')
+@Check('chk_rooms_status', `"status" IN ('ACTIVE','INACTIVE','MAINTENANCE')`)
 export class Room {
-    @PrimaryGeneratedColumn()
-    id!: number;
+  @PrimaryGeneratedColumn('increment', { type: 'bigint' })
+  id!: string;
 
-    @Column({ name: 'room_number', unique: true, length: 50 })
-    roomNumber!: string;
+  @Column({ name: 'room_number', unique: true, length: 20 })
+  roomNumber!: string;
 
-    @Column({ length: 255 })
-    name!: string;
+  @Column({ length: 150 })
+  name!: string;
 
-    @Column({ type: 'text', nullable: true })
-    description?: string | null;
+  @Column({ name: 'room_type', type: 'varchar', length: 50, nullable: true })
+  roomType?: string | null;
 
-    @Column({ name: 'view_type', type: 'enum', enum: RoomViewType, nullable: true })
-    viewType?: RoomViewType | null;
+  @Column({ type: 'text', nullable: true })
+  description?: string | null;
 
-    @Column()
-    capacity!: number;
+  // Plain varchar, not a native Postgres enum — kept consistent with the
+  // rest of the schema, which uses varchar + CHECK for all status-like columns.
+  @Column({ name: 'view_type', type: 'varchar', length: 50, nullable: true })
+  viewType?: RoomViewType | null;
 
-    @Column({
-        name: 'price_per_night',
-        type: 'decimal',
-        precision: 12,
-        scale: 2,
-        transformer: {
-            to: (value: number) => value,
-            from: (value: string) => Number(value),
-        },
-    })
-    pricePerNight!: number;
+  @Column({ type: 'smallint' })
+  capacity!: number;
 
-    @Column({
-        type:'enum',
-        enum: RoomStatus,
-        default: RoomStatus.AVAILABLE,
-    })
-    status!: RoomStatus;
+  @Column({
+    name: 'price_per_night',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    transformer: {
+      to: (value: number) => value,
+      from: (value: string) => Number(value),
+    },
+  })
+  pricePerNight!: number;
 
-    @CreateDateColumn({
-        name: 'created_at',
-        type: 'timestamp',
-    })
-    createdAt?: Date;
-    @UpdateDateColumn({
-        name: 'updated_at',
-        type: 'timestamp',
-    })
-    updatedAt?: Date;
-    @DeleteDateColumn({
-        name: 'deleted_at',
-        type: 'timestamp',
-        nullable: true,
-    })
-    deletedAt?: Date | null;
+  @Column({
+    length: 20,
+    default: RoomStatus.ACTIVE,
+  })
+  status!: RoomStatus;
 
-    @OneToMany(() => Booking, (booking) => booking.room)
-    bookings?: Booking[];
+  @CreateDateColumn({
+    name: 'created_at',
+    type: 'timestamptz',
+  })
+  createdAt?: Date;
+  @UpdateDateColumn({
+    name: 'updated_at',
+    type: 'timestamptz',
+  })
+  updatedAt?: Date;
+  @DeleteDateColumn({
+    name: 'deleted_at',
+    type: 'timestamptz',
+    nullable: true,
+  })
+  deletedAt?: Date | null;
 
-    @OneToMany(() => RoomAmenity, (roomAmenity) => roomAmenity.room)
-    roomAmenities?: RoomAmenity[];
+  @OneToMany(() => Booking, (booking) => booking.room)
+  bookings?: Booking[];
 
-    @OneToMany(() => Image, (image) => image.room)
-    images?: Image[];
+  @OneToMany(() => RoomAmenity, (roomAmenity) => roomAmenity.room)
+  roomAmenities?: RoomAmenity[];
 
-    /*@OneToMany(() => Review, (review) => review.room)
-    reviews?: Review[];*/
+  @OneToMany(() => Image, (image) => image.room)
+  images?: Image[];
+
+  @OneToMany(() => Review, (review) => review.room)
+  reviews?: Review[];
 }

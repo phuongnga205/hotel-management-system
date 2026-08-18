@@ -1,4 +1,4 @@
-import { PartialType } from "@nestjs/swagger";
-import { CreateRoomAmenityDto } from "./create-room-amenity.dto";
+import { PartialType } from '@nestjs/swagger';
+import { CreateRoomAmenityDto } from './create-room-amenity.dto';
 
-export class UpdateRoomAmenityDto extends PartialType(CreateRoomAmenityDto){}
+export class UpdateRoomAmenityDto extends PartialType(CreateRoomAmenityDto) {}

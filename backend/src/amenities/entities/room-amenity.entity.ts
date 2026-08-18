@@ -1,41 +1,37 @@
 import {
-    CreateDateColumn,
-    Entity,
-    JoinColumn,
-    ManyToOne,
-    PrimaryColumn,
-    UpdateDateColumn,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryColumn,
 } from 'typeorm';
 import { Room } from '../../rooms/entities/room.entity';
 import { Amenity } from '../../amenities/entities/amenity.entity';
 
 @Entity('room_amenities')
 export class RoomAmenity {
-    @PrimaryColumn({ name: 'room_id' })
-    roomId!: number;
+  @PrimaryColumn({ name: 'room_id', type: 'bigint' })
+  roomId!: string;
 
-    @PrimaryColumn({ name: 'amenity_id' })
-    amenityId!: number;
+  @PrimaryColumn({ name: 'amenity_id', type: 'bigint' })
+  amenityId!: string;
 
-    @CreateDateColumn({
-        name: 'created_at',
-        type: 'timestamp',
-    })
-    createdAt?: Date;
-    @UpdateDateColumn({
-        name: 'updated_at',
-        type: 'timestamp',
-    })
-    updatedAt?: Date;
-    @ManyToOne(() => Room, (room) => room.roomAmenities, {
-        onDelete: 'RESTRICT',
-    })
-    @JoinColumn({ name: 'room_id' })
-    room!: Room;
+  @CreateDateColumn({
+    name: 'created_at',
+    type: 'timestamptz',
+  })
+  createdAt?: Date;
 
-    @ManyToOne(() => Amenity, (amenity) => amenity.roomAmenities, {
-        onDelete: 'RESTRICT',
-    })
-    @JoinColumn({ name: 'amenity_id' })
-    amenity!: Amenity;
+  // Pure join table: the mapping goes away with either side, no soft delete.
+  @ManyToOne(() => Room, (room) => room.roomAmenities, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'room_id' })
+  room!: Room;
+
+  @ManyToOne(() => Amenity, (amenity) => amenity.roomAmenities, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'amenity_id' })
+  amenity!: Amenity;
 }

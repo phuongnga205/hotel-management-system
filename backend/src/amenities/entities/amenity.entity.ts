@@ -1,50 +1,48 @@
 import {
-    Column,
-    CreateDateColumn,
-    DeleteDateColumn,
-    Entity,
-    OneToMany,
-    PrimaryGeneratedColumn,
-    UpdateDateColumn,
+  Column,
+  CreateDateColumn,
+  DeleteDateColumn,
+  Entity,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { RoomAmenity } from './room-amenity.entity';
 
 @Entity('amenities')
 export class Amenity {
-    @PrimaryGeneratedColumn()
-    id!: number;
+  @PrimaryGeneratedColumn('increment', { type: 'bigint' })
+  id!: string;
 
-    @Column({
-        length: 100,
-        unique: true,
-    })
-    name!: string;
+  @Column({
+    length: 100,
+    unique: true,
+  })
+  name!: string;
 
-    @Column({
-        type: 'text',
-        nullable: true,
-    })
-    description?: string | null;
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
+  description?: string | null;
 
-    @CreateDateColumn({
-        name: 'created_at',
-        type: 'timestamp',
-    })
-    createdAt?: Date;
-    @UpdateDateColumn({
-        name: 'updated_at',
-        type: 'timestamp',
-    })
-    updatedAt?: Date;
-    @DeleteDateColumn({
-        name: 'deleted_at',
-        type: 'timestamp',
-        nullable: true,
-    })
-    deletedAt?: Date | null;
-    @OneToMany(
-        () => RoomAmenity,
-        (roomAmenity) => roomAmenity.amenity,
-    )
-    roomAmenities?: RoomAmenity[];
+  @CreateDateColumn({
+    name: 'created_at',
+    type: 'timestamptz',
+  })
+  createdAt?: Date;
+  @UpdateDateColumn({
+    name: 'updated_at',
+    type: 'timestamptz',
+  })
+  updatedAt?: Date;
+  @DeleteDateColumn({
+    name: 'deleted_at',
+    type: 'timestamptz',
+    nullable: true,
+  })
+  deletedAt?: Date | null;
+  @OneToMany(() => RoomAmenity, (roomAmenity) => roomAmenity.amenity)
+  roomAmenities?: RoomAmenity[];
 }

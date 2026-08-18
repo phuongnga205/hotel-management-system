@@ -1,22 +1,22 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
-import { Booking} from './entities/booking.entity';
+import { Booking } from './entities/booking.entity';
 import { Repository } from 'typeorm/repository/Repository.js';
 import { InjectRepository } from '@nestjs/typeorm/dist/common/typeorm.decorators';
-import { BookingResponseDto } from './dto/booking-response.dto';
 import { Room } from '../rooms/entities/room.entity';
-import { BookingStatus } from './enums/booking-status.enum';
 
 @Injectable()
 export class BookingsService {
   constructor(
-    @InjectRepository(Booking) private readonly bookingsRepository: Repository<Booking>,
-    @InjectRepository(Room) private readonly roomsRepository: Repository<Room>
-  ) { }
-  async create(createBookingDto: CreateBookingDto) {
+    @InjectRepository(Booking)
+    private readonly bookingsRepository: Repository<Booking>,
+    @InjectRepository(Room) private readonly roomsRepository: Repository<Room>,
+  ) {}
+  create(createBookingDto: CreateBookingDto) {
+    void createBookingDto;
     return 'created';
-  /*const bookingroom = await this.roomsRepository.findOne({
+    /*const bookingroom = await this.roomsRepository.findOne({
       where: {
         id: createBookingDto.roomId
       }
@@ -43,16 +43,17 @@ export class BookingsService {
     return `This action returns all bookings`;
   }
 
-  findOne(id: number) {
+  findOne(id: string) {
     return `This action returns a #${id} booking`;
   }
 
-  update(id: number, updateBookingDto: UpdateBookingDto) {
+  update(id: string, updateBookingDto: UpdateBookingDto) {
     void updateBookingDto;
     return `This action updates a #${id} booking`;
   }
 
-  async remove(id: number) {
+  remove(id: string) {
+    void id;
     /*const result = await this.bookingsRepository.update(
       id,
       { note: reason, status: BookingStatus.CANCELLED }
@@ -61,7 +62,7 @@ export class BookingsService {
       throw new NotFoundException();
     }*/
     return {
-      message: "Booking request deleted",
-    }
+      message: 'Booking request deleted',
+    };
   }
 }

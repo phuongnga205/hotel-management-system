@@ -1,87 +1,113 @@
 import {
-    Check,
-    Column,
-    CreateDateColumn,
-    DeleteDateColumn,
-    Entity,
-    Index,
-    JoinColumn,
-    ManyToOne,
-    OneToOne,
-    PrimaryGeneratedColumn,
-    UpdateDateColumn,
+  Check,
+  Column,
+  CreateDateColumn,
+  DeleteDateColumn,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { Payment } from '../../payments/entities/payment.entity';
 import { BookingStatus } from '../enums/booking-status.enum';
 import { Room } from '../../rooms/entities/room.entity';
 import { User } from '../../users/entities/user.entity';
-import { PaymentStatus } from '../../payments/enums/payment-status.enum';
 
 @Entity({ name: 'bookings' })
-@Check('CHK_bookings_dates', '"check_out_date" > "check_in_date"')
-@Check('CHK_bookings_guest_count', '"guest_count" > 0')
-@Check('CHK_bookings_total_amount', '"total_amount" >= 0')
-@Index('IDX_bookings_user_id', ['userId'])
-@Index('IDX_bookings_room_id', ['roomId'])
-@Index('IDX_bookings_status', ['status'])
+@Check('chk_bookings_dates', '"check_out_date" > "check_in_date"')
+@Check(
+  'chk_bookings_status',
+  `"status" IN ('PENDING','ACCEPTED','REJECTED','CANCELLED','EXPIRED')`,
+)
+@Index('idx_bookings_user_id', ['userId'])
+@Index('idx_bookings_room_id', ['roomId'])
+@Index('idx_bookings_status', ['status'])
+@Index('idx_bookings_room_dates', ['roomId', 'checkInDate', 'checkOutDate'])
 export class Booking {
-    @PrimaryGeneratedColumn()
-    id!: number;
+  @PrimaryGeneratedColumn('increment', { type: 'bigint' })
+  id!: string;
 
-    @Column({ name: 'user_id', type: 'bigint' })
-    userId!: number;
-    @ManyToOne(() => User, (user) => user.bookings, {
-        nullable: false,
-        onDelete: 'RESTRICT',
-    })
-    @JoinColumn({ name: 'user_id' })
-    user?: User;
+  @Column({ name: 'user_id', type: 'bigint' })
+  userId!: string;
+  @ManyToOne(() => User, (user) => user.bookings, {
+    nullable: false,
+    onDelete: 'RESTRICT',
+  })
+  @JoinColumn({ name: 'user_id' })
+  user?: User;
 
-    @Column({ name: 'room_id', type: 'bigint' })
-    roomId!: number;
+  @Column({ name: 'room_id', type: 'bigint' })
+  roomId!: string;
 
-    @ManyToOne(() => Room, { nullable: false, onDelete: 'RESTRICT' })
-    @JoinColumn({ name: 'room_id' })
-    room?: Room;
+  @ManyToOne(() => Room, (room) => room.bookings, {
+    nullable: false,
+    onDelete: 'RESTRICT',
+  })
+  @JoinColumn({ name: 'room_id' })
+  room?: Room;
 
-    @Column({ name: 'check_in_date', type: 'date' })
-    checkInDate!: string;
+  @Column({ name: 'check_in_date', type: 'date' })
+  checkInDate!: string;
 
-    @Column({ name: 'check_out_date', type: 'date' })
-    checkOutDate!: string;
+  @Column({ name: 'check_out_date', type: 'date' })
+  checkOutDate!: string;
 
-    @Column({ name: 'guest_count', type: 'int' })
-    guestCount?: number;
+  // Snapshot of the room's price at booking time — protects the booking
+  // from later changes to rooms.price_per_night.
+  @Column({
+    name: 'price_per_night',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    transformer: {
+      to: (value: number) => value,
+      from: (value: string) => Number(value),
+    },
+  })
+  pricePerNight!: number;
 
-    @Column({ name: 'total_amount', type: 'numeric', precision: 12, scale: 2 })
-    totalAmount!: string;
+  @Column({
+    name: 'total_price',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    transformer: {
+      to: (value: number) => value,
+      from: (value: string) => Number(value),
+    },
+  })
+  totalPrice!: number;
 
-    @Column({
-        type: 'enum',
-        enum: BookingStatus,
-        default: BookingStatus.PENDING,
-    })
-    status!: BookingStatus;
+  @Column({
+    length: 20,
+    default: BookingStatus.PENDING,
+  })
+  status!: BookingStatus;
 
-    @Column({
-        name: 'payment_status',
-        type: 'enum',
-        enum: PaymentStatus
-    })
-    paymentStatus?:PaymentStatus;
+  // For the "pay later" flow: PENDING bookings holding a slot must resolve
+  // (payment or admin decision) before this timestamp, or be auto-expired.
+  @Column({ name: 'hold_expires_at', type: 'timestamptz', nullable: true })
+  holdExpiresAt?: Date | null;
 
-    @Column({ name: 'special_request', type: 'text', nullable: true })
-    note?: string | null;
+  @Column({ type: 'text', nullable: true })
+  note?: string | null;
 
-    @OneToOne(() => Payment, (payment) => payment.booking)
-    payment?: Payment | null;
+  // Reason given on cancellation (by the user) or rejection (by admin).
+  @Column({ name: 'cancel_reason', type: 'text', nullable: true })
+  cancelReason?: string | null;
 
-    @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
-    createdAt?: Date;
+  @OneToMany(() => Payment, (payment) => payment.booking)
+  payments?: Payment[];
 
-    @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
-    updatedAt?: Date;
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
+  createdAt?: Date;
 
-    @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz', nullable: true })
-    deletedAt?: Date | null;
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
+  updatedAt?: Date;
+
+  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz', nullable: true })
+  deletedAt?: Date | null;
 }
