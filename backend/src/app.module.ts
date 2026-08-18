@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bullmq';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
@@ -17,6 +17,7 @@ import {
 import * as path from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { ENVIRONMENT_KEYS } from './config/environment.constants';
 
 const DEFAULT_REDIS_PORT = 6379;
 
@@ -33,56 +34,25 @@ const DEFAULT_REDIS_PORT = 6379;
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        // Determine synchronize behaviour from env or test mode. Default: enabled for tests, disabled otherwise.
-        const syncEnv = configService.get<string | undefined>(
-          'TYPEORM_SYNCHRONIZE',
+        const rawSsl = configService.get<string | boolean>(
+          ENVIRONMENT_KEYS.DATABASE_SSL_REJECT_UNAUTHORIZED,
+          'true',
         );
-        const synchronize =
-          syncEnv !== undefined
-            ? syncEnv === 'true'
-            : process.env.NODE_ENV === 'test';
 
-        const common = {
+        return {
+          type: 'postgres' as const,
+          url: configService.getOrThrow<string>(ENVIRONMENT_KEYS.DATABASE_URL),
+          ssl: {
+            rejectUnauthorized: rawSsl === true || rawSsl === 'true',
+          },
           autoLoadEntities: true,
-          synchronize,
+          synchronize:
+            configService.get<string>(
+              ENVIRONMENT_KEYS.TYPEORM_SYNCHRONIZE,
+              'false',
+            ) === 'true',
           logging: false,
         };
-
-        let options: TypeOrmModuleOptions;
-
-        if (process.env.NODE_ENV === 'test') {
-          options = {
-            type: 'better-sqlite3',
-            database: ':memory:',
-            ...common,
-          } as unknown as TypeOrmModuleOptions;
-        } else {
-          // Determine SSL certificate validation behavior.
-          // - Honor explicit `DATABASE_SSL_REJECT_UNAUTHORIZED` when provided.
-          // - If not set, try to auto-detect Neon (neon.tech) and disable strict validation by default.
-          const dbUrl = configService.get<string>('DATABASE_URL');
-          const rawSsl = configService.get<string | boolean | undefined>(
-            'DATABASE_SSL_REJECT_UNAUTHORIZED',
-          );
-
-          let sslReject: boolean;
-          if (rawSsl === undefined) {
-            sslReject = dbUrl ? dbUrl.includes('neon.tech') === false : true;
-          } else {
-            sslReject = rawSsl === true || rawSsl === 'true';
-          }
-
-          options = {
-            type: 'postgres',
-            url: dbUrl,
-            ssl: {
-              rejectUnauthorized: Boolean(sslReject),
-            },
-            ...common,
-          } as unknown as TypeOrmModuleOptions;
-        }
-
-        return options;
       },
     }),
 

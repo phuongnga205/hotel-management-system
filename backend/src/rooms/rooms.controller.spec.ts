@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { RoomsController } from './rooms.controller';
 import { RoomsService } from './rooms.service';
 import { RoomsExportService } from './rooms-export.service';
+import { I18nService } from 'nestjs-i18n';
+import { RoomsLogger } from './rooms.logger';
 
 describe('RoomsController', () => {
   let controller: RoomsController;
@@ -17,6 +19,14 @@ describe('RoomsController', () => {
         {
           provide: RoomsExportService,
           useValue: {},
+        },
+        {
+          provide: I18nService,
+          useValue: { t: jest.fn() },
+        },
+        {
+          provide: RoomsLogger,
+          useValue: { error: jest.fn() },
         },
       ],
     }).compile();

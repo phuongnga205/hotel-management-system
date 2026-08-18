@@ -5,12 +5,15 @@ import {
   DeleteDateColumn,
   Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
   OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Payment } from '../../payments/entities/payment.entity';
 import { BookingStatus } from '../enums/booking-status.enum';
+import { Room } from '../../rooms/entities/room.entity';
 
 @Entity({ name: 'bookings' })
 @Check('CHK_bookings_dates', '"check_out_date" > "check_in_date"')
@@ -23,11 +26,15 @@ export class Booking {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ name: 'user_id', type: 'int' })
-  userId: number;
+  @Column({ name: 'user_id', type: 'bigint' })
+  userId: string;
 
-  @Column({ name: 'room_id', type: 'int' })
-  roomId: number;
+  @Column({ name: 'room_id', type: 'bigint' })
+  roomId: string;
+
+  @ManyToOne(() => Room, { nullable: false, onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'room_id' })
+  room: Room;
 
   @Column({ name: 'check_in_date', type: 'date' })
   checkInDate: string;

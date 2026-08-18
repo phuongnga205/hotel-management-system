@@ -3,9 +3,13 @@ import {
   IsOptional,
   IsString,
   IsNumber,
+  IsEnum,
+  IsInt,
   Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { RoomStatus } from '../enums/room-status.enum';
+import { RoomViewType } from '../enums/room-view-type.enum';
 
 export class CreateRoomDto {
   @IsString()
@@ -21,8 +25,8 @@ export class CreateRoomDto {
   description?: string | null;
 
   @IsOptional()
-  @IsString()
-  viewType?: string | null;
+  @IsEnum(RoomViewType)
+  viewType?: RoomViewType | null;
 
   @Type(() => Number)
   @IsNumber()
@@ -30,11 +34,11 @@ export class CreateRoomDto {
   price: number;
 
   @Type(() => Number)
-  @IsNumber()
+  @IsInt()
   @Min(1)
   capacity: number;
 
   @IsOptional()
-  @IsString()
-  status?: string;
+  @IsEnum(RoomStatus)
+  status?: RoomStatus;
 }

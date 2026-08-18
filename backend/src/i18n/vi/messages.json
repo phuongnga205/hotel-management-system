@@ -1,4 +1,7 @@
 {
-    "HELLO": "Xin chào",
-    "USER_NOT_FOUND": "Không tìm thấy người dùng trong hệ thống."
+  "HELLO": "Xin chào",
+  "USER_NOT_FOUND": "Không tìm thấy người dùng trong hệ thống.",
+  "ROOM_NOT_FOUND": "Không tìm thấy phòng.",
+  "ROOM_NUMBER_EXISTS": "Số phòng đã tồn tại.",
+  "ROOM_SAVE_FAILED": "Không thể lưu thông tin phòng. Vui lòng thử lại."
 }

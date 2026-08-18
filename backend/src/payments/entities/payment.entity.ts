@@ -21,7 +21,7 @@ export class Payment {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ name: 'booking_id', type: 'int', unique: true })
+  @Column({ name: 'booking_id', type: 'int' })
   bookingId: number;
 
   @OneToOne(() => Booking, (booking) => booking.payment, {

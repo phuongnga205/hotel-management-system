@@ -1,4 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  DeleteDateColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+import { RoomStatus } from '../enums/room-status.enum';
+import { RoomViewType } from '../enums/room-view-type.enum';
 
 @Entity('rooms')
 export class Room {
@@ -15,7 +24,7 @@ export class Room {
   description?: string | null;
 
   @Column({ name: 'view_type', type: 'varchar', nullable: true })
-  viewType?: string | null;
+  viewType?: RoomViewType | null;
 
   @Column({ name: 'price_per_night', type: 'numeric' })
   price: number;
@@ -23,12 +32,19 @@ export class Room {
   @Column({ type: 'int' })
   capacity: number;
 
-  @Column({ type: 'varchar', default: 'AVAILABLE' })
-  status: string;
+  @Column({
+    type: 'enum',
+    enum: RoomStatus,
+    default: RoomStatus.AVAILABLE,
+  })
+  status: RoomStatus;
 
-  @Column({ name: 'created_at', type: 'timestamp', nullable: true })
-  createdAt?: Date | null;
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
+  createdAt: Date;
 
-  @Column({ name: 'updated_at', type: 'timestamp', nullable: true })
-  updatedAt?: Date | null;
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
+  updatedAt: Date;
+
+  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz', nullable: true })
+  deletedAt: Date | null;
 }

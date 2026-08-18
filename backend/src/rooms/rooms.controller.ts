@@ -9,6 +9,8 @@ import {
   Post,
   Query,
   StreamableFile,
+  UseGuards,
+  UseFilters,
 } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiProduces } from '@nestjs/swagger';
 import { RoomsService } from './rooms.service';
@@ -17,7 +19,17 @@ import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { ROOM_EXPORT } from './constants/room-export.constants';
 import { ListRoomsDto } from './dto/list-rooms.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '../users/enums/user-role.enum';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { RoomPersistenceExceptionFilter } from './filters/room-persistence-exception.filter';
 
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
+@UseFilters(RoomPersistenceExceptionFilter)
+@Roles(UserRole.ADMIN)
 @Controller('rooms')
 export class RoomsController {
   constructor(
@@ -42,8 +54,8 @@ export class RoomsController {
     description: 'Excel file containing the room list',
     schema: { type: 'string', format: 'binary' },
   })
-  async exportToExcel(): Promise<StreamableFile> {
-    const file = await this.roomsExportService.exportToExcel();
+  exportToExcel(): StreamableFile {
+    const file = this.roomsExportService.exportToExcel();
 
     return new StreamableFile(file, {
       type: ROOM_EXPORT.MIME_TYPE,
