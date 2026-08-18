@@ -8,6 +8,7 @@ import { RoomsModule } from './rooms/rooms.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { PaymentsModule } from './payments/payments.module';
+import { MailModule } from './mail/mail.module';
 import {
   I18nModule,
   AcceptLanguageResolver,
@@ -90,6 +91,8 @@ const DEFAULT_REDIS_PORT = 6379;
     PaymentsModule,
 
     ReviewsModule,
+
+    MailModule,
   ],
   controllers: [AppController],
   providers: [AppService],
