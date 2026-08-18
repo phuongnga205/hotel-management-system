@@ -1,4 +1,7 @@
 import axios from 'axios'
+import { router } from '../router'
+import { ROUTES } from '../router/paths'
+import { env } from '../config/env'
 
 /**
  * Axios instance dùng chung cho toàn bộ app.
@@ -6,10 +9,11 @@ import axios from 'axios'
  * ta dùng "interceptor" để axios tự động làm việc đó trước mỗi request.
  */
 export const axiosClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api/v1',
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL: env.apiBaseUrl,
+  // Không set cứng Content-Type ở đây: để axios tự suy ra theo dữ liệu gửi đi
+  // (application/json cho object thường, multipart/form-data khi truyền
+  // FormData để upload file...). Set cứng application/json sẽ làm hỏng các
+  // request upload FormData.
 })
 
 // Key dùng để lưu access token trong localStorage.
@@ -53,15 +57,14 @@ function isAuthEndpoint(url?: string): boolean {
 // --- RESPONSE INTERCEPTOR ---
 // Chạy sau khi nhận response: nếu backend trả 401 (token hết hạn / không hợp lệ)
 // từ một API cần xác thực (không phải chính API đăng nhập), tự động xoá token
-// và điều hướng về trang login.
+// và điều hướng về trang login qua router (không dùng window.location.href để
+// tránh reload cứng cả trang, mất state của SPA).
 axiosClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401 && !isAuthEndpoint(error.config?.url)) {
       clearAccessToken()
-      // TODO: thay bằng cách điều hướng phù hợp với router khi routes được thiết lập
-      // (ví dụ: dùng react-router navigate, hoặc dispatch action logout).
-      window.location.href = '/login'
+      void router.navigate(ROUTES.LOGIN)
     }
     return Promise.reject(error)
   },

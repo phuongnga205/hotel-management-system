@@ -7,10 +7,7 @@ function App() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-8">
       <h1 className="text-2xl font-semibold">{t('app.name')}</h1>
-      <p className="text-gray-500">
-        Setup mẫu: Vite + React + Tailwind CSS + Ant Design + i18n (vi/en).
-        Routes và style guide chính thức sẽ được bổ sung sau.
-      </p>
+      <p className="text-gray-500">{t('app.setupDescription')}</p>
 
       <Space>
         <Button type="primary">{t('common.save')}</Button>
