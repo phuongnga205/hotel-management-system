@@ -5,6 +5,7 @@ import { UpdateRoomDto } from './dto/update-room.dto';
 @Injectable()
 export class RoomsService {
   create(createRoomDto: CreateRoomDto) {
+    void createRoomDto;
     return 'This action adds a new room';
   }
 
@@ -17,6 +18,7 @@ export class RoomsService {
   }
 
   update(id: number, updateRoomDto: UpdateRoomDto) {
+    void updateRoomDto;
     return `This action updates a #${id} room`;
   }
 

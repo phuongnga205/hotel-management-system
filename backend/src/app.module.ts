@@ -28,10 +28,12 @@ const DEFAULT_THROTTLE_LIMIT = 10;
       envFilePath: '.env',
     }),
 
-    ThrottlerModule.forRoot([{
-      ttl: DEFAULT_THROTTLE_TTL,
-      limit: DEFAULT_THROTTLE_LIMIT,
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: DEFAULT_THROTTLE_TTL,
+        limit: DEFAULT_THROTTLE_LIMIT,
+      },
+    ]),
 
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -82,4 +84,4 @@ const DEFAULT_THROTTLE_LIMIT = 10;
   controllers: [],
   providers: [],
 })
-export class AppModule { }
+export class AppModule {}

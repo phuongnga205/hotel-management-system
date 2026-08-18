@@ -1,14 +1,14 @@
 {
-    "HELLO": "Xin chào",
-    "USER_NOT_FOUND": "Không tìm thấy người dùng trong hệ thống.",
+    "HELLO": "Hello",
+    "USER_NOT_FOUND": "User not found in the system.",
     "AUTH": {
-        "EMAIL_EXISTED": "Email này đã được đăng ký trong hệ thống.",
-        "INVALID_CREDENTIALS": "Email hoặc mật khẩu không chính xác.",
-        "REGISTER_SUCCESS": "Đăng ký tài khoản thành công.",
-        "LOGIN_SUCCESS": "Đăng nhập thành công.",
-        "LOGOUT_SUCCESS": "Đăng xuất thành công.",
-        "UNAUTHORIZED": "Phiên đăng nhập không hợp lệ hoặc đã hết hạn.",
-        "TOKEN_BLACKLISTED": "Token này đã bị vô hiệu hóa (đã đăng xuất)."
+        "EMAIL_EXISTED": "This email is already registered.",
+        "INVALID_CREDENTIALS": "Invalid email or password.",
+        "REGISTER_SUCCESS": "User registered successfully.",
+        "LOGIN_SUCCESS": "Login successfully.",
+        "LOGOUT_SUCCESS": "Logout successfully.",
+        "UNAUTHORIZED": "Unauthorized or session expired.",
+        "TOKEN_BLACKLISTED": "Token has been invalidated (logged out)."
     },
     "VALIDATION": {
         "IS_EMAIL": "Email format is invalid.",

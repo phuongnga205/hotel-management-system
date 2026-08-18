@@ -11,7 +11,7 @@ import {
   Res,
   ClassSerializerInterceptor,
 } from '@nestjs/common';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import {
   ApiBearerAuth,
@@ -24,7 +24,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GetRawToken } from './decorators/get-token.decorator';
-import { TokenUtil } from '../token/token.util';
+
 import { JwtService } from '@nestjs/jwt';
 import { I18nService } from 'nestjs-i18n';
 
@@ -32,7 +32,8 @@ const CLEAR_SITE_DATA_HEADER = 'Clear-Site-Data';
 const CLEAR_SITE_DATA_VALUE = '"cache", "cookies", "storage"';
 
 const CACHE_CONTROL_HEADER = 'Cache-Control';
-const CACHE_CONTROL_VALUE = 'no-store, no-cache, must-revalidate, proxy-revalidate';
+const CACHE_CONTROL_VALUE =
+  'no-store, no-cache, must-revalidate, proxy-revalidate';
 const PRAGMA_HEADER = 'Pragma';
 const PRAGMA_VALUE = 'no-cache';
 const EXPIRES_HEADER = 'Expires';
@@ -46,7 +47,6 @@ const SURROGATE_CONTROL_VALUE = 'no-store';
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly tokenUtil: TokenUtil,
     private readonly jwtService: JwtService,
     private readonly i18n: I18nService,
   ) {}
@@ -71,7 +71,10 @@ export class AuthController {
     description: 'Đăng nhập thành công, trả về Access Token',
   })
   @ApiResponse({ status: 401, description: 'Thông tin đăng nhập không hợp lệ' })
-  async signInAction(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res: Response) {
+  async signInAction(
+    @Body() loginDto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     res.set(CACHE_CONTROL_HEADER, CACHE_CONTROL_VALUE);
     res.set(PRAGMA_HEADER, PRAGMA_VALUE);
     res.set(EXPIRES_HEADER, EXPIRES_VALUE);
@@ -88,7 +91,7 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Token không hợp lệ' })
   async signOutAction(
     @GetRawToken() token: string,
-    @Req() req: any,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
     res.set(CACHE_CONTROL_HEADER, CACHE_CONTROL_VALUE);
@@ -96,24 +99,15 @@ export class AuthController {
     res.set(EXPIRES_HEADER, EXPIRES_VALUE);
     res.set(SURROGATE_CONTROL_HEADER, SURROGATE_CONTROL_VALUE);
     res.set(CLEAR_SITE_DATA_HEADER, CLEAR_SITE_DATA_VALUE);
-    if (req.session) {
-      req.session.destroy();
-    }
-    req.session = null;
 
     if (!token) {
-      return { message: this.i18n.t('messages.AUTH.SIGNOUT_SUCCESS') };
+      return { message: this.i18n.t('messages.AUTH.LOGOUT_SUCCESS') };
     }
 
-    const decoded: any = this.jwtService.decode(token);
-    if (decoded && decoded.exp) {
-      const currentTime = Math.floor(Date.now() / 1000);
-      const ttlSeconds = decoded.exp - currentTime;
-      await this.tokenUtil.revokeAuthToken(token, Math.floor(ttlSeconds));
-    }
+    await this.authService.logout(token);
 
     return {
-      message: this.i18n.t('messages.AUTH.SIGNOUT_SUCCESS'),
+      message: this.i18n.t('messages.AUTH.LOGOUT_SUCCESS'),
     };
   }
 }

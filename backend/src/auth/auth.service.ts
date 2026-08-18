@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { User } from '../users/entities/user.entity';
 import { JwtService } from '@nestjs/jwt';
 import { I18nService } from 'nestjs-i18n';
@@ -11,14 +12,27 @@ import * as bcrypt from 'bcrypt';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 
+import { TokenUtil } from '../token/token.util';
+
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User)
-    private userRepository: any,
+    private userRepository: Repository<User>,
     private readonly jwtService: JwtService,
     private readonly i18n: I18nService,
-  ) { }
+    private readonly tokenUtil: TokenUtil,
+  ) {}
+
+  async logout(token: string): Promise<void> {
+    const decoded: unknown = this.jwtService.decode(token);
+    if (decoded && typeof decoded === 'object' && 'exp' in decoded) {
+      const currentTime = Math.floor(Date.now() / 1000);
+      const exp = (decoded as { exp: number }).exp;
+      const ttlSeconds = exp - currentTime;
+      await this.tokenUtil.revokeAuthToken(token, Math.floor(ttlSeconds));
+    }
+  }
 
   async register(registerDto: RegisterDto) {
     const { email, password, username, phone } = registerDto;
@@ -74,5 +88,4 @@ export class AuthService {
       user,
     };
   }
-
 }
