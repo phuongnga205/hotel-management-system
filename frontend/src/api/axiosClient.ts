@@ -6,7 +6,7 @@ import axios from 'axios'
  * ta dùng "interceptor" để axios tự động làm việc đó trước mỗi request.
  */
 export const axiosClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000',
+  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -39,13 +39,25 @@ axiosClient.interceptors.request.use((config) => {
   return config
 })
 
+// Các endpoint tự nó là hành động đăng nhập: nếu chính các API này trả 401
+// (sai tài khoản/mật khẩu) thì đó là lỗi nghiệp vụ bình thường, không phải
+// token hết hạn -> không được tự reload/redirect, để form login còn hiển thị
+// thông báo lỗi và giữ lại dữ liệu người dùng đã nhập.
+const AUTH_ENDPOINTS = ['/auth/login']
+
+function isAuthEndpoint(url?: string): boolean {
+  if (!url) return false
+  return AUTH_ENDPOINTS.some((endpoint) => url.includes(endpoint))
+}
+
 // --- RESPONSE INTERCEPTOR ---
-// Chạy sau khi nhận response: nếu backend trả 401 (token hết hạn / không hợp lệ),
-// tự động xoá token và điều hướng về trang login.
+// Chạy sau khi nhận response: nếu backend trả 401 (token hết hạn / không hợp lệ)
+// từ một API cần xác thực (không phải chính API đăng nhập), tự động xoá token
+// và điều hướng về trang login.
 axiosClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !isAuthEndpoint(error.config?.url)) {
       clearAccessToken()
       // TODO: thay bằng cách điều hướng phù hợp với router khi routes được thiết lập
       // (ví dụ: dùng react-router navigate, hoặc dispatch action logout).
