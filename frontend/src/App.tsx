@@ -14,20 +14,6 @@ function App() {
         <Button>{t('common.cancel')}</Button>
       </Space>
 
-      <Space>
-        <Button
-          type={i18n.language.startsWith('vi') ? 'primary' : 'default'}
-          onClick={() => i18n.changeLanguage('vi')}
-        >
-          {t('language.vi')}
-        </Button>
-        <Button
-          type={i18n.language.startsWith('en') ? 'primary' : 'default'}
-          onClick={() => i18n.changeLanguage('en')}
-        >
-          {t('language.en')}
-        </Button>
-      </Space>
     </div>
   )
 }

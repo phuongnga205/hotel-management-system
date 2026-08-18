@@ -1,23 +1,32 @@
 {
   "app": {
-    "name": "Hệ thống quản lý khách sạn",
+    "name": "Grandeur",
     "setupDescription": "Setup mẫu: Vite + React + Tailwind CSS + Ant Design + i18n (vi/en). Routes và style guide chính thức sẽ được bổ sung sau."
   },
   "common": {
     "save": "Lưu",
     "cancel": "Huỷ",
-    "confirm": "Xác nhận",
-    "loading": "Đang tải...",
-    "search": "Tìm kiếm"
+    "confirm": "Xác Nhận",
+    "loading": "Đang Tải...",
+    "search": "Tìm Kiếm",
+    "name": "Họ Tên"
   },
   "auth": {
-    "login": "Đăng nhập",
-    "logout": "Đăng xuất",
+    "login": "Đăng Nhập",
+    "logout": "Đăng Xuất",
     "email": "Email",
-    "password": "Mật khẩu"
+    "password": "Mật Khẩu"
   },
   "language": {
     "vi": "Tiếng Việt",
     "en": "English"
+  },
+  "navigation": {
+    "home": "Trang Chủ",
+    "rooms": "Phòng",
+    "myBookings": "Booking Của Tôi",
+    "admin": "Quản Trị",
+    "profile": "Tài Khoản",
+    "logout": "Đăng Xuất"
   }
 }
