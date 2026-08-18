@@ -31,7 +31,7 @@ import * as path from 'path';
           rejectUnauthorized: false, // Bắt buộc cho Neon DB Serverless SSL
         },
         autoLoadEntities: true,    // Tự động nạp các Entity được khai báo ở các Module
-        synchronize: true,         // Tự động đồng bộ Schema DB (dùng cho môi trường Dev)
+        synchronize: false,         // Tự động đồng bộ Schema DB (dùng cho môi trường Dev)
         logging: false,            // Bật true nếu muốn in ra các câu lệnh SQL trong console
       }),
     }),

@@ -1,8 +1,11 @@
 import {
     Column,
+    CreateDateColumn,
+    DeleteDateColumn,
     Entity,
     OneToMany,
     PrimaryGeneratedColumn,
+    UpdateDateColumn,
 } from 'typeorm';
 import { RoomAmenity } from './room-amenity.entity';
 
@@ -23,6 +26,22 @@ export class Amenity {
     })
     description?: string | null;
 
+    @CreateDateColumn({
+        name: 'created_at',
+        type: 'timestamp',
+    })
+    createdAt?: Date;
+    @UpdateDateColumn({
+        name: 'updated_at',
+        type: 'timestamp',
+    })
+    updatedAt?: Date;
+    @DeleteDateColumn({
+        name: 'deleted_at',
+        type: 'timestamp',
+        nullable: true,
+    })
+    deletedAt?: Date | null;
     @OneToMany(
         () => RoomAmenity,
         (roomAmenity) => roomAmenity.amenity,

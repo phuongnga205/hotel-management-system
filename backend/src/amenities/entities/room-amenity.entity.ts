@@ -1,8 +1,10 @@
 import {
+    CreateDateColumn,
     Entity,
     JoinColumn,
     ManyToOne,
     PrimaryColumn,
+    UpdateDateColumn,
 } from 'typeorm';
 import { Room } from '../../rooms/entities/room.entity';
 import { Amenity } from '../../amenities/entities/amenity.entity';
@@ -15,6 +17,16 @@ export class RoomAmenity {
     @PrimaryColumn({ name: 'amenity_id' })
     amenityId!: number;
 
+    @CreateDateColumn({
+        name: 'created_at',
+        type: 'timestamp',
+    })
+    createdAt?: Date;
+    @UpdateDateColumn({
+        name: 'updated_at',
+        type: 'timestamp',
+    })
+    updatedAt?: Date;
     @ManyToOne(() => Room, (room) => room.roomAmenities, {
         onDelete: 'CASCADE',
     })

@@ -1,5 +1,6 @@
 import {
     IsEmail,
+    IsEnum,
     IsOptional,
     IsString,
     IsUrl,
@@ -68,7 +69,7 @@ export class CreateUserDto {
         example: 'USER',
     })
     @IsOptional()
-    @IsString()
+    @IsEnum(UserRole)
     @MaxLength(20)
     role?: UserRole;
 
@@ -77,7 +78,7 @@ export class CreateUserDto {
         example: 'ACTIVE',
     })
     @IsOptional()
-    @IsString()
+    @IsEnum(UserStatus)
     @MaxLength(20)
     status?: UserStatus;
 }

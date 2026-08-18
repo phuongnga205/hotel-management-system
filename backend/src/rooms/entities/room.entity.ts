@@ -1,13 +1,15 @@
 import {
     Column,
+    CreateDateColumn,
+    DeleteDateColumn,
     Entity,
     OneToMany,
     PrimaryGeneratedColumn,
+    UpdateDateColumn,
 } from 'typeorm';
 import { Booking } from '../../bookings/entities/booking.entity';
 import { RoomAmenity } from '../../amenities/entities/room-amenity.entity';
 import { Image } from '../../images/entities/image.entity';
-import { Review } from '../../reviews/entities/review.entity';
 
 export enum RoomStatus {
     AVAILABLE = 'AVAILABLE',
@@ -26,10 +28,10 @@ export class Room {
     name!: string;
 
     @Column({ type: 'text', nullable: true })
-    description?: string | null;
+    description?: string;
 
     @Column({ name: 'view_type', length: 50, nullable: true })
-    viewType?: string | null;
+    viewType?: string|null;
 
     @Column()
     capacity!: number;
@@ -47,6 +49,23 @@ export class Room {
         default: RoomStatus.AVAILABLE,
     })
     status!: RoomStatus;
+
+    @CreateDateColumn({
+        name: 'created_at',
+        type: 'timestamp',
+    })
+    createdAt?: Date;
+    @UpdateDateColumn({
+        name: 'updated_at',
+        type: 'timestamp',
+    })
+    updatedAt?: Date;
+    @DeleteDateColumn({
+        name: 'deleted_at',
+        type: 'timestamp',
+        nullable: true,
+    })
+    deletedAt?: Date | null;
 
     @OneToMany(() => Booking, (booking) => booking.room)
     bookings?: Booking[];

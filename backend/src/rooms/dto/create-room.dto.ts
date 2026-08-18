@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
+    IsEnum,
     IsInt,
     IsNumber,
     IsOptional,
@@ -64,7 +65,7 @@ export class CreateRoomDto {
         example: 'AVAILABLE',
     })
     @IsOptional()
-    @IsString()
+    @IsEnum(RoomStatus)
     @MaxLength(20)
     status?: RoomStatus;
 }

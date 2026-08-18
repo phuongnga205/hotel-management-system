@@ -1,20 +1,23 @@
 import {
     Column,
+    CreateDateColumn,
+    DeleteDateColumn,
     Entity,
     JoinColumn,
     ManyToOne,
     PrimaryGeneratedColumn,
+    UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Room } from '../../rooms/entities/room.entity';
 
 export enum BookingStatus {
-    PENDING = 'PENDING',
-    CONFIRMED = 'CONFIRMED',
-    CANCELLED = 'CANCELLED',
+    PENDING = 'PENDING',//đợi admin confirm
+    CONFIRMED = 'ACCEPTED',//admin confirm request
+    CANCELLED = 'CANCELLED',//admin hoặc user hủy request
 }
 export enum PaymentStatus {
-    UNPAID = 'UNPAID',
+    UNPAID = 'UNPAID',//sau admin confirm có thể trả tiền
     PAID = 'PAID',
     REFUNDED = 'REFUNDED',
 }
@@ -61,6 +64,23 @@ export class Booking {
         nullable: true,
     })
     note?: string | null;
+
+    @CreateDateColumn({
+        name: 'created_at',
+        type: 'timestamp',
+    })
+    createdAt?: Date;
+    @UpdateDateColumn({
+        name: 'updated_at',
+        type: 'timestamp',
+    })
+    updatedAt?: Date;
+    @DeleteDateColumn({
+        name: 'deleted_at',
+        type: 'timestamp',
+        nullable: true,
+    })
+    deletedAt?: Date | null;
 
     @ManyToOne(() => User, (user) => user.bookings, {
         onDelete: 'RESTRICT',
