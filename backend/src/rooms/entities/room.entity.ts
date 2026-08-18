@@ -10,6 +10,7 @@ import {
 import { Booking } from '../../bookings/entities/booking.entity';
 import { RoomAmenity } from '../../amenities/entities/room-amenity.entity';
 import { Image } from '../../images/entities/image.entity';
+import { RoomViewType } from '../enums/room-view-type.enum';
 
 export enum RoomStatus {
     AVAILABLE = 'AVAILABLE',
@@ -30,8 +31,8 @@ export class Room {
     @Column({ type: 'text', nullable: true })
     description?: string| null;
 
-    @Column({ name: 'view_type',type:'varchar', length: 50, nullable: true })
-    viewType?: string|null;
+    @Column({ name: 'view_type',type:'enum', enum:RoomViewType, nullable: true })
+    viewType?: RoomViewType|null;
 
     @Column()
     capacity!: number;
@@ -42,10 +43,11 @@ export class Room {
         precision: 12,
         scale: 2,
     })
-    pricePerNight!: number;
+    pricePerNight!: string;
 
     @Column({
         length: 20,
+        enum:RoomStatus,
         default: RoomStatus.AVAILABLE,
     })
     status!: RoomStatus;

@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
     IsEnum,
     IsInt,
+    IsNotEmpty,
     IsNumber,
     IsOptional,
     IsPositive,
@@ -10,6 +11,7 @@ import {
 } from 'class-validator';
 import { RoomStatus } from '../entities/room.entity';
 import { Type } from 'class-transformer';
+import { RoomViewType } from '../enums/room-view-type.enum';
 
 export class CreateRoomDto {
     @ApiProperty({
@@ -17,6 +19,7 @@ export class CreateRoomDto {
         example: '101',
     })
     @IsString()
+    @IsNotEmpty()
     @MaxLength(50)
     roomNumber!: string;
 
@@ -25,6 +28,7 @@ export class CreateRoomDto {
         example: 'Deluxe Suite',
     })
     @IsString()
+    @IsNotEmpty()
     @MaxLength(255)
     name!: string;
 
@@ -38,12 +42,12 @@ export class CreateRoomDto {
 
     @ApiProperty({
         description: 'The type of the room',
-        example: 'Ocean View',
+        example: 'SEA_VIEW',
     })
     @IsOptional()
     @IsString()
     @MaxLength(50)
-    viewType?: string;
+    viewType?: RoomViewType;
 
     @ApiProperty({
         description: 'The capacity of the room',
@@ -51,6 +55,7 @@ export class CreateRoomDto {
     })
     @Type(() => Number)
     @IsInt()
+    @IsNotEmpty()
     @IsPositive()
     capacity!: number;
 
@@ -59,9 +64,10 @@ export class CreateRoomDto {
         example: 150.00,
     })
     @Type(() => Number)
-    @IsNumber()
+    @IsString()
+    @IsNotEmpty()
     @IsPositive()
-    pricePerNight!: number;
+    pricePerNight!: string;
 
     @ApiProperty({
         description: 'The status of the room',

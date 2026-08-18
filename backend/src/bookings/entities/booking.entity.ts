@@ -15,6 +15,7 @@ import { Payment } from '../../payments/entities/payment.entity';
 import { BookingStatus } from '../enums/booking-status.enum';
 import { Room } from '../../rooms/entities/room.entity';
 import { User } from '../../users/entities/user.entity';
+import { PaymentStatus } from '../../payments/enums/payment-status.enum';
 
 @Entity({ name: 'bookings' })
 @Check('CHK_bookings_dates', '"check_out_date" > "check_in_date"')
@@ -64,9 +65,10 @@ export class Booking {
 
     @Column({
         name: 'payment_status',
-        type: 'enum'
-
+        type: 'enum',
+        enum: PaymentStatus
     })
+    paymentStatus?:PaymentStatus;
 
     @Column({ name: 'special_request', type: 'text', nullable: true })
     note?: string | null;

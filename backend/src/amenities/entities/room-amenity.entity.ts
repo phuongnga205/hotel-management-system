@@ -28,13 +28,13 @@ export class RoomAmenity {
     })
     updatedAt?: Date;
     @ManyToOne(() => Room, (room) => room.roomAmenities, {
-        onDelete: 'CASCADE',
+        onDelete: 'RESTRICT',
     })
     @JoinColumn({ name: 'room_id' })
     room?: Room;
 
     @ManyToOne(() => Amenity, (amenity) => amenity.roomAmenities, {
-        onDelete: 'CASCADE',
+        onDelete: 'RESTRICT',
     })
     @JoinColumn({ name: 'amenity_id' })
     amenity?: Amenity;

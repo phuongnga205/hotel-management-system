@@ -15,7 +15,8 @@ export class BookingsService {
     @InjectRepository(Room) private readonly roomsRepository: Repository<Room>
   ) { }
   async create(createBookingDto: CreateBookingDto) {
-    const bookingroom = await this.roomsRepository.findOne({
+    return 'created';
+  /*const bookingroom = await this.roomsRepository.findOne({
       where: {
         id: createBookingDto.roomId
       }
@@ -35,7 +36,7 @@ export class BookingsService {
     if (!booking) {
       throw new Error('Booking request failed');
     }
-    return new BookingResponseDto(booking);
+    return new BookingResponseDto(booking);*/
   }
 
   findAll() {
@@ -51,14 +52,14 @@ export class BookingsService {
     return `This action updates a #${id} booking`;
   }
 
-  async remove(id: number, reason: string) {
-    const result = await this.bookingsRepository.update(
+  async remove(id: number) {
+    /*const result = await this.bookingsRepository.update(
       id,
       { note: reason, status: BookingStatus.CANCELLED }
     );
     if (result.affected === 0) {
       throw new NotFoundException();
-    }
+    }*/
     return {
       message: "Booking request deleted",
     }
