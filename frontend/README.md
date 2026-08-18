@@ -1,75 +1,47 @@
-# React + TypeScript + Vite
+# Frontend — Hotel Management System
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + TypeScript + Vite. Stack đã setup:
 
-Currently, two official plugins are available:
+- **Tailwind CSS v4** (qua `@tailwindcss/vite`, không cần `tailwind.config.js`)
+- **Ant Design** (`antd`)
+- **Axios** với interceptor tự gắn JWT token + tự xử lý 401 — xem
+  [`src/api/axiosClient.ts`](src/api/axiosClient.ts)
+- **i18n** (vi/en) bằng `react-i18next`, text lưu trong file JSON — xem hướng
+  dẫn chi tiết tại [`docs/HUONG_DAN_I18N.md`](docs/HUONG_DAN_I18N.md)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-## React Compiler
+## Chạy dự án
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm install
+cp .env.example .env   # rồi chỉnh VITE_API_BASE_URL nếu cần
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Cấu trúc thư mục chính
 
 ```
+src/
+  api/            # axios client, các hàm gọi API
+  i18n/           # cấu hình i18next + locales (vi/en)
+  assets/
+  App.tsx
+  main.tsx
+```
+
+
+
+---
+
+<details>
+<summary>Ghi chú gốc từ Vite template (ESLint, React Compiler...)</summary>
+
+The React Compiler is not enabled on this template because of its impact on
+dev & build performances. To add it, see
+[this documentation](https://react.dev/learn/react-compiler/installation).
+
+If you are developing a production application, we recommend updating the
+lint configuration to enable type-aware rules — see the
+[typescript-eslint docs](https://typescript-eslint.io/getting-started/typed-linting).
+
+</details>
