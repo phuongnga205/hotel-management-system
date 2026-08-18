@@ -15,5 +15,9 @@
     "logout": "Log out",
     "email": "Email",
     "password": "Password"
+  },
+  "language": {
+    "vi": "Tiếng Việt",
+    "en": "English"
   }
 }

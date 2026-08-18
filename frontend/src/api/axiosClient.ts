@@ -1,7 +1,10 @@
 import axios from 'axios'
+import i18n from '../i18n'
 import { router } from '../router'
 import { ROUTES } from '../router/paths'
 import { env } from '../config/env'
+import { API_ENDPOINTS } from './endpoints'
+import { HTTP_STATUS, LANG_HEADER } from '../constants/http'
 
 /**
  * Axios instance dùng chung cho toàn bộ app.
@@ -33,13 +36,20 @@ export function clearAccessToken(): void {
 }
 
 // --- REQUEST INTERCEPTOR ---
-// Chạy trước mỗi request: chặn request lại, nhét JWT token vào header
-// Authorization nếu đã đăng nhập (có token trong localStorage).
+// Chạy trước mỗi request: chặn request lại, nhét JWT token + ngôn ngữ hiện
+// tại vào header trước khi gửi đi.
 axiosClient.interceptors.request.use((config) => {
   const token = getAccessToken()
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
+
+  // Báo cho Backend biết đang hiển thị ngôn ngữ nào (vi/en) để trả về
+  // message lỗi/i18n đúng ngôn ngữ đó — khớp với HeaderResolver(['x-lang'])
+  // đã cấu hình ở I18nModule bên NestJS. i18n.language có thể là 'vi-VN'
+  // (từ trình duyệt) nên chỉ lấy phần mã ngôn ngữ chính ('vi').
+  config.headers[LANG_HEADER] = i18n.language.split('-')[0]
+
   return config
 })
 
@@ -47,7 +57,7 @@ axiosClient.interceptors.request.use((config) => {
 // (sai tài khoản/mật khẩu) thì đó là lỗi nghiệp vụ bình thường, không phải
 // token hết hạn -> không được tự reload/redirect, để form login còn hiển thị
 // thông báo lỗi và giữ lại dữ liệu người dùng đã nhập.
-const AUTH_ENDPOINTS = ['/auth/login']
+const AUTH_ENDPOINTS: string[] = [API_ENDPOINTS.AUTH_LOGIN]
 
 function isAuthEndpoint(url?: string): boolean {
   if (!url) return false
@@ -62,7 +72,10 @@ function isAuthEndpoint(url?: string): boolean {
 axiosClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 && !isAuthEndpoint(error.config?.url)) {
+    if (
+      error.response?.status === HTTP_STATUS.UNAUTHORIZED &&
+      !isAuthEndpoint(error.config?.url)
+    ) {
       clearAccessToken()
       void router.navigate(ROUTES.LOGIN)
     }

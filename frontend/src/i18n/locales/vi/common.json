@@ -15,5 +15,9 @@
     "logout": "Đăng xuất",
     "email": "Email",
     "password": "Mật khẩu"
+  },
+  "language": {
+    "vi": "Tiếng Việt",
+    "en": "English"
   }
 }

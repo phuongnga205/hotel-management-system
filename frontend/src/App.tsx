@@ -19,13 +19,13 @@ function App() {
           type={i18n.language.startsWith('vi') ? 'primary' : 'default'}
           onClick={() => i18n.changeLanguage('vi')}
         >
-          Tiếng Việt
+          {t('language.vi')}
         </Button>
         <Button
           type={i18n.language.startsWith('en') ? 'primary' : 'default'}
           onClick={() => i18n.changeLanguage('en')}
         >
-          English
+          {t('language.en')}
         </Button>
       </Space>
     </div>
