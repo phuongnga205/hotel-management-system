@@ -8,8 +8,9 @@ import {
     IsPositive,
     IsString,
     MaxLength,
+    Min,
 } from 'class-validator';
-import { RoomStatus } from '../entities/room.entity';
+import { RoomStatus } from '../enums/room-status.enum';
 import { Type } from 'class-transformer';
 import { RoomViewType } from '../enums/room-view-type.enum';
 
@@ -45,7 +46,7 @@ export class CreateRoomDto {
         example: 'SEA_VIEW',
     })
     @IsOptional()
-    @IsString()
+    @IsEnum(RoomViewType)
     @MaxLength(50)
     viewType?: RoomViewType;
 
@@ -64,10 +65,10 @@ export class CreateRoomDto {
         example: 150.00,
     })
     @Type(() => Number)
-    @IsString()
+    @IsNumber({ maxDecimalPlaces: 2 })
     @IsNotEmpty()
-    @IsPositive()
-    pricePerNight!: string;
+    @Min(0)
+    pricePerNight!: number;
 
     @ApiProperty({
         description: 'The status of the room',

@@ -11,12 +11,8 @@ import { Booking } from '../../bookings/entities/booking.entity';
 import { RoomAmenity } from '../../amenities/entities/room-amenity.entity';
 import { Image } from '../../images/entities/image.entity';
 import { RoomViewType } from '../enums/room-view-type.enum';
+import { RoomStatus } from '../enums/room-status.enum';
 
-export enum RoomStatus {
-    AVAILABLE = 'AVAILABLE',
-    OCCUPIED = 'OCCUPIED',
-    MAINTENANCE = 'MAINTENANCE',
-}
 @Entity('rooms')
 export class Room {
     @PrimaryGeneratedColumn()
@@ -29,10 +25,10 @@ export class Room {
     name!: string;
 
     @Column({ type: 'text', nullable: true })
-    description?: string| null;
+    description?: string | null;
 
-    @Column({ name: 'view_type',type:'enum', enum:RoomViewType, nullable: true })
-    viewType?: RoomViewType|null;
+    @Column({ name: 'view_type', type: 'enum', enum: RoomViewType, nullable: true })
+    viewType?: RoomViewType | null;
 
     @Column()
     capacity!: number;
@@ -42,12 +38,16 @@ export class Room {
         type: 'decimal',
         precision: 12,
         scale: 2,
+        transformer: {
+            to: (value: number) => value,
+            from: (value: string) => Number(value),
+        },
     })
-    pricePerNight!: string;
+    pricePerNight!: number;
 
     @Column({
         length: 20,
-        enum:RoomStatus,
+        enum: RoomStatus,
         default: RoomStatus.AVAILABLE,
     })
     status!: RoomStatus;

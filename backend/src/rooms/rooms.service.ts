@@ -43,7 +43,6 @@ export class RoomsService {
     if (existingRoom) {
       throw this.roomNumberExistsException();
     }
-
     const room = this.repo.create(createRoomDto);
     const savedRoom = await this.repo.save(room);
     return this.toResponse(savedRoom);
