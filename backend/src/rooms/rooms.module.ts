@@ -1,14 +1,21 @@
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { RoomsService } from './rooms.service';
 import { RoomsController } from './rooms.controller';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { RoomsExportService } from './rooms-export.service';
 import { Room } from './entities/room.entity';
-import { RoomAmenity } from 'src/amenities/entities/room-amenity.entity';
-import { Image } from 'src/images/entities/image.entity';
+import { AuthModule } from '../auth/auth.module';
+import { RoomsLogger } from './rooms.logger';
+import { RoomPersistenceExceptionFilter } from './filters/room-persistence-exception.filter';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Room,RoomAmenity,Image])],
+  imports: [TypeOrmModule.forFeature([Room]), AuthModule],
   controllers: [RoomsController],
-  providers: [RoomsService],
+  providers: [
+    RoomsService,
+    RoomsExportService,
+    RoomsLogger,
+    RoomPersistenceExceptionFilter,
+  ],
 })
 export class RoomsModule {}

@@ -1,11 +1,41 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+  StreamableFile,
+  UseGuards,
+  UseFilters,
+} from '@nestjs/common';
+import { ApiOkResponse, ApiOperation, ApiProduces } from '@nestjs/swagger';
 import { RoomsService } from './rooms.service';
+import { RoomsExportService } from './rooms-export.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
+import { ROOM_EXPORT } from './constants/room-export.constants';
+import { ListRoomsDto } from './dto/list-rooms.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '../users/enums/user-role.enum';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { RoomPersistenceExceptionFilter } from './filters/room-persistence-exception.filter';
 
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
+@UseFilters(RoomPersistenceExceptionFilter)
+@Roles(UserRole.ADMIN)
 @Controller('rooms')
 export class RoomsController {
-  constructor(private readonly roomsService: RoomsService) {}
+  constructor(
+    private readonly roomsService: RoomsService,
+    private readonly roomsExportService: RoomsExportService,
+  ) {}
 
   @Post()
   create(@Body() createRoomDto: CreateRoomDto) {
@@ -13,22 +43,41 @@ export class RoomsController {
   }
 
   @Get()
-  findAll() {
-    return this.roomsService.findAll();
+  findAll(@Query() query: ListRoomsDto) {
+    return this.roomsService.findAll(query);
+  }
+
+  @Get('export')
+  @ApiOperation({ summary: 'Export room list to an Excel file' })
+  @ApiProduces(ROOM_EXPORT.MIME_TYPE)
+  @ApiOkResponse({
+    description: 'Excel file containing the room list',
+    schema: { type: 'string', format: 'binary' },
+  })
+  exportToExcel(): StreamableFile {
+    const file = this.roomsExportService.exportToExcel();
+
+    return new StreamableFile(file, {
+      type: ROOM_EXPORT.MIME_TYPE,
+      disposition: `attachment; filename="${ROOM_EXPORT.FILE_NAME}"`,
+    });
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.roomsService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.roomsService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateRoomDto: UpdateRoomDto) {
-    return this.roomsService.update(+id, updateRoomDto);
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateRoomDto: UpdateRoomDto,
+  ) {
+    return this.roomsService.update(id, updateRoomDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.roomsService.remove(+id);
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.roomsService.remove(id);
   }
 }

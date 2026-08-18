@@ -1,0 +1,23 @@
+{
+  "app": {
+    "name": "Hotel Management System",
+    "setupDescription": "Sample setup: Vite + React + Tailwind CSS + Ant Design + i18n (vi/en). Official routes and style guide will be added later."
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "loading": "Loading...",
+    "search": "Search"
+  },
+  "auth": {
+    "login": "Log in",
+    "logout": "Log out",
+    "email": "Email",
+    "password": "Password"
+  },
+  "language": {
+    "vi": "Tiếng Việt",
+    "en": "English"
+  }
+}

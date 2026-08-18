@@ -1,4 +1,10 @@
 {
-    "HELLO": "Hello",
-    "USER_NOT_FOUND": "User not found in the system."
+  "HELLO": "Hello",
+  "USER_NOT_FOUND": "User not found in the system.",
+  "ROOM_NOT_FOUND": "Room not found.",
+  "ROOM_NUMBER_EXISTS": "Room number already exists.",
+  "ROOM_SAVE_FAILED": "Unable to save room information. Please try again.",
+  "MAIL": {
+    "LOG_NOT_FOUND": "Email log {id} not found."
+  }
 }

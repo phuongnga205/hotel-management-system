@@ -42,7 +42,7 @@ export class Room {
         precision: 12,
         scale: 2,
     })
-    pricePerNight!: string;
+    pricePerNight!: number;
 
     @Column({
         length: 20,

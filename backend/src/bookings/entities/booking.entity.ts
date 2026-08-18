@@ -1,96 +1,85 @@
 import {
+    Check,
     Column,
     CreateDateColumn,
     DeleteDateColumn,
     Entity,
+    Index,
     JoinColumn,
     ManyToOne,
+    OneToOne,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
 } from 'typeorm';
-import { User } from '../../users/entities/user.entity';
+import { Payment } from '../../payments/entities/payment.entity';
+import { BookingStatus } from '../enums/booking-status.enum';
 import { Room } from '../../rooms/entities/room.entity';
+import { User } from '../../users/entities/user.entity';
 
-export enum BookingStatus {
-    PENDING = 'PENDING',//đợi admin confirm
-    CONFIRMED = 'ACCEPTED',//admin confirm request
-    CANCELLED = 'CANCELLED',//admin hoặc user hủy request
-}
-export enum PaymentStatus {
-    UNPAID = 'UNPAID',//sau admin confirm có thể trả tiền
-    PAID = 'PAID',
-    REFUNDED = 'REFUNDED',
-}
-@Entity('bookings')
+@Entity({ name: 'bookings' })
+@Check('CHK_bookings_dates', '"check_out_date" > "check_in_date"')
+@Check('CHK_bookings_guest_count', '"guest_count" > 0')
+@Check('CHK_bookings_total_amount', '"total_amount" >= 0')
+@Index('IDX_bookings_user_id', ['userId'])
+@Index('IDX_bookings_room_id', ['roomId'])
+@Index('IDX_bookings_status', ['status'])
 export class Booking {
     @PrimaryGeneratedColumn()
     id!: number;
 
-    @Column({ name: 'user_id' })
+    @Column({ name: 'user_id', type: 'bigint' })
     userId!: number;
+    @ManyToOne(() => User, (user) => user.bookings, {
+        nullable: false,
+        onDelete: 'RESTRICT',
+    })
+    @JoinColumn({ name: 'user_id' })
+    user?: User;
 
-    @Column({ name: 'room_id' })
+    @Column({ name: 'room_id', type: 'bigint' })
     roomId!: number;
 
+    @ManyToOne(() => Room, { nullable: false, onDelete: 'RESTRICT' })
+    @JoinColumn({ name: 'room_id' })
+    room?: Room;
+
     @Column({ name: 'check_in_date', type: 'date' })
-    checkInDate!: Date;
+    checkInDate!: string;
 
     @Column({ name: 'check_out_date', type: 'date' })
-    checkOutDate!: Date;
+    checkOutDate!: string;
 
-    @Column({
-        name: 'total_amount',
-        type: 'decimal',
-        precision: 12,
-        scale: 2,
-    })
+    @Column({ name: 'guest_count', type: 'int' })
+    guestCount?: number;
+
+    @Column({ name: 'total_amount', type: 'numeric', precision: 12, scale: 2 })
     totalAmount!: string;
 
     @Column({
-        name: 'payment_status',
-        length: 20,
-        default: PaymentStatus.UNPAID,
-    })
-    paymentStatus!: PaymentStatus;
-
-    @Column({
-        length: 20,
+        type: 'enum',
+        enum: BookingStatus,
         default: BookingStatus.PENDING,
     })
     status!: BookingStatus;
 
     @Column({
-        type: 'text',
-        nullable: true,
+        name: 'payment_status',
+        type: 'enum'
+
     })
+
+    @Column({ name: 'special_request', type: 'text', nullable: true })
     note?: string | null;
 
-    @CreateDateColumn({
-        name: 'created_at',
-        type: 'timestamp',
-    })
+    @OneToOne(() => Payment, (payment) => payment.booking)
+    payment?: Payment | null;
+
+    @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
     createdAt?: Date;
-    @UpdateDateColumn({
-        name: 'updated_at',
-        type: 'timestamp',
-    })
+
+    @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
     updatedAt?: Date;
-    @DeleteDateColumn({
-        name: 'deleted_at',
-        type: 'timestamp',
-        nullable: true,
-    })
+
+    @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz', nullable: true })
     deletedAt?: Date | null;
-
-    @ManyToOne(() => User, (user) => user.bookings, {
-        onDelete: 'RESTRICT',
-    })
-    @JoinColumn({ name: 'user_id' })
-    user!: User;
-
-    @ManyToOne(() => Room, (room) => room.bookings, {
-        onDelete: 'RESTRICT',
-    })
-    @JoinColumn({ name: 'room_id' })
-    room!: Room;
 }

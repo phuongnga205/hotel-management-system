@@ -2,6 +2,14 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
+import {
+  DEFAULT_SERVER_PORT,
+  ENVIRONMENT_KEYS,
+} from './config/environment.constants';
+// AppDataSource is intentionally not imported here; migrations are run via scripts
+
+const API_DOCS_PATH = 'api/docs';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -10,10 +18,12 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1');
 
   // 2. Bật Whitelist (Loại bỏ dữ liệu rác từ Frontend gửi lên)
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    transform: true,
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+    }),
+  );
 
   // 3. Cấu hình CORS để Frontend (ReactJS) có thể gọi API mà không bị chặn
   app.enableCors();
@@ -26,8 +36,15 @@ async function bootstrap() {
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  SwaggerModule.setup(API_DOCS_PATH, app, document);
 
-  await app.listen(process.env.PORT || 3000);
+  // Migrations are not run automatically on startup. Use `npm run migration:run` to apply migrations.
+
+  const configService = app.get(ConfigService);
+  const port = configService.get<number>(
+    ENVIRONMENT_KEYS.PORT,
+    DEFAULT_SERVER_PORT,
+  );
+  await app.listen(port);
 }
-bootstrap();
+void bootstrap();

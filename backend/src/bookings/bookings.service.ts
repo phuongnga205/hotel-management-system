@@ -5,7 +5,7 @@ import { Booking, BookingStatus } from './entities/booking.entity';
 import { Repository } from 'typeorm/repository/Repository.js';
 import { InjectRepository } from '@nestjs/typeorm/dist/common/typeorm.decorators';
 import { BookingResponseDto } from './dto/booking-response.dto';
-import { Room } from 'src/rooms/entities/room.entity';
+import { Room } from '../rooms/entities/room.entity';
 
 @Injectable()
 export class BookingsService {
@@ -46,6 +46,7 @@ export class BookingsService {
   }
 
   update(id: number, updateBookingDto: UpdateBookingDto) {
+    void updateBookingDto;
     return `This action updates a #${id} booking`;
   }
 

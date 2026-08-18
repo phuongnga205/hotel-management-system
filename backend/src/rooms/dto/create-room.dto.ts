@@ -9,6 +9,7 @@ import {
     MaxLength,
 } from 'class-validator';
 import { RoomStatus } from '../entities/room.entity';
+import { Type } from 'class-transformer';
 
 export class CreateRoomDto {
     @ApiProperty({
@@ -48,6 +49,7 @@ export class CreateRoomDto {
         description: 'The capacity of the room',
         example: 2,
     })
+    @Type(() => Number)
     @IsInt()
     @IsPositive()
     capacity!: number;
@@ -56,6 +58,7 @@ export class CreateRoomDto {
         description: 'The price per night for the room',
         example: 150.00,
     })
+    @Type(() => Number)
     @IsNumber()
     @IsPositive()
     pricePerNight!: number;
