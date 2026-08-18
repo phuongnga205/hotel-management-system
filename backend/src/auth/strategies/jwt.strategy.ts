@@ -6,7 +6,7 @@ import { Request } from 'express';
 import { TokenUtil } from '../../token/token.util';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from '../../users/entities/user.entity';
+import { User, UserStatus } from '../../users/entities/user.entity';
 import { I18nService } from 'nestjs-i18n';
 
 @Injectable()
@@ -48,6 +48,12 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     if (!user) {
       throw new UnauthorizedException(
         this.i18n.t('messages.AUTH.UNAUTHORIZED'),
+      );
+    }
+
+    if (user.status === UserStatus.INACTIVE) {
+      throw new UnauthorizedException(
+        this.i18n.t('messages.AUTH.USER_INACTIVE'),
       );
     }
 

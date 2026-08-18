@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { RedisUtil } from './redis.util';
+import * as crypto from 'crypto';
 
 const TOKEN_BLACKLIST_PREFIX = 'blacklist:';
 const TOKEN_REVOKED_VALUE = '1';
@@ -9,7 +10,8 @@ export class TokenUtil {
   constructor(private readonly redisUtil: RedisUtil) {}
 
   private getBlacklistKey(token: string): string {
-    return `${TOKEN_BLACKLIST_PREFIX}${token}`;
+    const hash = crypto.createHash('sha256').update(token).digest('hex');
+    return `${TOKEN_BLACKLIST_PREFIX}${hash}`;
   }
 
   async revokeAuthToken(token: string, ttl: number): Promise<void> {

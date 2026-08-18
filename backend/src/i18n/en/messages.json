@@ -9,7 +9,8 @@
         "LOGOUT_SUCCESS": "Logout successfully.",
         "UNAUTHORIZED": "Unauthorized or session expired.",
         "TOKEN_BLACKLISTED": "Token has been invalidated (logged out).",
-        "USER_ALREADY_EXISTS": "User with this email, username, or phone already exists."
+        "USER_ALREADY_EXISTS": "User with this email, username, or phone already exists.",
+        "USER_INACTIVE": "Your account has been locked or is inactive."
     },
     "VALIDATION": {
         "IS_EMAIL": "Email format is invalid.",

@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from '../users/entities/user.entity';
+import { User, UserStatus } from '../users/entities/user.entity';
 import { JwtService } from '@nestjs/jwt';
 import { I18nService } from 'nestjs-i18n';
 import * as bcrypt from 'bcrypt';
@@ -45,15 +45,6 @@ export class AuthService {
   async register(registerDto: RegisterDto) {
     const { email, password, username, phone } = registerDto;
 
-    const existingUser = await this.userRepository.findOne({
-      where: [{ email }, { username }, { phone }],
-    });
-    if (existingUser) {
-      throw new ConflictException(
-        this.i18n.t('messages.AUTH.USER_ALREADY_EXISTS'),
-      );
-    }
-
     const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
 
     const user = this.userRepository.create({
@@ -63,7 +54,21 @@ export class AuthService {
       phone,
     });
 
-    await this.userRepository.save(user);
+    try {
+      await this.userRepository.save(user);
+    } catch (error: unknown) {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'code' in error &&
+        error.code === '23505'
+      ) {
+        throw new ConflictException(
+          this.i18n.t('messages.AUTH.USER_ALREADY_EXISTS'),
+        );
+      }
+      throw error;
+    }
 
     return {
       message: this.i18n.t('messages.AUTH.REGISTER_SUCCESS'),
@@ -78,6 +83,12 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException(
         this.i18n.t('messages.AUTH.INVALID_CREDENTIALS'),
+      );
+    }
+
+    if (user.status === UserStatus.INACTIVE) {
+      throw new UnauthorizedException(
+        this.i18n.t('messages.AUTH.USER_INACTIVE'),
       );
     }
 
