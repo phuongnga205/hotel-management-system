@@ -8,6 +8,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Exclude } from 'class-transformer';
 import { Booking } from '../../bookings/entities/booking.entity';
 import { Review } from '../../reviews/entities/review.entity';
 
@@ -46,6 +47,9 @@ export class User {
   })
   email!: string;
 
+  // Never serialized out — see also auth.service.ts, which maps through
+  // instanceToPlain() rather than relying on this decorator alone.
+  @Exclude()
   @Column({
     name: 'password_hash',
     length: 255,

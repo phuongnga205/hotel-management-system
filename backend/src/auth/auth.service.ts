@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { instanceToPlain } from 'class-transformer';
 import { User, UserStatus } from '../users/entities/user.entity';
 import { JwtService } from '@nestjs/jwt';
 import { I18nService } from 'nestjs-i18n';
@@ -74,7 +75,10 @@ export class AuthService {
 
     return {
       message: this.i18n.t('messages.AUTH.REGISTER_SUCCESS'),
-      user,
+      // Never hand the raw entity to a controller — instanceToPlain() strips
+      // every @Exclude()-marked field (password) regardless of whether the
+      // caller remembers to have ClassSerializerInterceptor wired up.
+      user: instanceToPlain(user),
     };
   }
 
@@ -105,7 +109,7 @@ export class AuthService {
     return {
       message: this.i18n.t('messages.AUTH.LOGIN_SUCCESS'),
       accessToken,
-      user,
+      user: instanceToPlain(user),
     };
   }
 }
