@@ -7,6 +7,10 @@
   "MAIL": {
     "LOG_NOT_FOUND": "Không tìm thấy nhật ký email {id}."
   },
+  "BOOKING": {
+    "NOT_FOUND": "Không tìm thấy yêu cầu đặt phòng.",
+    "DELETED_SUCCESS": "Đã xóa yêu cầu đặt phòng thành công."
+  },
   "AUTH": {
     "EMAIL_EXISTED": "Email này đã được đăng ký trong hệ thống.",
     "INVALID_CREDENTIALS": "Email hoặc mật khẩu không chính xác.",

@@ -5,7 +5,6 @@ import {
   Entity,
   Index,
   PrimaryGeneratedColumn,
-  UpdateDateColumn,
 } from 'typeorm';
 import {
   EMAIL_RECIPIENT_MAX_LENGTH,
@@ -42,19 +41,16 @@ export class EmailLog {
   @Column({ length: EMAIL_STATUS_MAX_LENGTH })
   status!: string;
 
-  @Column({ name: 'retry_count', default: 0 })
+  @Column({ name: 'retry_count', type: 'smallint', default: 0 })
   retryCount!: number;
 
   @Column({ name: 'last_error', type: 'text', nullable: true })
   lastError!: string | null;
 
   // Set the moment the SMTP send actually succeeds (distinct from queue time)
-  @Column({ name: 'sent_at', type: 'timestamp', nullable: true })
+  @Column({ name: 'sent_at', type: 'timestamptz', nullable: true })
   sentAt!: Date | null;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;
-
-  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
-  updatedAt!: Date;
 }

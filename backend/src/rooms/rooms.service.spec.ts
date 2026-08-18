@@ -18,14 +18,15 @@ describe('RoomsService', () => {
   const softDelete = jest.fn();
 
   const room: Room = {
-    id: 1,
+    id: '1',
     roomNumber: '101',
     name: 'Deluxe Room',
+    roomType: null,
     description: null,
     viewType: RoomViewType.SEA_VIEW,
-    price: 1500000,
+    pricePerNight: 1500000,
     capacity: 2,
-    status: RoomStatus.AVAILABLE,
+    status: RoomStatus.ACTIVE,
     createdAt: new Date('2026-01-01T00:00:00Z'),
     updatedAt: new Date('2026-01-01T00:00:00Z'),
     deletedAt: null,
@@ -34,9 +35,9 @@ describe('RoomsService', () => {
   const createDto: CreateRoomDto = {
     roomNumber: room.roomNumber,
     name: room.name,
-    description: room.description,
-    viewType: room.viewType,
-    price: room.price,
+    description: room.description ?? undefined,
+    viewType: room.viewType ?? undefined,
+    pricePerNight: room.pricePerNight,
     capacity: room.capacity,
     status: room.status,
   };
@@ -95,7 +96,7 @@ describe('RoomsService', () => {
   it('throws when a room is not found', async () => {
     findOneBy.mockResolvedValue(null);
 
-    await expect(service.findOne(999)).rejects.toBeInstanceOf(
+    await expect(service.findOne('999')).rejects.toBeInstanceOf(
       NotFoundException,
     );
   });

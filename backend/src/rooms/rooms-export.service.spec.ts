@@ -31,20 +31,20 @@ describe('RoomsExportService', () => {
   it('should export room records to a valid Excel workbook', async () => {
     find.mockResolvedValueOnce([
       {
-        id: 1,
+        id: '1',
         roomNumber: '101',
         name: 'Room 101',
-        price: 1500000,
+        pricePerNight: 1500000,
         capacity: 2,
-        status: RoomStatus.AVAILABLE,
+        status: RoomStatus.ACTIVE,
       },
       {
-        id: 2,
+        id: '2',
         roomNumber: '102',
         name: 'Room 102',
-        price: 1750000,
+        pricePerNight: 1750000,
         capacity: 3,
-        status: RoomStatus.AVAILABLE,
+        status: RoomStatus.ACTIVE,
       },
     ]);
 
@@ -72,7 +72,7 @@ describe('RoomsExportService', () => {
       'Name',
       'Description',
       'ViewType',
-      'Price',
+      'PricePerNight',
       'Capacity',
       'Status',
       'CreatedAt',
@@ -80,14 +80,14 @@ describe('RoomsExportService', () => {
     ]);
     expect(worksheet?.getRow(2).values).toEqual([
       undefined,
-      1,
+      '1',
       '101',
       'Room 101',
       undefined,
       undefined,
       1500000,
       2,
-      'AVAILABLE',
+      'ACTIVE',
     ]);
     expect(find).toHaveBeenCalledTimes(1);
   });
@@ -96,12 +96,12 @@ describe('RoomsExportService', () => {
     const firstBatch = Array.from(
       { length: ROOM_EXPORT.BATCH_SIZE },
       (_, index) => ({
-        id: index + 1,
+        id: String(index + 1),
         roomNumber: String(index + 1),
         name: `Room ${index + 1}`,
-        price: 1000000,
+        pricePerNight: 1000000,
         capacity: 2,
-        status: RoomStatus.AVAILABLE,
+        status: RoomStatus.ACTIVE,
       }),
     );
     find.mockResolvedValueOnce(firstBatch).mockResolvedValueOnce([]);

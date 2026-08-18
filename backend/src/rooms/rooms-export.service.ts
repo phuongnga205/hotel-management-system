@@ -57,7 +57,7 @@ export class RoomsExportService {
       'name',
       'description',
       'viewType',
-      'price',
+      'pricePerNight',
       'capacity',
       'status',
       'createdAt',
@@ -65,7 +65,7 @@ export class RoomsExportService {
     ];
     this.configureWorksheet(worksheet, columnNames);
 
-    let lastId = 0;
+    let lastId = '0';
     while (true) {
       const rooms = await this.findRoomBatch(lastId);
       if (rooms.length === 0) break;
@@ -76,7 +76,7 @@ export class RoomsExportService {
         name: r.name ?? '',
         description: r.description ?? '',
         viewType: r.viewType ?? '',
-        price: r.price ?? null,
+        pricePerNight: r.pricePerNight ?? null,
         capacity: r.capacity ?? null,
         status: r.status,
         createdAt: r.createdAt ?? null,
@@ -100,7 +100,7 @@ export class RoomsExportService {
     await finalizeWorkbook(workbook);
   }
 
-  private findRoomBatch(lastId: number): Promise<Room[]> {
+  private findRoomBatch(lastId: string): Promise<Room[]> {
     return this.roomRepository.find({
       select: {
         id: true,
@@ -108,7 +108,7 @@ export class RoomsExportService {
         name: true,
         description: true,
         viewType: true,
-        price: true,
+        pricePerNight: true,
         capacity: true,
         status: true,
         createdAt: true,

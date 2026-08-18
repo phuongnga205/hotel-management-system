@@ -26,9 +26,6 @@ export class EmailLogResponseDto {
   @ApiProperty({ type: String, format: 'date-time' })
   createdAt!: Date;
 
-  @ApiProperty({ type: String, format: 'date-time' })
-  updatedAt!: Date;
-
   static fromEntity(entity: EmailLog): EmailLogResponseDto {
     const dto = new EmailLogResponseDto();
     dto.id = entity.id;
@@ -39,7 +36,6 @@ export class EmailLogResponseDto {
     dto.lastError = entity.lastError ?? null;
     dto.sentAt = entity.sentAt ?? null;
     dto.createdAt = entity.createdAt;
-    dto.updatedAt = entity.updatedAt;
     return dto;
   }
 }

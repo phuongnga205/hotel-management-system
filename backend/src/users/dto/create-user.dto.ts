@@ -17,7 +17,7 @@ export class CreateUserDto {
   @IsNotEmpty({
     message: i18nValidationMessage('messages.VALIDATION.NOT_EMPTY'),
   })
-  email: string;
+  email!: string;
 
   @ApiProperty({ example: '123456', description: 'Mật khẩu' })
   @IsString({ message: i18nValidationMessage('messages.VALIDATION.IS_STRING') })
@@ -27,14 +27,14 @@ export class CreateUserDto {
   @MinLength(6, {
     message: i18nValidationMessage('messages.VALIDATION.MIN_LENGTH'),
   })
-  password: string;
+  password!: string;
 
   @ApiProperty({ example: 'nguyen_van_a', description: 'Tên đăng nhập' })
   @IsString({ message: i18nValidationMessage('messages.VALIDATION.IS_STRING') })
   @IsNotEmpty({
     message: i18nValidationMessage('messages.VALIDATION.NOT_EMPTY'),
   })
-  username: string;
+  username!: string;
 
   @ApiPropertyOptional({ example: '0987654321', description: 'Số điện thoại' })
   @IsOptional()

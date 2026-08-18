@@ -1,28 +1,70 @@
 import { Injectable } from '@nestjs/common';
+import { I18nService } from 'nestjs-i18n';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
+import { Booking } from './entities/booking.entity';
+import { Repository } from 'typeorm/repository/Repository.js';
+import { InjectRepository } from '@nestjs/typeorm/dist/common/typeorm.decorators';
+import { Room } from '../rooms/entities/room.entity';
 
 @Injectable()
 export class BookingsService {
+  constructor(
+    @InjectRepository(Booking)
+    private readonly bookingsRepository: Repository<Booking>,
+    @InjectRepository(Room) private readonly roomsRepository: Repository<Room>,
+    private readonly i18n: I18nService,
+  ) {}
   create(createBookingDto: CreateBookingDto) {
     void createBookingDto;
-    return 'This action adds a new booking';
+    return 'created';
+    /*const bookingroom = await this.roomsRepository.findOne({
+      where: {
+        id: createBookingDto.roomId
+      }
+    });
+    if (!bookingroom) {
+      throw new NotFoundException();
+    }
+    const checkIn = new Date(`${createBookingDto.checkInDate}T00:00:00Z`);
+    const checkOut = new Date(`${createBookingDto.checkOutDate}T00:00:00Z`);
+
+    const nights =
+      (checkOut.getTime() - checkIn.getTime()) /
+      (1000 * 60 * 60 * 24);
+    const totalAmount= (nights * Number(bookingroom.pricePerNight)).toFixed(2);
+
+    const booking = await this.bookingsRepository.save({ userId: 1,totalAmount, ...createBookingDto });
+    if (!booking) {
+      throw new Error('Booking request failed');
+    }
+    return new BookingResponseDto(booking);*/
   }
 
   findAll() {
     return `This action returns all bookings`;
   }
 
-  findOne(id: number) {
+  findOne(id: string) {
     return `This action returns a #${id} booking`;
   }
 
-  update(id: number, updateBookingDto: UpdateBookingDto) {
+  update(id: string, updateBookingDto: UpdateBookingDto) {
     void updateBookingDto;
     return `This action updates a #${id} booking`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} booking`;
+  remove(id: string) {
+    void id;
+    /*const result = await this.bookingsRepository.update(
+      id,
+      { note: reason, status: BookingStatus.CANCELLED }
+    );
+    if (result.affected === 0) {
+      throw new NotFoundException(this.i18n.t('messages.BOOKING.NOT_FOUND'));
+    }*/
+    return {
+      message: this.i18n.t('messages.BOOKING.DELETED_SUCCESS'),
+    };
   }
 }

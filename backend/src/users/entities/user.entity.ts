@@ -1,56 +1,101 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
+  Check,
   Column,
   CreateDateColumn,
-  UpdateDateColumn,
   DeleteDateColumn,
+  Entity,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
+import { Booking } from '../../bookings/entities/booking.entity';
+import { Review } from '../../reviews/entities/review.entity';
 
 export enum UserRole {
-  ADMIN = 'ADMIN',
   USER = 'USER',
+  ADMIN = 'ADMIN',
 }
-
 export enum UserStatus {
   ACTIVE = 'ACTIVE',
   INACTIVE = 'INACTIVE',
 }
-
 @Entity('users')
+@Check('chk_users_status', `"status" IN ('ACTIVE','INACTIVE')`)
+@Check('chk_users_role', `"role" IN ('USER','ADMIN')`)
 export class User {
   @PrimaryGeneratedColumn('increment', { type: 'bigint' })
-  id: string;
+  id!: string;
 
-  @Column({ type: 'varchar', length: 100, unique: true })
-  username: string;
+  @Column({
+    length: 50,
+    unique: true,
+  })
+  username!: string;
 
-  @Column({ type: 'varchar', length: 20, unique: true, nullable: true })
-  phone: string;
+  @Column({
+    type: 'varchar',
+    length: 20,
+    unique: true,
+    nullable: true,
+  })
+  phone!: string | null;
 
-  @Column({ type: 'varchar', length: 255, unique: true })
-  email: string;
+  @Column({
+    length: 255,
+    unique: true,
+  })
+  email!: string;
 
-  @Column({ type: 'varchar', length: 255 })
+  // Never serialized out — see also auth.service.ts, which maps through
+  // instanceToPlain() rather than relying on this decorator alone.
   @Exclude()
-  password?: string;
+  @Column({
+    name: 'password_hash',
+    length: 255,
+  })
+  password!: string;
 
-  @Column({ type: 'varchar', length: 20, default: UserStatus.ACTIVE })
-  status: UserStatus;
+  @Column({
+    length: 20,
+    default: UserStatus.INACTIVE,
+  })
+  status!: UserStatus;
 
-  @Column({ name: 'avatar_url', type: 'varchar', length: 500, nullable: true })
-  avatar_url: string;
+  @Column({
+    name: 'avatar_url',
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+  })
+  avatarUrl?: string | null;
 
-  @Column({ type: 'varchar', length: 20, default: UserRole.USER })
-  role: UserRole;
+  @Column({
+    length: 20,
+    default: UserRole.USER,
+  })
+  role!: UserRole;
 
-  @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+  @CreateDateColumn({
+    name: 'created_at',
+    type: 'timestamptz',
+  })
+  createdAt?: Date;
+  @UpdateDateColumn({
+    name: 'updated_at',
+    type: 'timestamptz',
+  })
+  updatedAt?: Date;
+  @DeleteDateColumn({
+    name: 'deleted_at',
+    type: 'timestamptz',
+    nullable: true,
+  })
+  deletedAt?: Date | null;
 
-  @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+  @OneToMany(() => Booking, (booking) => booking.user)
+  bookings?: Booking[];
 
-  @DeleteDateColumn({ name: 'deleted_at' })
-  deletedAt: Date;
+  @OneToMany(() => Review, (review) => review.user)
+  reviews?: Review[];
 }

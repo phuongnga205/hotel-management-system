@@ -5,25 +5,35 @@ import { Payment } from '../payments/entities/payment.entity';
 import { PaymentStatus } from '../payments/enums/payment-status.enum';
 
 describe('Booking and Payment schema', () => {
-  const expectedStatuses = ['PENDING', 'ACCEPTED', 'CANCELLED'];
-
   it('uses the required Booking status enum values', () => {
-    expect(Object.values(BookingStatus)).toEqual(expectedStatuses);
-    expect(getColumnOptions(Booking, 'status').enum).toBe(BookingStatus);
+    expect(Object.values(BookingStatus)).toEqual([
+      'PENDING',
+      'ACCEPTED',
+      'REJECTED',
+      'CANCELLED',
+      'EXPIRED',
+    ]);
+    // status is a plain varchar + CHECK constraint, not a native Postgres enum.
+    expect(getColumnOptions(Booking, 'status').length).toBe(20);
     expect(getColumnOptions(Booking, 'status').default).toBe(
       BookingStatus.PENDING,
     );
   });
 
-  it('uses the required Payment status enum values', () => {
-    expect(Object.values(PaymentStatus)).toEqual(expectedStatuses);
-    expect(getColumnOptions(Payment, 'status').enum).toBe(PaymentStatus);
+  it('uses the required Payment status enum values, distinct from Booking', () => {
+    expect(Object.values(PaymentStatus)).toEqual([
+      'PENDING',
+      'SUCCESS',
+      'FAILED',
+      'REFUNDED',
+    ]);
+    expect(getColumnOptions(Payment, 'status').length).toBe(20);
     expect(getColumnOptions(Payment, 'status').default).toBe(
       PaymentStatus.PENDING,
     );
   });
 
-  it('models one payment per booking', () => {
+  it('models many payments per booking (charge + refund history)', () => {
     const bookingRelation = getMetadataArgsStorage().relations.find(
       ({ target, propertyName }) =>
         target === Payment && propertyName === 'booking',
@@ -33,7 +43,7 @@ describe('Booking and Payment schema', () => {
         target === Payment && propertyName === 'booking',
     );
 
-    expect(bookingRelation?.relationType).toBe('one-to-one');
+    expect(bookingRelation?.relationType).toBe('many-to-one');
     expect(bookingRelation?.options.nullable).toBe(false);
     expect(bookingJoinColumn?.name).toBe('booking_id');
   });

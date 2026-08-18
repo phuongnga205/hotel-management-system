@@ -9,6 +9,8 @@ import { TokenModule } from './token/token.module';
 import { RoomsModule } from './rooms/rooms.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { AmenitiesModule } from './amenities/amenities.module';
+import { ImagesModule } from './images/images.module';
 import { PaymentsModule } from './payments/payments.module';
 import { MailModule } from './mail/mail.module';
 import {
@@ -99,6 +101,8 @@ const DEFAULT_THROTTLE_LIMIT = 10;
     PaymentsModule,
 
     ReviewsModule,
+    AmenitiesModule,
+    ImagesModule,
     TokenModule,
 
     MailModule,

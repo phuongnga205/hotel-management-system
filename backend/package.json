@@ -17,6 +17,7 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
+    "typeorm": "typeorm-ts-node-commonjs",
     "test:e2e": "NODE_ENV=test jest --config ./test/jest-e2e.json --no-watchman",
     "lint:run": "sunlint --all --input=src",
     "lint:changed": "sunlint --all --changed-files",

@@ -54,3 +54,6 @@ pids
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# SunLint generates this locally with an absolute path baked in — never commit it
+.sunlint-eslint.config.js
