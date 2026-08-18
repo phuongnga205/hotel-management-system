@@ -43,7 +43,7 @@ const DEFAULT_THROTTLE_LIMIT = 10;
           rejectUnauthorized: true,
         },
         autoLoadEntities: true,
-        synchronize: true,
+        synchronize: false,
         logging: false,
       }),
     }),
