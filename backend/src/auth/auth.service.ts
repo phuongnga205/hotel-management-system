@@ -1,28 +1,111 @@
-import { Injectable } from '@nestjs/common';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User, UserStatus } from '../users/entities/user.entity';
+import { JwtService } from '@nestjs/jwt';
+import { I18nService } from 'nestjs-i18n';
+import * as bcrypt from 'bcrypt';
+import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
+
+import { TokenUtil } from '../token/token.util';
+
+export const BCRYPT_SALT_ROUNDS = 10;
+export const POSTGRES_UNIQUE_VIOLATION_CODE = '23505';
 
 @Injectable()
 export class AuthService {
-  create(createAuthDto: CreateAuthDto) {
-    void createAuthDto;
-    return 'This action adds a new auth';
+  constructor(
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+    private readonly jwtService: JwtService,
+    private readonly i18n: I18nService,
+    private readonly tokenUtil: TokenUtil,
+  ) {}
+
+  async logout(token: string) {
+    if (token) {
+      const decoded: unknown = this.jwtService.decode(token);
+      if (decoded && typeof decoded === 'object' && 'exp' in decoded) {
+        const currentTime = Math.floor(Date.now() / 1000);
+        const exp = (decoded as { exp: number }).exp;
+        const ttlSeconds = exp - currentTime;
+        await this.tokenUtil.revokeAuthToken(token, Math.floor(ttlSeconds));
+      }
+    }
+
+    return {
+      message: this.i18n.t('messages.AUTH.LOGOUT_SUCCESS'),
+    };
   }
 
-  findAll() {
-    return `This action returns all auth`;
+  async register(registerDto: RegisterDto) {
+    const { email, password, username, phone } = registerDto;
+
+    const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
+
+    const user = this.userRepository.create({
+      email,
+      password: hashedPassword,
+      username,
+      phone,
+    });
+
+    try {
+      await this.userRepository.save(user);
+    } catch (error: unknown) {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'code' in error &&
+        error.code === POSTGRES_UNIQUE_VIOLATION_CODE
+      ) {
+        throw new ConflictException(
+          this.i18n.t('messages.AUTH.USER_ALREADY_EXISTS'),
+        );
+      }
+      throw error;
+    }
+
+    return {
+      message: this.i18n.t('messages.AUTH.REGISTER_SUCCESS'),
+      user,
+    };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} auth`;
-  }
+  async login(loginDto: LoginDto) {
+    const { email, password } = loginDto;
 
-  update(id: number, updateAuthDto: UpdateAuthDto) {
-    void updateAuthDto;
-    return `This action updates a #${id} auth`;
-  }
+    const user = await this.userRepository.findOne({ where: { email } });
+    if (!user) {
+      throw new UnauthorizedException(
+        this.i18n.t('messages.AUTH.INVALID_CREDENTIALS'),
+      );
+    }
 
-  remove(id: number) {
-    return `This action removes a #${id} auth`;
+    if (user.status === UserStatus.INACTIVE) {
+      throw new ForbiddenException(this.i18n.t('messages.AUTH.USER_INACTIVE'));
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password || '');
+    if (!isPasswordValid) {
+      throw new UnauthorizedException(
+        this.i18n.t('messages.AUTH.INVALID_CREDENTIALS'),
+      );
+    }
+
+    const payload = { sub: user.id, email: user.email, role: user.role };
+    const accessToken = this.jwtService.sign(payload);
+
+    return {
+      message: this.i18n.t('messages.AUTH.LOGIN_SUCCESS'),
+      accessToken,
+      user,
+    };
   }
 }
