@@ -7,7 +7,13 @@ import { UsersModule } from './users/users.module';
 import { RoomsModule } from './rooms/rooms.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { ReviewsModule } from './reviews/reviews.module';
-import { I18nModule, AcceptLanguageResolver, HeaderResolver, QueryResolver } from 'nestjs-i18n';
+import { MailModule } from './mail/mail.module';
+import {
+  I18nModule,
+  AcceptLanguageResolver,
+  HeaderResolver,
+  QueryResolver,
+} from 'nestjs-i18n';
 import * as path from 'path';
 
 @Module({
@@ -28,9 +34,9 @@ import * as path from 'path';
         ssl: {
           rejectUnauthorized: false, // Bắt buộc cho Neon DB Serverless SSL
         },
-        autoLoadEntities: true,    // Tự động nạp các Entity được khai báo ở các Module
-        synchronize: true,         // Tự động đồng bộ Schema DB (dùng cho môi trường Dev)
-        logging: false,            // Bật true nếu muốn in ra các câu lệnh SQL trong console
+        autoLoadEntities: true, // Tự động nạp các Entity được khai báo ở các Module
+        synchronize: true, // Tự động đồng bộ Schema DB (dùng cho môi trường Dev)
+        logging: false, // Bật true nếu muốn in ra các câu lệnh SQL trong console
       }),
     }),
 
@@ -65,8 +71,10 @@ import * as path from 'path';
     RoomsModule,
     BookingsModule,
     ReviewsModule,
+
+    MailModule,
   ],
   controllers: [],
   providers: [],
 })
-export class AppModule { }
+export class AppModule {}
