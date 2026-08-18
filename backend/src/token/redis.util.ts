@@ -2,8 +2,6 @@ import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 
-export const DEFAULT_REDIS_PORT = 6379;
-
 @Injectable()
 export class RedisUtil implements OnModuleInit, OnModuleDestroy {
   private client: Redis;
@@ -12,8 +10,8 @@ export class RedisUtil implements OnModuleInit, OnModuleDestroy {
 
   onModuleInit() {
     this.client = new Redis({
-      host: this.configService.get<string>('REDIS_HOST'),
-      port: this.configService.get<number>('REDIS_PORT') || DEFAULT_REDIS_PORT,
+      host: this.configService.getOrThrow<string>('REDIS_HOST'),
+      port: this.configService.getOrThrow<number>('REDIS_PORT'),
     });
   }
 

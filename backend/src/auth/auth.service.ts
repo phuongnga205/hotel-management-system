@@ -14,6 +14,8 @@ import { LoginDto } from './dto/login.dto';
 
 import { TokenUtil } from '../token/token.util';
 
+export const BCRYPT_SALT_ROUNDS = 10;
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -24,28 +26,35 @@ export class AuthService {
     private readonly tokenUtil: TokenUtil,
   ) {}
 
-  async logout(token: string): Promise<void> {
-    const decoded: unknown = this.jwtService.decode(token);
-    if (decoded && typeof decoded === 'object' && 'exp' in decoded) {
-      const currentTime = Math.floor(Date.now() / 1000);
-      const exp = (decoded as { exp: number }).exp;
-      const ttlSeconds = exp - currentTime;
-      await this.tokenUtil.revokeAuthToken(token, Math.floor(ttlSeconds));
+  async logout(token: string) {
+    if (token) {
+      const decoded: unknown = this.jwtService.decode(token);
+      if (decoded && typeof decoded === 'object' && 'exp' in decoded) {
+        const currentTime = Math.floor(Date.now() / 1000);
+        const exp = (decoded as { exp: number }).exp;
+        const ttlSeconds = exp - currentTime;
+        await this.tokenUtil.revokeAuthToken(token, Math.floor(ttlSeconds));
+      }
     }
+
+    return {
+      message: this.i18n.t('messages.AUTH.LOGOUT_SUCCESS'),
+    };
   }
 
   async register(registerDto: RegisterDto) {
     const { email, password, username, phone } = registerDto;
 
     const existingUser = await this.userRepository.findOne({
-      where: { email },
+      where: [{ email }, { username }, { phone }],
     });
     if (existingUser) {
-      throw new ConflictException(this.i18n.t('messages.AUTH.EMAIL_EXISTED'));
+      throw new ConflictException(
+        this.i18n.t('messages.AUTH.USER_ALREADY_EXISTS'),
+      );
     }
 
-    const SALT_ROUNDS = 10;
-    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+    const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
 
     const user = this.userRepository.create({
       email,
@@ -80,7 +89,7 @@ export class AuthService {
     }
 
     const payload = { sub: user.id, email: user.email, role: user.role };
-    const accessToken = this.jwtService.sign(payload, { expiresIn: '1h' });
+    const accessToken = this.jwtService.sign(payload);
 
     return {
       message: this.i18n.t('messages.AUTH.LOGIN_SUCCESS'),

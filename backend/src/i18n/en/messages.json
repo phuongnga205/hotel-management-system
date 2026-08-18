@@ -8,7 +8,8 @@
         "LOGIN_SUCCESS": "Login successfully.",
         "LOGOUT_SUCCESS": "Logout successfully.",
         "UNAUTHORIZED": "Unauthorized or session expired.",
-        "TOKEN_BLACKLISTED": "Token has been invalidated (logged out)."
+        "TOKEN_BLACKLISTED": "Token has been invalidated (logged out).",
+        "USER_ALREADY_EXISTS": "User with this email, username, or phone already exists."
     },
     "VALIDATION": {
         "IS_EMAIL": "Email format is invalid.",

@@ -8,7 +8,8 @@
         "LOGIN_SUCCESS": "Đăng nhập thành công.",
         "LOGOUT_SUCCESS": "Đăng xuất thành công.",
         "UNAUTHORIZED": "Phiên đăng nhập không hợp lệ hoặc đã hết hạn.",
-        "TOKEN_BLACKLISTED": "Token này đã bị vô hiệu hóa (đã đăng xuất)."
+        "TOKEN_BLACKLISTED": "Token này đã bị vô hiệu hóa (đã đăng xuất).",
+        "USER_ALREADY_EXISTS": "Người dùng với email, tài khoản hoặc số điện thoại này đã tồn tại."
     },
     "VALIDATION": {
         "IS_EMAIL": "Email không đúng định dạng.",

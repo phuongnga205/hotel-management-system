@@ -7,11 +7,10 @@ import {
   UseGuards,
   UseInterceptors,
   Header,
-  Req,
   Res,
   ClassSerializerInterceptor,
 } from '@nestjs/common';
-import type { Request, Response } from 'express';
+import type { Response } from 'express';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import {
   ApiBearerAuth,
@@ -24,9 +23,6 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GetRawToken } from './decorators/get-token.decorator';
-
-import { JwtService } from '@nestjs/jwt';
-import { I18nService } from 'nestjs-i18n';
 
 const CLEAR_SITE_DATA_HEADER = 'Clear-Site-Data';
 const CLEAR_SITE_DATA_VALUE = '"cache", "cookies", "storage"';
@@ -45,11 +41,7 @@ const SURROGATE_CONTROL_VALUE = 'no-store';
 @Controller('auth')
 @UseInterceptors(ClassSerializerInterceptor)
 export class AuthController {
-  constructor(
-    private readonly authService: AuthService,
-    private readonly jwtService: JwtService,
-    private readonly i18n: I18nService,
-  ) {}
+  constructor(private readonly authService: AuthService) {}
 
   @Post('register')
   @Header('Cache-Control', 'no-cache, no-store, max-age=0, must-revalidate')
@@ -91,7 +83,6 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Token không hợp lệ' })
   async signOutAction(
     @GetRawToken() token: string,
-    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
     res.set(CACHE_CONTROL_HEADER, CACHE_CONTROL_VALUE);
@@ -100,14 +91,6 @@ export class AuthController {
     res.set(SURROGATE_CONTROL_HEADER, SURROGATE_CONTROL_VALUE);
     res.set(CLEAR_SITE_DATA_HEADER, CLEAR_SITE_DATA_VALUE);
 
-    if (!token) {
-      return { message: this.i18n.t('messages.AUTH.LOGOUT_SUCCESS') };
-    }
-
-    await this.authService.logout(token);
-
-    return {
-      message: this.i18n.t('messages.AUTH.LOGOUT_SUCCESS'),
-    };
+    return this.authService.logout(token);
   }
 }
