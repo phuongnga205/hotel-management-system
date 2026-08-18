@@ -1,11 +1,28 @@
-import { Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { I18nService } from 'nestjs-i18n';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
+import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { Booking } from './entities/booking.entity';
+import { BookingStatus } from './enums/booking-status.enum';
 import { Repository } from 'typeorm/repository/Repository.js';
 import { InjectRepository } from '@nestjs/typeorm/dist/common/typeorm.decorators';
 import { Room } from '../rooms/entities/room.entity';
+import { AppEvent } from '../common/events/event-names.constants';
+import { BookingStatusChangedEvent } from '../common/events/booking-status-changed.event';
+
+// Các trạng thái mà user còn được phép tự huỷ — 1 booking đã REJECTED/
+// CANCELLED/EXPIRED thì không còn gì để huỷ nữa.
+const CANCELLABLE_STATUSES: BookingStatus[] = [
+  BookingStatus.PENDING,
+  BookingStatus.ACCEPTED,
+];
 
 @Injectable()
 export class BookingsService {
@@ -14,6 +31,7 @@ export class BookingsService {
     private readonly bookingsRepository: Repository<Booking>,
     @InjectRepository(Room) private readonly roomsRepository: Repository<Room>,
     private readonly i18n: I18nService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
   create(createBookingDto: CreateBookingDto) {
     void createBookingDto;
@@ -65,6 +83,51 @@ export class BookingsService {
     }*/
     return {
       message: this.i18n.t('messages.BOOKING.DELETED_SUCCESS'),
+    };
+  }
+
+  // userId luôn lấy từ JWT (@GetUser trong controller), không tin userId
+  // đến từ body/param để xác định quyền sở hữu booking.
+  async cancel(id: string, userId: string, dto: CancelBookingDto) {
+    const booking = await this.bookingsRepository.findOne({
+      where: { id },
+      relations: { user: true },
+    });
+    if (!booking) {
+      throw new NotFoundException(this.i18n.t('messages.BOOKING.NOT_FOUND'));
+    }
+    if (booking.userId !== userId) {
+      throw new ForbiddenException(
+        this.i18n.t('messages.BOOKING.CANCEL_FORBIDDEN'),
+      );
+    }
+    if (!CANCELLABLE_STATUSES.includes(booking.status)) {
+      throw new ConflictException(
+        this.i18n.t('messages.BOOKING.CANCEL_INVALID_STATUS'),
+      );
+    }
+
+    const oldStatus = booking.status;
+    booking.status = BookingStatus.CANCELLED;
+    booking.cancelReason = dto.reason;
+    await this.bookingsRepository.save(booking);
+
+    if (booking.user) {
+      this.eventEmitter.emit(
+        AppEvent.BOOKING_STATUS_CHANGED,
+        new BookingStatusChangedEvent(
+          booking.id,
+          booking.user.id,
+          booking.user.email,
+          booking.user.username,
+          oldStatus,
+          booking.status,
+        ),
+      );
+    }
+
+    return {
+      message: this.i18n.t('messages.BOOKING.CANCEL_SUCCESS'),
     };
   }
 }

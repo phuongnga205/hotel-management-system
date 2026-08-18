@@ -21,6 +21,7 @@ export enum EmailStatus {
 export enum EmailType {
   ACCOUNT_ACTIVATION = 'account-activation',
   PASSWORD_RESET = 'password-reset',
+  PASSWORD_CHANGED = 'password-changed',
   BOOKING_STATUS_CHANGED = 'booking-status-changed',
   REVIEW_DELETED = 'review-deleted',
 }

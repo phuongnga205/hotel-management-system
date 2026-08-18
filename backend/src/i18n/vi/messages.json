@@ -5,11 +5,43 @@
   "ROOM_NUMBER_EXISTS": "Số phòng đã tồn tại.",
   "ROOM_SAVE_FAILED": "Không thể lưu thông tin phòng. Vui lòng thử lại.",
   "MAIL": {
-    "LOG_NOT_FOUND": "Không tìm thấy nhật ký email {id}."
+    "LOG_NOT_FOUND": "Không tìm thấy nhật ký email {id}.",
+    "TEMPLATES": {
+      "ACCOUNT_ACTIVATION": {
+        "SUBJECT": "Kích hoạt tài khoản Hotel Management System",
+        "BODY": "<p>Xin chào {username},</p><p>Mã OTP kích hoạt tài khoản của bạn là:</p><p style=\"font-size:24px;font-weight:bold;letter-spacing:4px;\">{otp}</p><p>Mã có hiệu lực trong 10 phút. Vui lòng nhập mã này vào màn hình kích hoạt tài khoản.</p>"
+      },
+      "PASSWORD_RESET": {
+        "SUBJECT": "Yêu cầu đặt lại mật khẩu",
+        "BODY": "<p>Xin chào {username},</p><p>Bạn (hoặc ai đó) vừa yêu cầu đặt lại mật khẩu. Mã OTP của bạn là:</p><p style=\"font-size:24px;font-weight:bold;letter-spacing:4px;\">{otp}</p><p>Mã có hiệu lực trong 10 phút. Nếu không phải bạn yêu cầu, hãy bỏ qua email này.</p>"
+      },
+      "PASSWORD_CHANGED": {
+        "SUBJECT": "Mật khẩu của bạn vừa được thay đổi",
+        "BODY": "<p>Xin chào {username},</p><p>Mật khẩu tài khoản của bạn vừa được thay đổi thành công. Nếu không phải bạn thực hiện, vui lòng liên hệ với chúng tôi ngay.</p>"
+      },
+      "BOOKING_STATUS_CHANGED": {
+        "SUBJECT": "Cập nhật trạng thái đơn đặt phòng #{bookingId}",
+        "BODY": "<p>Xin chào {username},</p><p>Đơn đặt phòng #{bookingId} của bạn vừa chuyển sang trạng thái: <strong>{status}</strong>.</p>"
+      },
+      "REVIEW_DELETED": {
+        "SUBJECT": "Đánh giá của bạn đã bị gỡ",
+        "BODY": "<p>Xin chào {username},</p><p>Đánh giá của bạn đã bị quản trị viên gỡ khỏi hệ thống do vi phạm quy định.</p>"
+      }
+    }
   },
   "BOOKING": {
     "NOT_FOUND": "Không tìm thấy yêu cầu đặt phòng.",
-    "DELETED_SUCCESS": "Đã xóa yêu cầu đặt phòng thành công."
+    "DELETED_SUCCESS": "Đã xóa yêu cầu đặt phòng thành công.",
+    "CANCEL_SUCCESS": "Đã huỷ yêu cầu đặt phòng thành công.",
+    "CANCEL_FORBIDDEN": "Bạn không có quyền huỷ yêu cầu đặt phòng này.",
+    "CANCEL_INVALID_STATUS": "Không thể huỷ yêu cầu đặt phòng ở trạng thái hiện tại.",
+    "STATUS_LABEL": {
+      "PENDING": "Đang chờ xử lý",
+      "ACCEPTED": "Đã chấp nhận",
+      "REJECTED": "Đã từ chối",
+      "CANCELLED": "Đã huỷ",
+      "EXPIRED": "Đã hết hạn"
+    }
   },
   "AUTH": {
     "EMAIL_EXISTED": "Email này đã được đăng ký trong hệ thống.",
@@ -20,12 +52,31 @@
     "UNAUTHORIZED": "Phiên đăng nhập không hợp lệ hoặc đã hết hạn.",
     "TOKEN_BLACKLISTED": "Token này đã bị vô hiệu hóa (đã đăng xuất).",
     "USER_ALREADY_EXISTS": "Người dùng với email, tài khoản hoặc số điện thoại này đã tồn tại.",
-    "USER_INACTIVE": "Tài khoản của bạn đã bị khóa hoặc chưa kích hoạt."
+    "USER_INACTIVE": "Tài khoản của bạn đã bị khóa hoặc chưa kích hoạt.",
+    "ACTIVATE_SUCCESS": "Kích hoạt tài khoản thành công.",
+    "ACTIVATE_TOKEN_INVALID": "Mã OTP kích hoạt không hợp lệ hoặc đã hết hạn.",
+    "FORGOT_PASSWORD_SUCCESS": "Nếu email tồn tại trong hệ thống, mã OTP đặt lại mật khẩu đã được gửi.",
+    "RESET_PASSWORD_SUCCESS": "Đặt lại mật khẩu thành công.",
+    "RESET_TOKEN_INVALID": "Mã OTP đặt lại mật khẩu không hợp lệ hoặc đã hết hạn."
+  },
+  "USERS": {
+    "CREATE_SUCCESS": "Tạo người dùng thành công.",
+    "FIND_ALL_SUCCESS": "Lấy danh sách người dùng thành công.",
+    "FIND_ONE_SUCCESS": "Lấy thông tin người dùng {id} thành công.",
+    "UPDATE_SUCCESS": "Cập nhật người dùng {id} thành công.",
+    "REMOVE_SUCCESS": "Xoá người dùng {id} thành công.",
+    "CHANGE_PASSWORD_SUCCESS": "Đổi mật khẩu thành công.",
+    "CHANGE_PASSWORD_INVALID_CURRENT": "Mật khẩu hiện tại không chính xác."
+  },
+  "REVIEWS": {
+    "NOT_FOUND": "Không tìm thấy đánh giá.",
+    "ADMIN_DELETE_SUCCESS": "Đã xoá đánh giá thành công."
   },
   "VALIDATION": {
     "IS_EMAIL": "Email không đúng định dạng.",
     "NOT_EMPTY": "{property} không được để trống.",
     "MIN_LENGTH": "{property} phải có ít nhất {constraints.0} ký tự.",
-    "IS_STRING": "{property} phải là chuỗi văn bản."
+    "IS_STRING": "{property} phải là chuỗi văn bản.",
+    "OTP_LENGTH": "Mã OTP phải gồm đúng {constraints.0} chữ số."
   }
 }

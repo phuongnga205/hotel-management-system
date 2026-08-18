@@ -21,6 +21,9 @@ import {
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { ActivateAccountDto } from './dto/activate-account.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GetRawToken } from './decorators/get-token.decorator';
 
@@ -52,6 +55,41 @@ export class AuthController {
   @ApiResponse({ status: 409, description: 'Email đã tồn tại' })
   async register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
+  }
+
+  @Post('activate')
+  @UseGuards(ThrottlerGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Kích hoạt tài khoản bằng mã OTP gửi qua email' })
+  @ApiResponse({ status: 200, description: 'Kích hoạt thành công' })
+  @ApiResponse({
+    status: 400,
+    description: 'OTP không hợp lệ hoặc đã hết hạn',
+  })
+  async activate(@Body() activateAccountDto: ActivateAccountDto) {
+    return this.authService.activate(activateAccountDto);
+  }
+
+  @Post('forgot-password')
+  @UseGuards(ThrottlerGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Yêu cầu gửi email đặt lại mật khẩu' })
+  @ApiResponse({ status: 200, description: 'Yêu cầu đã được ghi nhận' })
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(forgotPasswordDto);
+  }
+
+  @Post('reset-password')
+  @UseGuards(ThrottlerGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Đặt lại mật khẩu bằng mã OTP gửi qua email' })
+  @ApiResponse({ status: 200, description: 'Đặt lại mật khẩu thành công' })
+  @ApiResponse({
+    status: 400,
+    description: 'OTP không hợp lệ hoặc đã hết hạn',
+  })
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    return this.authService.resetPassword(resetPasswordDto);
   }
 
   @Post('login')

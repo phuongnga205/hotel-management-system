@@ -10,6 +10,20 @@
 > `backend/docs/DANH_SACH_API.md`) — dựng UI trước, gắn API thật sau khi BE
 > xong, không block việc code giao diện.
 
+## Quy ước UI dùng chung (áp dụng nhiều màn)
+
+- **Loading State** — thống nhất dùng **1 component `Loading`/`Spinner` chung**
+  cho toàn app, không để mỗi màn tự chế 1 kiểu (tránh UI giật/đơ cục bộ khi
+  chuyển trang hoặc submit form). Áp dụng ở 2 tình huống:
+  - **Chuyển trang** (route transition, đặc biệt các trang gọi API ngay khi
+    mount như `RoomDetailPage`, `BookingDetailPage`, mọi trang `Admin*ListPage`).
+  - **Submit form** (đặc biệt `LoginPage`, `RegisterPage`,
+    `BookRoomPage`/`POST /bookings`, `BookingPaymentPage`/`POST
+    /bookings/:id/pay`) — disable nút + hiện trạng thái loading ngay trên nút
+    bấm trong lúc chờ response, tránh double-submit.
+  - 🚧 **Style/animation lấy theo loading của nút "Thanh toán" trong Figma**
+    (chưa gắn link Figma cụ thể vào doc này — bổ sung sau khi có link). 
+
 ## A. Public
 
 | Page component | Route | API sử dụng | Ghi chú |
