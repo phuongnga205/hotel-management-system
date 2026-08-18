@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -15,6 +16,7 @@ import { LoginDto } from './dto/login.dto';
 import { TokenUtil } from '../token/token.util';
 
 export const BCRYPT_SALT_ROUNDS = 10;
+export const POSTGRES_UNIQUE_VIOLATION_CODE = '23505';
 
 @Injectable()
 export class AuthService {
@@ -61,7 +63,7 @@ export class AuthService {
         error &&
         typeof error === 'object' &&
         'code' in error &&
-        error.code === '23505'
+        error.code === POSTGRES_UNIQUE_VIOLATION_CODE
       ) {
         throw new ConflictException(
           this.i18n.t('messages.AUTH.USER_ALREADY_EXISTS'),
@@ -87,9 +89,7 @@ export class AuthService {
     }
 
     if (user.status === UserStatus.INACTIVE) {
-      throw new UnauthorizedException(
-        this.i18n.t('messages.AUTH.USER_INACTIVE'),
-      );
+      throw new ForbiddenException(this.i18n.t('messages.AUTH.USER_INACTIVE'));
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password || '');

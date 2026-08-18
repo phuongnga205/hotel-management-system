@@ -7,7 +7,11 @@ import { JwtService } from '@nestjs/jwt';
 import { I18nService } from 'nestjs-i18n';
 import { TokenUtil } from '../token/token.util';
 import * as bcrypt from 'bcrypt';
-import { UnauthorizedException, ConflictException } from '@nestjs/common';
+import {
+  UnauthorizedException,
+  ConflictException,
+  ForbiddenException,
+} from '@nestjs/common';
 
 jest.mock('bcrypt');
 
@@ -160,11 +164,9 @@ describe('AuthService', () => {
       );
     });
 
-    it('should throw Unauthorized if inactive', async () => {
+    it('should throw Forbidden if inactive', async () => {
       userRepository.findOne.mockResolvedValue({ status: UserStatus.INACTIVE });
-      await expect(service.login(loginDto)).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(service.login(loginDto)).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw Unauthorized if wrong password', async () => {
