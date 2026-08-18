@@ -1,28 +1,30 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { I18nService } from 'nestjs-i18n';
 
 @Injectable()
 export class UsersService {
-  create(createUserDto: CreateUserDto) {
-    void createUserDto;
-    return 'This action adds a new user';
+  constructor(private readonly i18n: I18nService) {}
+
+  create(_createUserDto: CreateUserDto) {
+    return this.i18n.t('messages.USERS.CREATE_SUCCESS');
   }
 
   findAll() {
-    return `This action returns all users`;
+    return this.i18n.t('messages.USERS.FIND_ALL_SUCCESS');
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} user`;
+    return this.i18n.t('messages.USERS.FIND_ONE_SUCCESS', { args: { id } });
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    void updateUserDto;
-    return `This action updates a #${id} user`;
+  update(id: number, _updateUserDto: UpdateUserDto) {
+    return this.i18n.t('messages.USERS.UPDATE_SUCCESS', { args: { id } });
   }
 
   remove(id: number) {
-    return `This action removes a #${id} user`;
+    return this.i18n.t('messages.USERS.REMOVE_SUCCESS', { args: { id } });
   }
 }

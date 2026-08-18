@@ -8,8 +8,8 @@ import {
 } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
 
-export class CreateUserDto {
-  @ApiProperty({ example: 'nguyen@gmail.com', description: 'Email' })
+export class RegisterDto {
+  @ApiProperty({ example: 'nguyen@gmail.com', description: 'Email người dùng' })
   @IsEmail(
     {},
     { message: i18nValidationMessage('messages.VALIDATION.IS_EMAIL') },
@@ -19,8 +19,10 @@ export class CreateUserDto {
   })
   email: string;
 
-  @ApiProperty({ example: '123456', description: 'Mật khẩu' })
-  @IsString({ message: i18nValidationMessage('messages.VALIDATION.IS_STRING') })
+  @ApiProperty({ example: '123456', description: 'Mật khẩu tối thiểu 6 ký tự' })
+  @IsString({
+    message: i18nValidationMessage('messages.VALIDATION.IS_STRING'),
+  })
   @IsNotEmpty({
     message: i18nValidationMessage('messages.VALIDATION.NOT_EMPTY'),
   })
@@ -30,7 +32,9 @@ export class CreateUserDto {
   password: string;
 
   @ApiProperty({ example: 'nguyen_van_a', description: 'Tên đăng nhập' })
-  @IsString({ message: i18nValidationMessage('messages.VALIDATION.IS_STRING') })
+  @IsString({
+    message: i18nValidationMessage('messages.VALIDATION.IS_STRING'),
+  })
   @IsNotEmpty({
     message: i18nValidationMessage('messages.VALIDATION.NOT_EMPTY'),
   })
@@ -38,6 +42,8 @@ export class CreateUserDto {
 
   @ApiPropertyOptional({ example: '0987654321', description: 'Số điện thoại' })
   @IsOptional()
-  @IsString({ message: i18nValidationMessage('messages.VALIDATION.IS_STRING') })
+  @IsString({
+    message: i18nValidationMessage('messages.VALIDATION.IS_STRING'),
+  })
   phone?: string;
 }
