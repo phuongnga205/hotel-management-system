@@ -27,6 +27,7 @@ export enum EmailType {
 
 @Entity('email_logs')
 @Check('chk_email_logs_retry_count', '"retry_count" >= 0')
+@Check('chk_email_logs_status', `"status" IN ('PENDING','SENT','FAILED')`)
 export class EmailLog {
   @PrimaryGeneratedColumn({ type: 'bigint' })
   id!: string;
@@ -38,7 +39,7 @@ export class EmailLog {
   recipient!: string;
 
   @Index('idx_email_logs_status')
-  @Column({ length: EMAIL_STATUS_MAX_LENGTH })
+  @Column({ length: EMAIL_STATUS_MAX_LENGTH, default: EmailStatus.PENDING })
   status!: string;
 
   @Column({ name: 'retry_count', type: 'smallint', default: 0 })
