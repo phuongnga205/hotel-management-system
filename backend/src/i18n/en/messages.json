@@ -7,6 +7,10 @@
   "MAIL": {
     "LOG_NOT_FOUND": "Email log {id} not found."
   },
+  "BOOKING": {
+    "NOT_FOUND": "Booking not found.",
+    "DELETED_SUCCESS": "Booking request deleted successfully."
+  },
   "AUTH": {
     "EMAIL_EXISTED": "This email is already registered.",
     "INVALID_CREDENTIALS": "Invalid email or password.",

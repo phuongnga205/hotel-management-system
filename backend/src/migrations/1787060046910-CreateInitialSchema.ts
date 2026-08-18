@@ -103,6 +103,9 @@ export class CreateInitialSchema1787060046910 implements MigrationInterface {
         CONSTRAINT "FK_room_amenities_amenity" FOREIGN KEY ("amenity_id") REFERENCES "amenities"("id") ON DELETE CASCADE
       )
     `);
+    await queryRunner.query(
+      `CREATE INDEX "idx_room_amenities_amenity_id" ON "room_amenities" ("amenity_id")`,
+    );
 
     await queryRunner.query(`
       CREATE TABLE "bookings" (

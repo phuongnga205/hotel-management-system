@@ -1,6 +1,7 @@
 import {
   CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryColumn,
@@ -9,6 +10,9 @@ import { Room } from '../../rooms/entities/room.entity';
 import { Amenity } from '../../amenities/entities/amenity.entity';
 
 @Entity('room_amenities')
+// The composite PK (room_id, amenity_id) only serves lookups by room_id
+// first; a reverse lookup ("which rooms have amenity X") needs its own index.
+@Index('idx_room_amenities_amenity_id', ['amenityId'])
 export class RoomAmenity {
   @PrimaryColumn({ name: 'room_id', type: 'bigint' })
   roomId!: string;

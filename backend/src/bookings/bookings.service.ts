@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { I18nService } from 'nestjs-i18n';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { Booking } from './entities/booking.entity';
@@ -12,6 +13,7 @@ export class BookingsService {
     @InjectRepository(Booking)
     private readonly bookingsRepository: Repository<Booking>,
     @InjectRepository(Room) private readonly roomsRepository: Repository<Room>,
+    private readonly i18n: I18nService,
   ) {}
   create(createBookingDto: CreateBookingDto) {
     void createBookingDto;
@@ -59,10 +61,10 @@ export class BookingsService {
       { note: reason, status: BookingStatus.CANCELLED }
     );
     if (result.affected === 0) {
-      throw new NotFoundException();
+      throw new NotFoundException(this.i18n.t('messages.BOOKING.NOT_FOUND'));
     }*/
     return {
-      message: 'Booking request deleted',
+      message: this.i18n.t('messages.BOOKING.DELETED_SUCCESS'),
     };
   }
 }
