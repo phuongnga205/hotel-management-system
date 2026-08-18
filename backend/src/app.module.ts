@@ -9,7 +9,8 @@ import { TokenModule } from './token/token.module';
 import { RoomsModule } from './rooms/rooms.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { ReviewsModule } from './reviews/reviews.module';
-
+import { PaymentsModule } from './payments/payments.module';
+import { MailModule } from './mail/mail.module';
 import {
   I18nModule,
   AcceptLanguageResolver,
@@ -17,6 +18,11 @@ import {
   QueryResolver,
 } from 'nestjs-i18n';
 import * as path from 'path';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { ENVIRONMENT_KEYS } from './config/environment.constants';
+
+const DEFAULT_REDIS_PORT = 6379;
 
 const DEFAULT_THROTTLE_TTL = 60000;
 const DEFAULT_THROTTLE_LIMIT = 10;
@@ -38,16 +44,27 @@ const DEFAULT_THROTTLE_LIMIT = 10;
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        url: configService.get<string>('DATABASE_URL'),
-        ssl: {
-          rejectUnauthorized: true,
-        },
-        autoLoadEntities: true,
-        synchronize: false,
-        logging: false,
-      }),
+      useFactory: (configService: ConfigService) => {
+        const rawSsl = configService.get<string | boolean>(
+          ENVIRONMENT_KEYS.DATABASE_SSL_REJECT_UNAUTHORIZED,
+          'true',
+        );
+
+        return {
+          type: 'postgres' as const,
+          url: configService.getOrThrow<string>(ENVIRONMENT_KEYS.DATABASE_URL),
+          ssl: {
+            rejectUnauthorized: rawSsl === true || rawSsl === 'true',
+          },
+          autoLoadEntities: true,
+          synchronize:
+            configService.get<string>(
+              ENVIRONMENT_KEYS.TYPEORM_SYNCHRONIZE,
+              'false',
+            ) === 'true',
+          logging: false,
+        };
+      },
     }),
 
     BullModule.forRootAsync({
@@ -55,8 +72,8 @@ const DEFAULT_THROTTLE_LIMIT = 10;
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         connection: {
-          host: configService.get<string>('REDIS_HOST'),
-          port: configService.get<number>('REDIS_PORT'),
+          host: configService.get<string>('REDIS_HOST', 'localhost'),
+          port: configService.get<number>('REDIS_PORT', DEFAULT_REDIS_PORT),
         },
       }),
     }),
@@ -78,10 +95,15 @@ const DEFAULT_THROTTLE_LIMIT = 10;
     UsersModule,
     RoomsModule,
     BookingsModule,
+
+    PaymentsModule,
+
     ReviewsModule,
     TokenModule,
+
+    MailModule,
   ],
-  controllers: [],
-  providers: [],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}

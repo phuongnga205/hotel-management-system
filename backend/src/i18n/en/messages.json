@@ -1,21 +1,27 @@
 {
-    "HELLO": "Hello",
-    "USER_NOT_FOUND": "User not found in the system.",
-    "AUTH": {
-        "EMAIL_EXISTED": "This email is already registered.",
-        "INVALID_CREDENTIALS": "Invalid email or password.",
-        "REGISTER_SUCCESS": "User registered successfully.",
-        "LOGIN_SUCCESS": "Login successfully.",
-        "LOGOUT_SUCCESS": "Logout successfully.",
-        "UNAUTHORIZED": "Unauthorized or session expired.",
-        "TOKEN_BLACKLISTED": "Token has been invalidated (logged out).",
-        "USER_ALREADY_EXISTS": "User with this email, username, or phone already exists.",
-        "USER_INACTIVE": "Your account has been locked or is inactive."
-    },
-    "VALIDATION": {
-        "IS_EMAIL": "Email format is invalid.",
-        "NOT_EMPTY": "{property} should not be empty.",
-        "MIN_LENGTH": "{property} must be longer than or equal to {constraints.0} characters.",
-        "IS_STRING": "{property} must be a string."
-    }
+  "HELLO": "Hello",
+  "USER_NOT_FOUND": "User not found in the system.",
+  "ROOM_NOT_FOUND": "Room not found.",
+  "ROOM_NUMBER_EXISTS": "Room number already exists.",
+  "ROOM_SAVE_FAILED": "Unable to save room information. Please try again.",
+  "MAIL": {
+    "LOG_NOT_FOUND": "Email log {id} not found."
+  },
+  "AUTH": {
+    "EMAIL_EXISTED": "This email is already registered.",
+    "INVALID_CREDENTIALS": "Invalid email or password.",
+    "REGISTER_SUCCESS": "User registered successfully.",
+    "LOGIN_SUCCESS": "Login successfully.",
+    "LOGOUT_SUCCESS": "Logout successfully.",
+    "UNAUTHORIZED": "Unauthorized or session expired.",
+    "TOKEN_BLACKLISTED": "Token has been invalidated (logged out).",
+    "USER_ALREADY_EXISTS": "User with this email, username, or phone already exists.",
+    "USER_INACTIVE": "Your account has been locked or is inactive."
+  },
+  "VALIDATION": {
+    "IS_EMAIL": "Email format is invalid.",
+    "NOT_EMPTY": "{property} should not be empty.",
+    "MIN_LENGTH": "{property} must be longer than or equal to {constraints.0} characters.",
+    "IS_STRING": "{property} must be a string."
+  }
 }

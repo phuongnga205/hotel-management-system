@@ -4,6 +4,11 @@ import { ValidationPipe } from '@nestjs/common';
 import { I18nValidationExceptionFilter, I18nValidationPipe } from 'nestjs-i18n';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
+import {
+  DEFAULT_SERVER_PORT,
+  ENVIRONMENT_KEYS,
+} from './config/environment.constants';
+// AppDataSource is intentionally not imported here; migrations are run via scripts
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -18,6 +23,7 @@ async function bootstrap() {
     }),
   );
 
+  // Cấu hình CORS để Frontend (ReactJS) có thể gọi API mà không bị chặn
   app.enableCors();
 
   const API_DOCS_PATH = 'api/docs';
@@ -30,7 +36,13 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup(API_DOCS_PATH, app, document);
 
+  // Migrations are not run automatically on startup. Use `npm run migration:run` to apply migrations.
+
   const configService = app.get(ConfigService);
-  await app.listen(configService.get<number>('PORT') || 3000);
+  const port = configService.get<number>(
+    ENVIRONMENT_KEYS.PORT,
+    DEFAULT_SERVER_PORT,
+  );
+  await app.listen(port);
 }
 void bootstrap();
