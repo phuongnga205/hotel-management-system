@@ -28,9 +28,9 @@ export class Room {
     name!: string;
 
     @Column({ type: 'text', nullable: true })
-    description?: string;
+    description?: string| null;
 
-    @Column({ name: 'view_type', length: 50, nullable: true })
+    @Column({ name: 'view_type',type:'varchar', length: 50, nullable: true })
     viewType?: string|null;
 
     @Column()

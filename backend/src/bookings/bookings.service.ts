@@ -5,14 +5,32 @@ import { Booking, BookingStatus } from './entities/booking.entity';
 import { Repository } from 'typeorm/repository/Repository.js';
 import { InjectRepository } from '@nestjs/typeorm/dist/common/typeorm.decorators';
 import { BookingResponseDto } from './dto/booking-response.dto';
+import { Room } from 'src/rooms/entities/room.entity';
 
 @Injectable()
 export class BookingsService {
   constructor(
-    @InjectRepository(Booking) private readonly bookingsRepository: Repository<Booking>
+    @InjectRepository(Booking) private readonly bookingsRepository: Repository<Booking>,
+    @InjectRepository(Room) private readonly roomsRepository: Repository<Room>
   ) { }
   async create(createBookingDto: CreateBookingDto) {
-    const booking = await this.bookingsRepository.save(createBookingDto);
+    const bookingroom = await this.roomsRepository.findOne({
+      where: {
+        id: createBookingDto.roomId
+      }
+    });
+    if (!bookingroom) {
+      throw new NotFoundException();
+    }
+    const checkIn = new Date(`${createBookingDto.checkInDate}T00:00:00Z`);
+    const checkOut = new Date(`${createBookingDto.checkOutDate}T00:00:00Z`);
+
+    const nights =
+      (checkOut.getTime() - checkIn.getTime()) /
+      (1000 * 60 * 60 * 24);
+    const totalAmount= (nights * Number(bookingroom.pricePerNight)).toFixed(2);
+
+    const booking = await this.bookingsRepository.save({ userId: 1,totalAmount, ...createBookingDto });
     if (!booking) {
       throw new Error('Booking request failed');
     }

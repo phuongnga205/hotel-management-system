@@ -30,8 +30,8 @@ export class BookingsController {
   @Delete(':id')
   remove(
     @Param('id',ParseIntPipe) id: number,
-    @Body() note:string,
+    @Body() note,
     ) {
-    return this.bookingsService.remove(id,note??"");
+    return this.bookingsService.remove(id,note??{note:""});
   }
 }

@@ -11,7 +11,7 @@ import {
 export class CreateBookingDto {
     @ApiProperty({
         description: 'The ID of the room being booked',
-        example: 1,
+        example: 5,
     })
     @IsInt()
     @IsPositive()
@@ -30,6 +30,7 @@ export class CreateBookingDto {
     })
     @IsDateString()
     checkOutDate!: string;
+
 
     @ApiProperty({
         description: 'A note about the booking',

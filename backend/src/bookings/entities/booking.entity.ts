@@ -33,10 +33,10 @@ export class Booking {
     roomId!: number;
 
     @Column({ name: 'check_in_date', type: 'date' })
-    checkInDate!: string;
+    checkInDate!: Date;
 
     @Column({ name: 'check_out_date', type: 'date' })
-    checkOutDate!: string;
+    checkOutDate!: Date;
 
     @Column({
         name: 'total_amount',

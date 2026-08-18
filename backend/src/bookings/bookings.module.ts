@@ -7,7 +7,7 @@ import { Room } from 'src/rooms/entities/room.entity';
 import { User } from 'src/users/entities/user.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Booking,Room,User])],
+  imports: [TypeOrmModule.forFeature([Booking,Room])],
   controllers: [BookingsController],
   providers: [BookingsService],
 })

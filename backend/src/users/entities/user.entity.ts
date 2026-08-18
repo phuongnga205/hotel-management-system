@@ -29,6 +29,7 @@ export class User {
     username!: string;
 
     @Column({
+        type:'varchar',
         length: 20,
         unique: true,
         nullable: true,
@@ -54,6 +55,7 @@ export class User {
 
     @Column({
         name: 'avatar_url',
+        type:'varchar',
         length: 500,
         nullable: true,
     })
