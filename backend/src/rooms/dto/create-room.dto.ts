@@ -47,7 +47,6 @@ export class CreateRoomDto {
     })
     @IsOptional()
     @IsEnum(RoomViewType)
-    @MaxLength(50)
     viewType?: RoomViewType;
 
     @ApiProperty({
@@ -76,6 +75,5 @@ export class CreateRoomDto {
     })
     @IsOptional()
     @IsEnum(RoomStatus)
-    @MaxLength(20)
     status?: RoomStatus;
 }

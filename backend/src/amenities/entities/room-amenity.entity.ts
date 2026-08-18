@@ -31,11 +31,11 @@ export class RoomAmenity {
         onDelete: 'RESTRICT',
     })
     @JoinColumn({ name: 'room_id' })
-    room?: Room;
+    room!: Room;
 
     @ManyToOne(() => Amenity, (amenity) => amenity.roomAmenities, {
         onDelete: 'RESTRICT',
     })
     @JoinColumn({ name: 'amenity_id' })
-    amenity?: Amenity;
+    amenity!: Amenity;
 }

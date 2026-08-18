@@ -46,7 +46,7 @@ export class Room {
     pricePerNight!: number;
 
     @Column({
-        length: 20,
+        type:'enum',
         enum: RoomStatus,
         default: RoomStatus.AVAILABLE,
     })
