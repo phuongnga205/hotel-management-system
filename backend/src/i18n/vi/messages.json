@@ -12,7 +12,9 @@
     "DELETED_SUCCESS": "Đã xóa yêu cầu đặt phòng thành công.",
     "CANCEL_SUCCESS": "Đã hủy yêu cầu đặt phòng thành công.",
     "REQUEST_FAIL" : "Yêu cầu đặt phòng thất bại.",
-    "CANNOT_CANCEL": "Yêu cầu đặt phòng không thể hủy."
+    "CANNOT_CANCEL": "Yêu cầu đặt phòng không thể hủy.",
+    "CHECK_IN_DATE_IN_PAST": "Ngày checkin ở quá khứ.",
+    "INVALID_DATE_RANGE": "Thời gian không phù hợp."
   },
   "AUTH": {
     "EMAIL_EXISTED": "Email này đã được đăng ký trong hệ thống.",

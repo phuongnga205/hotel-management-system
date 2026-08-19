@@ -19,6 +19,19 @@ export class BookingsService {
     private readonly i18n: I18nService,
   ) { }
   async create(createBookingDto: CreateBookingDto, userId: string) {
+    const today = new Date().toISOString().slice(0, 10);
+
+    if (createBookingDto.checkInDate < today) {
+      throw new BadRequestException(
+        this.i18n.t('messages.BOOKING.CHECK_IN_DATE_IN_PAST'),
+      );
+    }
+
+    if (createBookingDto.checkOutDate <= createBookingDto.checkInDate) {
+      throw new BadRequestException(
+        this.i18n.t('messages.BOOKING.INVALID_DATE_RANGE'),
+      );
+    }
     const bookingroom = await this.roomsRepository.findOne({
       where: {
         id: createBookingDto.roomId
@@ -41,9 +54,6 @@ export class BookingsService {
       ...createBookingDto,
       pricePerNight: bookingroom.pricePerNight,
     });
-    if (!booking) {
-      throw new Error(this.i18n.t("messages.BOOK.REQUEST_FAIL"));
-    }
     return new BookingResponseDto(booking);
     //trên server đã có constraint excl_bookings_no_overlap để tránh lặp rồi nên không cần logic xét ngày trùng nữa
   }
@@ -62,14 +72,19 @@ export class BookingsService {
   }
 
   async cancel(id: string, userId: string, reason: CancelBookingDto) {
-    const booking = await this.bookingsRepository.findOne({
-      where: {
-        id: id,
-        userId,
-      },
-    });
+    const result = await this.bookingsRepository.update(
+  {
+    id,
+    userId,
+    status: BookingStatus.PENDING,
+  },
+  {
+    status: BookingStatus.CANCELLED,
+    cancelReason: reason.cancelReason,
+  },
+);
 
-    if (!booking) {
+    /*if (!booking) {
       throw new NotFoundException(
         this.i18n.t('messages.BOOKING.NOT_FOUND'),
       );
@@ -86,9 +101,9 @@ export class BookingsService {
         cancelReason: reason.cancelReason,
         status: BookingStatus.CANCELLED
       }
-    );
+    );*/
     if (result.affected === 0) {
-      throw new NotFoundException(this.i18n.t('messages.BOOKING.NOT_FOUND'));
+      throw new NotFoundException(this.i18n.t('messages.BOOKING.CANNOT_CANCEL'));
     }
     return {
       message: this.i18n.t('messages.BOOKING.CANCEL_SUCCESS'),

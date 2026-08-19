@@ -12,7 +12,9 @@
     "DELETED_SUCCESS": "Booking request deleted successfully.",
     "CANCEL_SUCCESS": "Booking request cancelled successfully.",
     "REQUEST_FAIL" : "Booking request failed.",
-    "CANNOT_CANCEL": "Booking request cannot be cancelled."
+    "CANNOT_CANCEL": "Booking request cannot be cancelled.",
+    "CHECK_IN_DATE_IN_PAST": "Checkin date in the past.",
+    "INVALID_DATE_RANGE": "Date range invalid."
 
   },
   "AUTH": {
