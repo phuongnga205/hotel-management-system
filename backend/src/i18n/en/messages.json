@@ -11,7 +11,8 @@
     "NOT_FOUND": "Booking not found.",
     "DELETED_SUCCESS": "Booking request deleted successfully.",
     "CANCEL_SUCCESS": "Booking request cancelled successfully.",
-    "REQUEST_FAIL" : "Booking request failed."
+    "REQUEST_FAIL" : "Booking request failed.",
+    "CANNOT_CANCEL": "Booking request cannot be cancelled."
 
   },
   "AUTH": {

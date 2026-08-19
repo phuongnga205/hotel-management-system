@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { I18nService } from 'nestjs-i18n';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
@@ -17,8 +17,8 @@ export class BookingsService {
     private readonly bookingsRepository: Repository<Booking>,
     @InjectRepository(Room) private readonly roomsRepository: Repository<Room>,
     private readonly i18n: I18nService,
-  ) {}
-  async create(createBookingDto: CreateBookingDto, userId:string) {
+  ) { }
+  async create(createBookingDto: CreateBookingDto, userId: string) {
     const bookingroom = await this.roomsRepository.findOne({
       where: {
         id: createBookingDto.roomId
@@ -33,11 +33,11 @@ export class BookingsService {
     const nights =
       (checkOut.getTime() - checkIn.getTime()) /
       (1000 * 60 * 60 * 24);
-    const totalAmount= (nights * Number(bookingroom.pricePerNight));
+    const totalAmount = (nights * Number(bookingroom.pricePerNight));
 
     const booking = await this.bookingsRepository.save({
       userId: userId,
-      totalPrice:totalAmount,
+      totalPrice: totalAmount,
       ...createBookingDto,
       pricePerNight: bookingroom.pricePerNight,
     });
@@ -61,12 +61,31 @@ export class BookingsService {
     return `This action updates a #${id} booking`;
   }
 
-  async cancel(id: string,reason:CancelBookingDto) {
+  async cancel(id: string, userId: string, reason: CancelBookingDto) {
+    const booking = await this.bookingsRepository.findOne({
+      where: {
+        id: id,
+        userId,
+      },
+    });
+
+    if (!booking) {
+      throw new NotFoundException(
+        this.i18n.t('messages.BOOKING.NOT_FOUND'),
+      );
+    }
+
+    if (booking.status !== BookingStatus.PENDING) {
+      throw new BadRequestException(
+        this.i18n.t('messages.BOOKING.CANNOT_CANCEL'),
+      );
+    }
     const result = await this.bookingsRepository.update(
       id,
       {
         cancelReason: reason.cancelReason,
-        status: BookingStatus.CANCELLED }
+        status: BookingStatus.CANCELLED
+      }
     );
     if (result.affected === 0) {
       throw new NotFoundException(this.i18n.t('messages.BOOKING.NOT_FOUND'));

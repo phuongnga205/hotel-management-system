@@ -49,9 +49,10 @@ export class BookingsController {
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
   cancelBooking(
+    @Req() req,
     @Param('id') id: string,
     @Body() reason:CancelBookingDto,
 ) {
-    return this.bookingsService.cancel(id,reason);
+    return this.bookingsService.cancel(id,req.user.id,reason);
   }
 }
