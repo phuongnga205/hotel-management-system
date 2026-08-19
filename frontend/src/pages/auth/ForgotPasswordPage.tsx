@@ -5,23 +5,24 @@ import { Form, Input, Button } from 'antd'
 import { CheckCircleOutlined } from '@ant-design/icons'
 import { toast } from 'react-toastify'
 import { authApi } from '../../api/auth.api'
+import { getErrorMessage } from '../../api/errorMessage'
+import type { ForgotPasswordPayload } from '../../api/types'
 import { ROUTES } from '../../router/paths'
 
 export const ForgotPasswordPage = () => {
   const { t } = useTranslation(['auth'])
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(false)
+  const [sentEmail, setSentEmail] = useState<string | null>(null)
 
-  const onFinish = async (values: any) => {
+  const onFinish = async (values: ForgotPasswordPayload) => {
     try {
       setLoading(true)
-      await authApi.forgotPassword({ email: values.email })
-      setSuccess(true)
+      await authApi.forgotPassword(values)
+      setSentEmail(values.email)
       toast.success(t('auth:forgotPasswordSuccess'))
-    } catch (error: any) {
-      const msg = error.response?.data?.message || t('auth:errors.general')
-      toast.error(msg)
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, t('auth:errors.general')))
     } finally {
       setLoading(false)
     }
@@ -33,7 +34,7 @@ export const ForgotPasswordPage = () => {
       <div className="auth-card">
         <h2 className="auth-title-small">{t('auth:forgotPassword')}</h2>
         
-        {success ? (
+        {sentEmail ? (
           <div className="text-center">
             <div className="auth-success-icon">
               <CheckCircleOutlined />
@@ -41,12 +42,19 @@ export const ForgotPasswordPage = () => {
             <p className="auth-success-text">
               {t('auth:resetEmailSent')}
             </p>
-            <Button type="primary" onClick={() => navigate(ROUTES.LOGIN)} className="btn-primary btn-large-full">
+            <Button
+              type="primary"
+              onClick={() => navigate(`${ROUTES.RESET_PASSWORD}?email=${encodeURIComponent(sentEmail)}`)}
+              className="btn-primary btn-large-full"
+            >
+              {t('auth:resetPassword')}
+            </Button>
+            <Button type="link" onClick={() => navigate(ROUTES.LOGIN)} className="mt-2">
               {t('auth:backToLogin')}
             </Button>
           </div>
         ) : (
-          <Form layout="vertical" onFinish={onFinish} size="large">
+          <Form<ForgotPasswordPayload> layout="vertical" onFinish={onFinish} size="large">
             <p className="auth-subtitle">
               {t('auth:forgotPasswordDesc')}
             </p>

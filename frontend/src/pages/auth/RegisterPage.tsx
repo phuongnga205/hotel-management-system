@@ -1,16 +1,29 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Form, Input, Button } from 'antd'
+import { CheckCircleOutlined } from '@ant-design/icons'
 import { toast } from 'react-toastify'
 import { authApi } from '../../api/auth.api'
+import { getErrorMessage } from '../../api/errorMessage'
+import type { RegisterPayload } from '../../api/types'
 import { ROUTES } from '../../router/paths'
+
+// Form có thêm `confirmPassword` (chỉ để validate ở FE) so với payload thật
+// gửi lên BE (`RegisterPayload`), nên cần type riêng cho form.
+interface RegisterFormValues extends RegisterPayload {
+  confirmPassword: string
+}
 
 export const RegisterPage = () => {
   const { t } = useTranslation(['auth', 'common'])
+  const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
+  // Đăng ký xong hiện modal ngay trên trang (không đổi route), kèm nút chuyển
+  // sang /activate để nhập OTP — theo frontend/docs/CAU_TRUC_ROUTE.md.
+  const [registeredEmail, setRegisteredEmail] = useState<string | null>(null)
 
-  const onFinish = async (values: any) => {
+  const onFinish = async (values: RegisterFormValues) => {
     try {
       setLoading(true)
       await authApi.register({
@@ -18,14 +31,11 @@ export const RegisterPage = () => {
         password: values.password,
         username: values.username,
       })
-      
+
       toast.success(t('auth:registerSuccess'))
-      // Registration typically needs activation, so we might stay or go to a wait page.
-      // The doc says: "Submit xong → hiện modal 'vui lòng kiểm tra email kích hoạt' ngay trên trang này, không đổi route."
-      // But a toast is fine and we can clear the form, or navigate to login. Let's just use toast.
-    } catch (error: any) {
-      const msg = error.response?.data?.message || t('auth:errors.general')
-      toast.error(msg)
+      setRegisteredEmail(values.email)
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, t('auth:errors.general')))
     } finally {
       setLoading(false)
     }
@@ -36,8 +46,23 @@ export const RegisterPage = () => {
       <div className="auth-overlay"></div>
       <div className="auth-card">
         <h2 className="auth-title">{t('auth:register')}</h2>
-        
-        <Form layout="vertical" onFinish={onFinish} size="large">
+
+        {registeredEmail ? (
+          <div className="text-center">
+            <div className="auth-success-icon">
+              <CheckCircleOutlined />
+            </div>
+            <p className="auth-success-text">{t('auth:registerSuccess')}</p>
+            <Button
+              type="primary"
+              onClick={() => navigate(`${ROUTES.ACTIVATE}?email=${encodeURIComponent(registeredEmail)}`)}
+              className="btn-primary btn-large-full"
+            >
+              {t('auth:activate')}
+            </Button>
+          </div>
+        ) : (
+        <Form<RegisterFormValues> layout="vertical" onFinish={onFinish} size="large">
           <Form.Item
             label={<span className="auth-label">{t('common:common.name')}</span>}
             name="username"
@@ -101,6 +126,7 @@ export const RegisterPage = () => {
             </Link>
           </div>
         </Form>
+        )}
       </div>
     </div>
   )

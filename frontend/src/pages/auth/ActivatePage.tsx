@@ -4,30 +4,28 @@ import { useTranslation } from 'react-i18next'
 import { Form, Input, Button } from 'antd'
 import { toast } from 'react-toastify'
 import { authApi } from '../../api/auth.api'
-import { setAccessToken } from '../../api/axiosClient'
 import { getErrorMessage } from '../../api/errorMessage'
-import type { LoginPayload } from '../../api/types'
+import type { ActivatePayload } from '../../api/types'
 import { ROUTES } from '../../router/paths'
 
-export const LoginPage = () => {
+export const ActivatePage = () => {
   const { t } = useTranslation(['auth'])
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [loading, setLoading] = useState(false)
 
-  const onFinish = async (values: LoginPayload) => {
+  // `?email=` chỉ để prefill cho tiện, không phải cơ chế xác thực — xác thực
+  // thật là user gõ đúng OTP nhận qua email (xem frontend/docs/bridge.md).
+  const emailFromQuery = searchParams.get('email') ?? ''
+
+  const onFinish = async (values: ActivatePayload) => {
     try {
       setLoading(true)
-      const res = await authApi.login(values)
-
-      if (res.accessToken) {
-        setAccessToken(res.accessToken)
-        toast.success(t('auth:loginSuccess'))
-        const redirectUrl = searchParams.get('redirect') || ROUTES.HOME
-        navigate(redirectUrl)
-      }
+      await authApi.activate(values)
+      toast.success(t('auth:activateSuccess'))
+      navigate(ROUTES.LOGIN)
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error, t('auth:errors.invalidCredentials')))
+      toast.error(getErrorMessage(error, t('auth:errors.general')))
     } finally {
       setLoading(false)
     }
@@ -37,9 +35,15 @@ export const LoginPage = () => {
     <div className="auth-layout">
       <div className="auth-overlay"></div>
       <div className="auth-card">
-        <h2 className="auth-title">{t('auth:login')}</h2>
-        
-        <Form<LoginPayload> layout="vertical" onFinish={onFinish} size="large">
+        <h2 className="auth-title-small">{t('auth:activate')}</h2>
+        <p className="auth-subtitle">{t('auth:activateDesc')}</p>
+
+        <Form<ActivatePayload>
+          layout="vertical"
+          onFinish={onFinish}
+          size="large"
+          initialValues={{ email: emailFromQuery }}
+        >
           <Form.Item
             label={<span className="auth-label">{t('auth:email')}</span>}
             name="email"
@@ -52,30 +56,26 @@ export const LoginPage = () => {
           </Form.Item>
 
           <Form.Item
-            label={<span className="auth-label">{t('auth:password')}</span>}
-            name="password"
+            label={<span className="auth-label">{t('auth:otp')}</span>}
+            name="otp"
             rules={[
-              { required: true, message: t('auth:errors.required', { field: t('auth:password') }) },
+              { required: true, message: t('auth:errors.required', { field: t('auth:otp') }) },
+              { len: 6, message: t('auth:errors.otpLength') },
+              { pattern: /^\d{6}$/, message: t('auth:errors.otpFormat') },
             ]}
           >
-            <Input.Password placeholder="••••••••" className="rounded-lg" />
+            <Input placeholder="000000" maxLength={6} className="rounded-lg" inputMode="numeric" />
           </Form.Item>
-
-          <div className="auth-link-wrapper">
-            <Link to={ROUTES.FORGOT_PASSWORD} className="link-standard text-sm">
-              {t('auth:forgotPassword')}
-            </Link>
-          </div>
 
           <Form.Item>
             <Button type="primary" htmlType="submit" className="btn-primary btn-large-full" loading={loading}>
-              {t('auth:login')}
+              {t('auth:activate')}
             </Button>
           </Form.Item>
-          
+
           <div className="auth-footer">
-            <Link to={ROUTES.REGISTER} className="link-standard">
-              {t('auth:dontHaveAccount')}
+            <Link to={ROUTES.LOGIN} className="link-standard">
+              {t('auth:backToLogin')}
             </Link>
           </div>
         </Form>
@@ -84,4 +84,4 @@ export const LoginPage = () => {
   )
 }
 
-export default LoginPage
+export default ActivatePage

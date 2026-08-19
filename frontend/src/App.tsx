@@ -2,7 +2,7 @@ import { Button, Space } from 'antd'
 import { useTranslation } from 'react-i18next'
 
 function App() {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-8">

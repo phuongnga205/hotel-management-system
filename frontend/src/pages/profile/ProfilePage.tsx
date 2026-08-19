@@ -1,46 +1,53 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Form, Input, Button, Avatar, Tabs, Select, DatePicker } from 'antd'
-import { 
-  UserOutlined, 
-  PhoneOutlined, 
+import { Form, Input, Button, Avatar, Tabs, Select } from 'antd'
+import {
+  UserOutlined,
+  PhoneOutlined,
   MailOutlined,
   SafetyCertificateOutlined
 } from '@ant-design/icons'
 import { toast } from 'react-toastify'
-import { userApi } from '../../api/user.api'
+import { userApi, type UserProfile } from '../../api/user.api'
+import { getErrorMessage } from '../../api/errorMessage'
+import type { UpdateProfilePayload } from '../../api/types'
 import { COUNTRIES } from '../../utils/countries'
-import dayjs from 'dayjs'
 import { PageLoader } from '../../components/common/PageLoader'
 
 
 const { TabPane } = Tabs
 const { Option } = Select
 
+// Form đổi mật khẩu có thêm `confirmPassword` (chỉ validate ở FE), payload
+// thật gửi lên BE chỉ gồm `currentPassword`/`newPassword` (`ChangePasswordPayload`).
+interface PasswordFormValues {
+  oldPassword: string
+  newPassword: string
+  confirmPassword: string
+}
+
+// Chỉ những field thật sự tồn tại trong bảng `users` (xem
+// frontend/docs/bridge.md) mới được đưa vào form — không vẽ thêm field UI
+// (địa chỉ/giới tính/quốc tịch/ngày sinh...) mà schema hiện tại chưa có.
 export const ProfilePage = () => {
   const { t } = useTranslation(['profile', 'common', 'auth'])
   const [form] = Form.useForm()
   const [passwordForm] = Form.useForm()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [userProfile, setUserProfile] = useState<any>(null)
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const data = await userApi.getProfile() as any
+        const data = await userApi.getProfile()
         setUserProfile(data)
         form.setFieldsValue({
-          name: data.name,
+          fullName: data.fullName,
           phone: data.phone,
-          address: data.address,
-          // mock some missing fields
-          gender: 'male',
-          nationality: 'Vietnam',
-          dob: dayjs('1990-01-01')
         })
-      } catch (error) {
-        toast.error(t('profile:loadError'))
+      } catch (error: unknown) {
+        toast.error(getErrorMessage(error, t('profile:loadError')))
       } finally {
         setLoading(false)
       }
@@ -49,36 +56,30 @@ export const ProfilePage = () => {
     fetchProfile()
   }, [form, t])
 
-  const onFinishInfo = async (values: any) => {
+  const onFinishInfo = async (values: UpdateProfilePayload) => {
     try {
       setSaving(true)
-      await userApi.updateProfile({
-        name: values.name,
-        phone: values.phone,
-        address: values.address,
-        gender: values.gender,
-        nationality: values.nationality,
-        dob: values.dob?.format('YYYY-MM-DD')
-      })
-      setUserProfile((prev: any) => ({ ...prev, ...values }))
+      const updated = await userApi.updateProfile(values)
+      setUserProfile(updated)
       toast.success(t('profile:updateSuccess'))
-    } catch (error: any) {
-      const msg = error.response?.data?.message || t('profile:updateError')
-      toast.error(msg)
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, t('profile:updateError')))
     } finally {
       setSaving(false)
     }
   }
 
-  const onFinishPassword = async () => {
+  const onFinishPassword = async (values: PasswordFormValues) => {
     try {
       setSaving(true)
-      // Mocking password change
-      await new Promise(resolve => setTimeout(resolve, 500))
+      await userApi.changePassword({
+        currentPassword: values.oldPassword,
+        newPassword: values.newPassword,
+      })
       toast.success(t('profile:changePasswordSuccess'))
       passwordForm.resetFields()
-    } catch (error: any) {
-      toast.error(t('profile:changePasswordError'))
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, t('profile:changePasswordError')))
     } finally {
       setSaving(false)
     }
@@ -103,7 +104,8 @@ export const ProfilePage = () => {
               src={userProfile?.avatarUrl}
               className="bg-navy-light text-white mb-6 shadow-md"
             />
-            <h2 className="text-2xl mt-2 font-semibold text-center text-navy">{userProfile?.name}</h2>
+            <h2 className="text-2xl mt-2 font-semibold text-center text-navy">{userProfile?.fullName}</h2>
+            <span className="text-gray-400 text-sm">@{userProfile?.username}</span>
             <div className="flex flex-col items-center gap-3 mt-4 text-gray-500 text-sm w-full">
               <div className="flex items-center gap-3 w-full justify-center">
                 <MailOutlined className="text-gold text-lg" />
@@ -132,18 +134,26 @@ export const ProfilePage = () => {
                 key="1"
               >
                 <div className="p-6 md:p-8 max-w-4xl mx-auto">
-                  <Form 
-                    form={form} 
-                    layout="vertical" 
+                  <Form<UpdateProfilePayload>
+                    form={form}
+                    layout="vertical"
                     onFinish={onFinishInfo}
                     size="large"
                   >
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                       
-                      {/* Thêm prefixSelector bên trong render hoặc lấy ra ngoài đều được, tôi sẽ đặt trực tiếp */}
+                      {/* Chỉ field có thật trong bảng `users` (bridge.md): fullName, phone.
+                          `username`/`email` hiển thị read-only, không cho sửa ở đây — email
+                          gắn với đăng nhập/kích hoạt, username là định danh unique. */}
+                      <Form.Item
+                        label={<span className="font-medium text-gray-700">{t('profile:username')}</span>}
+                      >
+                        <Input value={userProfile?.username} disabled className="rounded-lg h-12" />
+                      </Form.Item>
+
                       <Form.Item
                         label={<span className="font-medium text-gray-700">{t('common:common.name')}</span>}
-                        name="name"
+                        name="fullName"
                         rules={[{ required: true, message: t('profile:nameRequired') }]}
                       >
                         <Input prefix={<UserOutlined className="text-gray-400 mr-2" />} className="rounded-lg h-12" />
@@ -152,8 +162,9 @@ export const ProfilePage = () => {
                       <Form.Item
                         label={<span className="font-medium text-gray-700">{t('profile:phone')}</span>}
                         name="phone"
+                        className="md:col-span-2"
                       >
-                        <Input 
+                        <Input
                           addonBefore={
                             <Form.Item name="dialCode" noStyle initialValue="+84">
                               <Select popupMatchSelectWidth={false} style={{ width: 100 }} className="h-full">
@@ -165,57 +176,9 @@ export const ProfilePage = () => {
                               </Select>
                             </Form.Item>
                           }
-                          className="rounded-lg h-12" 
+                          className="rounded-lg h-12"
                           style={{ padding: 0 }}
                         />
-                      </Form.Item>
-
-                      <Form.Item
-                        label={<span className="font-medium text-gray-700">{t('profile:dob')}</span>}
-                        name="dob"
-                      >
-                        <DatePicker className="w-full rounded-lg h-12" format="DD/MM/YYYY" />
-                      </Form.Item>
-
-                      <Form.Item
-                        label={<span className="font-medium text-gray-700">{t('profile:gender')}</span>}
-                        name="gender"
-                      >
-                        <Select className="rounded-lg h-12">
-                          <Option value="male">{t('profile:male')}</Option>
-                          <Option value="female">{t('profile:female')}</Option>
-                          <Option value="other">{t('profile:other')}</Option>
-                        </Select>
-                      </Form.Item>
-                      
-                      <Form.Item
-                        label={<span className="font-medium text-gray-700">{t('profile:nationality')}</span>}
-                        name="nationality"
-                        className="md:col-span-2"
-                      >
-                        <Select 
-                          showSearch
-                          className="h-12 w-full"
-                          placeholder={t('profile:nationality')}
-                          optionFilterProp="label"
-                          options={COUNTRIES.map(c => ({
-                            value: c.name, // Lưu thẳng tên quốc gia để Form dễ xử lý
-                            label: (
-                              <div className="flex items-center gap-2">
-                                <span>{c.flag}</span>
-                                <span>{c.name}</span>
-                              </div>
-                            )
-                          }))}
-                        />
-                      </Form.Item>
-
-                      <Form.Item
-                        label={<span className="font-medium text-gray-700">{t('profile:address')}</span>}
-                        name="address"
-                        className="md:col-span-2"
-                      >
-                        <Input.TextArea rows={4} className="rounded-lg p-3" />
                       </Form.Item>
                     </div>
 
@@ -239,9 +202,9 @@ export const ProfilePage = () => {
                 key="2"
               >
                 <div className="p-6 md:p-8 max-w-lg mx-auto">
-                  <Form 
-                    form={passwordForm} 
-                    layout="vertical" 
+                  <Form<PasswordFormValues>
+                    form={passwordForm}
+                    layout="vertical"
                     onFinish={onFinishPassword}
                     size="large"
                   >

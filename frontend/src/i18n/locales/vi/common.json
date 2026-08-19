@@ -6,27 +6,27 @@
   "common": {
     "save": "Lưu",
     "cancel": "Huỷ",
-    "confirm": "Xác Nhận",
-    "loading": "Đang Tải...",
-    "search": "Tìm Kiếm",
-    "name": "Họ Tên"
+    "confirm": "Xác nhận",
+    "loading": "Đang tải...",
+    "search": "Tìm kiếm",
+    "name": "Họ tên"
   },
   "auth": {
-    "login": "Đăng Nhập",
-    "logout": "Đăng Xuất",
+    "login": "Đăng nhập",
+    "logout": "Đăng xuất",
     "email": "Email",
-    "password": "Mật Khẩu"
+    "password": "Mật khẩu"
   },
   "language": {
     "vi": "Tiếng Việt",
     "en": "English"
   },
   "navigation": {
-    "home": "Trang Chủ",
+    "home": "Trang chủ",
     "rooms": "Phòng",
-    "myBookings": "Booking Của Tôi",
-    "admin": "Quản Trị",
-    "profile": "Tài Khoản",
-    "logout": "Đăng Xuất"
+    "myBookings": "Booking của tôi",
+    "admin": "Quản trị",
+    "profile": "Tài khoản",
+    "logout": "Đăng xuất"
   }
 }
