@@ -9,7 +9,9 @@
   },
   "BOOKING": {
     "NOT_FOUND": "Không tìm thấy yêu cầu đặt phòng.",
-    "DELETED_SUCCESS": "Đã xóa yêu cầu đặt phòng thành công."
+    "DELETED_SUCCESS": "Đã xóa yêu cầu đặt phòng thành công.",
+    "CANCEL_SUCCESS": "Đã hủy yêu cầu đặt phòng thành công.",
+    "REQUEST_FAIL" : "Yêu cầu đặt phòng thất bại."
   },
   "AUTH": {
     "EMAIL_EXISTED": "Email này đã được đăng ký trong hệ thống.",

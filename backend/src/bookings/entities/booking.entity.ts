@@ -82,7 +82,8 @@ export class Booking {
   totalPrice!: number;
 
   @Column({
-    length: 20,
+    type:'enum',
+    enum:BookingStatus,
     default: BookingStatus.PENDING,
   })
   status!: BookingStatus;

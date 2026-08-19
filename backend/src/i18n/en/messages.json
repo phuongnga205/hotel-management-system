@@ -9,7 +9,10 @@
   },
   "BOOKING": {
     "NOT_FOUND": "Booking not found.",
-    "DELETED_SUCCESS": "Booking request deleted successfully."
+    "DELETED_SUCCESS": "Booking request deleted successfully.",
+    "CANCEL_SUCCESS": "Booking request cancelled successfully.",
+    "REQUEST_FAIL" : "Booking request failed."
+
   },
   "AUTH": {
     "EMAIL_EXISTED": "This email is already registered.",

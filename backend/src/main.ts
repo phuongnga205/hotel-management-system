@@ -31,7 +31,17 @@ async function bootstrap() {
     .setTitle('Hotel API (Neon DB Sync)')
     .setDescription('Tài liệu API quản lý khách sạn')
     .setVersion('1.0')
-    .addBearerAuth()
+    .addBearerAuth(
+    {
+      type: 'http',
+      scheme: 'bearer',
+      bearerFormat: 'JWT',
+      name: 'Authorization',
+      description: 'Enter JWT token',
+      in: 'header',
+    },
+    'access-token',
+  )
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup(API_DOCS_PATH, app, document);

@@ -6,18 +6,27 @@ import {
   Patch,
   Param,
   Delete,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { CancelBookingDto } from './dto/cancel-booking.dto';
 
 @Controller('bookings')
 export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
 
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard)
   @Post()
-  create(@Body() createBookingDto: CreateBookingDto) {
-    return this.bookingsService.create(createBookingDto);
+  create(
+    @Req() req,
+    @Body() createBookingDto: CreateBookingDto) {
+    return this.bookingsService.create(createBookingDto, req.user.id);
   }
 
   @Get()
@@ -35,8 +44,14 @@ export class BookingsController {
     return this.bookingsService.update(id, updateBookingDto);
   }
 
+
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.bookingsService.remove(id);
+  cancelBooking(
+    @Param('id') id: string,
+    @Body() reason:CancelBookingDto,
+) {
+    return this.bookingsService.cancel(id,reason);
   }
 }
