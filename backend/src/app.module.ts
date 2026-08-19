@@ -13,6 +13,7 @@ import { AmenitiesModule } from './amenities/amenities.module';
 import { ImagesModule } from './images/images.module';
 import { PaymentsModule } from './payments/payments.module';
 import { MailModule } from './mail/mail.module';
+import { RoomTypesModule } from './room-types/room-types.module';
 import {
   I18nModule,
   AcceptLanguageResolver,
@@ -96,6 +97,7 @@ const DEFAULT_THROTTLE_LIMIT = 10;
     AuthModule,
     UsersModule,
     RoomsModule,
+    RoomTypesModule,
     BookingsModule,
 
     PaymentsModule,

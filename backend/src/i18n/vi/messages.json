@@ -4,6 +4,31 @@
   "ROOM_NOT_FOUND": "Không tìm thấy phòng.",
   "ROOM_NUMBER_EXISTS": "Số phòng đã tồn tại.",
   "ROOM_SAVE_FAILED": "Không thể lưu thông tin phòng. Vui lòng thử lại.",
+  "ROOM": {
+    "NOT_FOUND": "Không tìm thấy phòng.",
+    "NUMBER_EXISTS": "Số phòng đã tồn tại.",
+    "AMENITY_NOT_FOUND": "Một hoặc nhiều tiện nghi không tồn tại.",
+    "ROOM_AMENITY_NOT_FOUND": "Tiện nghi chưa được gán cho phòng này.",
+    "AMENITIES_ADDED": "Đã thêm tiện nghi vào phòng thành công.",
+    "AMENITY_REMOVED": "Đã xóa tiện nghi khỏi phòng thành công.",
+    "IMAGE_NOT_FOUND": "Không tìm thấy ảnh của phòng.",
+    "IMAGE_REMOVED": "Đã xóa ảnh phòng thành công.",
+    "IMAGE_FILE_REQUIRED": "Vui lòng chọn tệp ảnh.",
+    "IMAGE_TYPE_UNSUPPORTED": "Chỉ hỗ trợ ảnh JPEG, PNG và WebP.",
+    "IMAGE_CONTENT_INVALID": "Nội dung tệp tải lên không phải là ảnh hợp lệ.",
+    "IMAGE_TOO_LARGE": "Ảnh phòng không được vượt quá 5 MB.",
+    "IMAGE_UPLOAD_FAILED": "Không thể tải ảnh phòng lên. Vui lòng thử lại.",
+    "THUMBNAIL_EXISTS": "Đang có yêu cầu cập nhật ảnh đại diện khác. Vui lòng thử lại."
+  },
+  "AMENITY": {
+    "NOT_FOUND": "Không tìm thấy tiện nghi.",
+    "NAME_EXISTS": "Tên tiện nghi đã tồn tại."
+  },
+  "ROOM_TYPE": {
+    "NOT_FOUND": "Không tìm thấy loại phòng.",
+    "NAME_EXISTS": "Tên loại phòng đã tồn tại.",
+    "IN_USE": "Không thể xóa loại phòng đang được sử dụng."
+  },
   "MAIL": {
     "LOG_NOT_FOUND": "Không tìm thấy nhật ký email {id}."
   },

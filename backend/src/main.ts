@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { I18nValidationExceptionFilter, I18nValidationPipe } from 'nestjs-i18n';
@@ -8,10 +9,12 @@ import {
   DEFAULT_SERVER_PORT,
   ENVIRONMENT_KEYS,
 } from './config/environment.constants';
+import { resolve } from 'node:path';
+import { ROOM_IMAGE } from './rooms/constants/room-image.constants';
 // AppDataSource is intentionally not imported here; migrations are run via scripts
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.setGlobalPrefix('api/v1');
   app.useGlobalFilters(new I18nValidationExceptionFilter());
@@ -39,6 +42,15 @@ async function bootstrap() {
   // Migrations are not run automatically on startup. Use `npm run migration:run` to apply migrations.
 
   const configService = app.get(ConfigService);
+  const roomUploadDirectory = resolve(
+    configService.get<string>(
+      ENVIRONMENT_KEYS.ROOM_UPLOAD_DIRECTORY,
+      ROOM_IMAGE.DEFAULT_UPLOAD_DIRECTORY,
+    ),
+  );
+  app.useStaticAssets(roomUploadDirectory, {
+    prefix: ROOM_IMAGE.PUBLIC_PREFIX,
+  });
   const port = configService.get<number>(
     ENVIRONMENT_KEYS.PORT,
     DEFAULT_SERVER_PORT,

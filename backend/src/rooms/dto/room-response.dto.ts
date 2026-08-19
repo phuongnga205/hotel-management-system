@@ -13,7 +13,7 @@ export class RoomResponseDto {
   name!: string;
 
   @Expose()
-  roomType!: string | null;
+  roomTypeId!: string;
 
   @Expose()
   description!: string | null;
