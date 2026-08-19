@@ -28,4 +28,8 @@ export class RedisUtil implements OnModuleInit, OnModuleDestroy {
   async findOne(key: string): Promise<string | null> {
     return this.client.get(key);
   }
+
+  async delete(key: string): Promise<void> {
+    await this.client.del(key);
+  }
 }
