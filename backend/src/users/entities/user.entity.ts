@@ -57,10 +57,27 @@ export class User {
   password!: string;
 
   @Column({
+    name: 'full_name',
+    type: 'varchar',
+    length: 150,
+    nullable: true,
+  })
+  fullName?: string | null;
+
+  @Column({
     length: 20,
     default: UserStatus.INACTIVE,
   })
   status!: UserStatus;
+
+  // Set the moment the account activation succeeds (email verification),
+  // distinct from `createdAt`. Stays null while status = INACTIVE.
+  @Column({
+    name: 'activated_at',
+    type: 'timestamptz',
+    nullable: true,
+  })
+  activatedAt?: Date | null;
 
   @Column({
     name: 'avatar_url',
