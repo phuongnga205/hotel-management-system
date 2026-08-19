@@ -131,7 +131,7 @@ export class BookingsService {
       );
     }
 
-    const roomId = updateDto.roomId ?? booking.roomId;
+    const roomId =booking.roomId;
     const checkInDate =
       updateDto.checkInDate ?? booking.checkInDate;
     const checkOutDate =

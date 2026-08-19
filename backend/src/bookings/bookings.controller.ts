@@ -30,10 +30,6 @@ export class BookingsController {
     return this.bookingsService.create(createBookingDto, req.user.id);
   }
 
-  @Get()
-  findAll() {
-    return this.bookingsService.findAll();
-  }
 
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard)
