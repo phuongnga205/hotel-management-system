@@ -19,7 +19,9 @@ export class BookingsService {
     private readonly i18n: I18nService,
   ) { }
   async create(createBookingDto: CreateBookingDto, userId: string) {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+    }).format(new Date());
 
     if (createBookingDto.checkInDate < today) {
       throw new BadRequestException(
@@ -62,48 +64,81 @@ export class BookingsService {
     return `This action returns all bookings`;
   }
 
-  findOne(id: string) {
-    return `This action returns a #${id} booking`;
+  async findOne(id: string, userId: string) {
+    const booking = await this.bookingsRepository.findOne({
+      where: {
+        id: id,
+        userId: userId
+      }
+    })
+    if (!booking) {
+      throw new NotFoundException(this.i18n.t('messages.BOOKING.NOT_FOUND'));
+    }
+    return new BookingResponseDto(booking);
   }
 
-  update(id: string, updateBookingDto: UpdateBookingDto) {
-    void updateBookingDto;
-    return `This action updates a #${id} booking`;
+  async findHistory(
+    userId: string,
+    page: number,
+    limit: number,
+  ) {
+    const skip = (page - 1) * limit;
+
+    const [bookings, total] = await this.bookingsRepository
+      .createQueryBuilder('booking')
+      .where('booking.user_id = :userId', { userId })
+      .orderBy('booking.created_at', 'DESC')
+      .skip(skip)
+      .take(limit)
+      .getManyAndCount();
+
+    return {
+      data: bookings,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
-  async cancel(id: string, userId: string, reason: CancelBookingDto) {
+  async update(id: string, userId: string, updateBookingDto: UpdateBookingDto) {
     const result = await this.bookingsRepository.update(
-  {
-    id,
-    userId,
-    status: BookingStatus.PENDING,
-  },
-  {
-    status: BookingStatus.CANCELLED,
-    cancelReason: reason.cancelReason,
-  },
-);
+      {
+        id,
+        userId,
+        status: BookingStatus.PENDING,
+      },
+    
+        updateBookingDto,
+    );
 
-    /*if (!booking) {
+    if (result.affected === 0) {
       throw new NotFoundException(
         this.i18n.t('messages.BOOKING.NOT_FOUND'),
       );
     }
-
-    if (booking.status !== BookingStatus.PENDING) {
-      throw new BadRequestException(
-        this.i18n.t('messages.BOOKING.CANNOT_CANCEL'),
-      );
+    return {
+      message: this.i18n.t("messages.BOOKING.UPDATED_SUCCESS")
     }
+  }
+
+  async cancel(id: string, userId: string, reason: CancelBookingDto) {
     const result = await this.bookingsRepository.update(
-      id,
       {
+        id,
+        userId,
+        status: BookingStatus.PENDING,
+      },
+      {
+        status: BookingStatus.CANCELLED,
         cancelReason: reason.cancelReason,
-        status: BookingStatus.CANCELLED
-      }
-    );*/
+      },
+    );
+
     if (result.affected === 0) {
-      throw new NotFoundException(this.i18n.t('messages.BOOKING.CANNOT_CANCEL'));
+      throw new BadRequestException(this.i18n.t('messages.BOOKING.CANNOT_CANCEL'));
     }
     return {
       message: this.i18n.t('messages.BOOKING.CANCEL_SUCCESS'),

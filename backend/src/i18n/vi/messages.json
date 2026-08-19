@@ -9,6 +9,7 @@
   },
   "BOOKING": {
     "NOT_FOUND": "Không tìm thấy yêu cầu đặt phòng.",
+    "UPDATED_SUCCESS": "Đã cập nhật yêu cầu đặt phòng thành công.",
     "DELETED_SUCCESS": "Đã xóa yêu cầu đặt phòng thành công.",
     "CANCEL_SUCCESS": "Đã hủy yêu cầu đặt phòng thành công.",
     "REQUEST_FAIL" : "Yêu cầu đặt phòng thất bại.",

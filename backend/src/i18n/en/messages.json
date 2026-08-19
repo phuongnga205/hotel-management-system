@@ -9,6 +9,7 @@
   },
   "BOOKING": {
     "NOT_FOUND": "Booking not found.",
+    "UPDATED_SUCCESS": "Booking request updated successfully.",
     "DELETED_SUCCESS": "Booking request deleted successfully.",
     "CANCEL_SUCCESS": "Booking request cancelled successfully.",
     "REQUEST_FAIL" : "Booking request failed.",
