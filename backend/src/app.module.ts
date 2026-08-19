@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bullmq';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
@@ -13,6 +14,7 @@ import { AmenitiesModule } from './amenities/amenities.module';
 import { ImagesModule } from './images/images.module';
 import { PaymentsModule } from './payments/payments.module';
 import { MailModule } from './mail/mail.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import {
   I18nModule,
   AcceptLanguageResolver,
@@ -42,6 +44,11 @@ const DEFAULT_THROTTLE_LIMIT = 10;
         limit: DEFAULT_THROTTLE_LIMIT,
       },
     ]),
+
+    // Sự kiện nội bộ (UserRegistered, BookingStatusChanged...) — global nên
+    // mọi module nghe (@OnEvent) hoặc bắn (EventEmitter2.emit) không cần
+    // import EventEmitterModule riêng lẻ.
+    EventEmitterModule.forRoot(),
 
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -106,6 +113,7 @@ const DEFAULT_THROTTLE_LIMIT = 10;
     TokenModule,
 
     MailModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -5,11 +5,43 @@
   "ROOM_NUMBER_EXISTS": "Room number already exists.",
   "ROOM_SAVE_FAILED": "Unable to save room information. Please try again.",
   "MAIL": {
-    "LOG_NOT_FOUND": "Email log {id} not found."
+    "LOG_NOT_FOUND": "Email log {id} not found.",
+    "TEMPLATES": {
+      "ACCOUNT_ACTIVATION": {
+        "SUBJECT": "Activate your Hotel Management System account",
+        "BODY": "<p>Hello {username},</p><p>Your account activation OTP code is:</p><p style=\"font-size:24px;font-weight:bold;letter-spacing:4px;\">{otp}</p><p>This code is valid for 10 minutes. Please enter it on the activation screen.</p>"
+      },
+      "PASSWORD_RESET": {
+        "SUBJECT": "Password reset request",
+        "BODY": "<p>Hello {username},</p><p>You (or someone else) requested a password reset. Your OTP code is:</p><p style=\"font-size:24px;font-weight:bold;letter-spacing:4px;\">{otp}</p><p>This code is valid for 10 minutes. If you did not request this, please ignore this email.</p>"
+      },
+      "PASSWORD_CHANGED": {
+        "SUBJECT": "Your password has been changed",
+        "BODY": "<p>Hello {username},</p><p>Your account password was just changed successfully. If this wasn't you, please contact us immediately.</p>"
+      },
+      "BOOKING_STATUS_CHANGED": {
+        "SUBJECT": "Booking #{bookingId} status update",
+        "BODY": "<p>Hello {username},</p><p>Your booking #{bookingId} status has changed to: <strong>{status}</strong>.</p>"
+      },
+      "REVIEW_DELETED": {
+        "SUBJECT": "Your review has been removed",
+        "BODY": "<p>Hello {username},</p><p>Your review has been removed by an administrator for violating our guidelines.</p>"
+      }
+    }
   },
   "BOOKING": {
     "NOT_FOUND": "Booking not found.",
-    "DELETED_SUCCESS": "Booking request deleted successfully."
+    "DELETED_SUCCESS": "Booking request deleted successfully.",
+    "CANCEL_SUCCESS": "Booking request cancelled successfully.",
+    "CANCEL_FORBIDDEN": "You do not have permission to cancel this booking request.",
+    "CANCEL_INVALID_STATUS": "This booking request cannot be cancelled in its current status.",
+    "STATUS_LABEL": {
+      "PENDING": "Pending",
+      "ACCEPTED": "Accepted",
+      "REJECTED": "Rejected",
+      "CANCELLED": "Cancelled",
+      "EXPIRED": "Expired"
+    }
   },
   "AUTH": {
     "EMAIL_EXISTED": "This email is already registered.",
@@ -20,12 +52,31 @@
     "UNAUTHORIZED": "Unauthorized or session expired.",
     "TOKEN_BLACKLISTED": "Token has been invalidated (logged out).",
     "USER_ALREADY_EXISTS": "User with this email, username, or phone already exists.",
-    "USER_INACTIVE": "Your account has been locked or is inactive."
+    "USER_INACTIVE": "Your account has been locked or is inactive.",
+    "ACTIVATE_SUCCESS": "Account activated successfully.",
+    "ACTIVATE_TOKEN_INVALID": "Activation OTP is invalid or expired.",
+    "FORGOT_PASSWORD_SUCCESS": "If the email exists in our system, a password reset OTP has been sent.",
+    "RESET_PASSWORD_SUCCESS": "Password reset successfully.",
+    "RESET_TOKEN_INVALID": "Password reset OTP is invalid or expired."
+  },
+  "USERS": {
+    "CREATE_SUCCESS": "User created successfully.",
+    "FIND_ALL_SUCCESS": "Users retrieved successfully.",
+    "FIND_ONE_SUCCESS": "User {id} retrieved successfully.",
+    "UPDATE_SUCCESS": "User {id} updated successfully.",
+    "REMOVE_SUCCESS": "User {id} removed successfully.",
+    "CHANGE_PASSWORD_SUCCESS": "Password changed successfully.",
+    "CHANGE_PASSWORD_INVALID_CURRENT": "Current password is incorrect."
+  },
+  "REVIEWS": {
+    "NOT_FOUND": "Review not found.",
+    "ADMIN_DELETE_SUCCESS": "Review deleted successfully."
   },
   "VALIDATION": {
     "IS_EMAIL": "Email format is invalid.",
     "NOT_EMPTY": "{property} should not be empty.",
     "MIN_LENGTH": "{property} must be longer than or equal to {constraints.0} characters.",
-    "IS_STRING": "{property} must be a string."
+    "IS_STRING": "{property} must be a string.",
+    "OTP_LENGTH": "OTP must be exactly {constraints.0} digits."
   }
 }

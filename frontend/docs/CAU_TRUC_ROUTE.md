@@ -145,6 +145,20 @@ Tất cả nằm dưới `AdminLayout` + `AdminGuard` (role !== admin → `/403`
       `createBrowserRouter` với nested routes theo 3 layout ở trên.
 - [ ] Viết `AuthGuard`, `AdminGuard` (kiểm tra token/role từ state auth — xem
       `src/api/axiosClient.ts` cho phần lấy/xoá token).
+- [x] **Xử lý Token hết hạn** (bổ sung vào phần Guard/Auth) — đã implement ở
+      `src/api/axiosClient.ts`: response interceptor bắt lỗi `401
+      Unauthorized` từ BE, tự động `clearAccessToken()` (xoá token khỏi
+      `localStorage`) rồi `router.navigate(ROUTES.LOGIN)` để đá user về
+      `/login`. Không dùng `window.location.href` (tránh reload cứng cả
+      trang, mất state SPA). **Lưu ý cho các thành viên khác khi thêm
+      API mới**: interceptor này tự chạy cho mọi request qua `axiosClient`,
+      **trừ** các endpoint liệt kê trong `AUTH_ENDPOINTS` (hiện chỉ có
+      `POST /auth/login`) — vì 401 từ chính API đăng nhập là lỗi sai mật
+      khẩu (nghiệp vụ bình thường), không phải token hết hạn, không được
+      tự động đá về `/login` (sẽ làm mất nội dung form/thông báo lỗi đang
+      hiện). Nếu thêm 1 API public khác mà backend cũng có thể trả 401 vì
+      lý do nghiệp vụ (không phải hết hạn token), phải thêm URL đó vào
+      `AUTH_ENDPOINTS` tương tự.
 - [ ] Style guide UI (áp dụng Tailwind + theme Ant Design) — làm sau, không
       block việc dựng khung route.
 - [ ] Xử lý riêng lỗi `409 Conflict` khi gọi `POST /rooms/:roomId/book` (race
