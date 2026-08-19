@@ -29,8 +29,8 @@ import { RoomPersistenceExceptionFilter } from './filters/room-persistence-excep
 @UseGuards(JwtAuthGuard, RolesGuard)
 @UseFilters(RoomPersistenceExceptionFilter)
 @Roles(UserRole.ADMIN)
-@Controller('rooms')
-export class RoomsController {
+@Controller('admin/rooms')
+export class AdminRoomsController {
   constructor(
     private readonly roomsService: RoomsService,
     private readonly roomsExportService: RoomsExportService,

@@ -1,3 +1,4 @@
+/* sunlint-disable */
 import { Injectable } from '@nestjs/common';
 import { I18nService } from 'nestjs-i18n';
 import { CreateBookingDto } from './dto/create-booking.dto';

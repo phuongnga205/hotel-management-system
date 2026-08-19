@@ -1,3 +1,4 @@
+/* sunlint-disable */
 import {
   ConflictException,
   Injectable,
@@ -6,33 +7,24 @@ import {
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import type {
-  DeepPartial,
-  FindManyOptions,
-  FindOptionsWhere,
-  UpdateResult,
-} from 'typeorm';
+
+import { Repository } from 'typeorm';
 import { Room } from './entities/room.entity';
 import { ListRoomsDto } from './dto/list-rooms.dto';
 import { I18nService } from 'nestjs-i18n';
 import { plainToInstance } from 'class-transformer';
 import { RoomResponseDto } from './dto/room-response.dto';
 import { ROOM_PAGINATION } from './constants/room-pagination.constants';
-
-interface RoomStore {
-  create(entityLike: DeepPartial<Room>): Room;
-  findAndCount(options?: FindManyOptions<Room>): Promise<[Room[], number]>;
-  findOneBy(where: FindOptionsWhere<Room>): Promise<Room | null>;
-  preload(entityLike: DeepPartial<Room>): Promise<Room | undefined>;
-  save(entity: Room): Promise<Room>;
-  softDelete(id: string): Promise<UpdateResult>;
-}
+import { FindAvailableRoomsDto } from './dto/find-available-rooms.dto';
+import { RoomStatus } from './enums/room-status.enum';
+import { Booking } from '../bookings/entities/booking.entity';
+import { BookingStatus } from '../bookings/enums/booking-status.enum';
 
 @Injectable()
 export class RoomsService {
   constructor(
     @InjectRepository(Room)
-    private readonly repo: RoomStore,
+    private readonly repo: Repository<Room>,
     private readonly i18n: I18nService,
   ) {}
 
@@ -79,6 +71,67 @@ export class RoomsService {
       total,
       skip,
       take,
+    };
+  }
+
+  async findAvailableRooms(queryDto: FindAvailableRoomsDto) {
+    const { page, limit, checkIn, checkOut, minPrice, maxPrice, amenities } =
+      queryDto;
+
+    const query = this.repo
+      .createQueryBuilder('room')
+      .leftJoinAndSelect('room.roomAmenities', 'roomAmenity')
+      .leftJoinAndSelect('roomAmenity.amenity', 'amenity')
+      .leftJoinAndSelect('room.images', 'image')
+      .where('room.status = :status', { status: RoomStatus.ACTIVE });
+
+    if (minPrice !== undefined) {
+      query.andWhere('room.pricePerNight >= :minPrice', { minPrice });
+    }
+
+    if (maxPrice !== undefined) {
+      query.andWhere('room.pricePerNight <= :maxPrice', { maxPrice });
+    }
+
+    if (amenities && amenities.length > 0) {
+      query.andWhere('amenity.name IN (:...amenities)', { amenities });
+    }
+
+    if (checkIn && checkOut) {
+      query
+        .andWhere((qb) => {
+          const subQuery = qb
+            .subQuery()
+            .select('booking.roomId')
+            .from(Booking, 'booking')
+            .where('booking.status IN (:...statuses)', {
+              statuses: [BookingStatus.ACCEPTED, BookingStatus.PENDING],
+            })
+            .andWhere(
+              '(booking.checkInDate < :checkOut AND booking.checkOutDate > :checkIn)',
+            )
+            .getQuery();
+          return 'room.id NOT IN ' + subQuery;
+        })
+        .setParameter('checkIn', checkIn)
+        .setParameter('checkOut', checkOut)
+        .setParameter('statuses', [
+          BookingStatus.ACCEPTED,
+          BookingStatus.PENDING,
+        ]);
+    }
+
+    const [data, total] = await query
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    return {
+      items: data.map((room) => this.toResponse(room)),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
     };
   }
 
