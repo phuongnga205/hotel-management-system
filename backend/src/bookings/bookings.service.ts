@@ -18,6 +18,8 @@ export class BookingsService {
     @InjectRepository(Room) private readonly roomsRepository: Repository<Room>,
     private readonly i18n: I18nService,
   ) { }
+
+  //CREATE
   async create(createBookingDto: CreateBookingDto, userId: string) {
     const today = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'Asia/Ho_Chi_Minh',
@@ -93,7 +95,9 @@ export class BookingsService {
       .getManyAndCount();
 
     return {
-      data: bookings,
+      data: bookings.map(
+        booking => new BookingResponseDto(booking),
+      ),
       meta: {
         page,
         limit,
@@ -103,25 +107,89 @@ export class BookingsService {
     };
   }
 
-  async update(id: string, userId: string, updateBookingDto: UpdateBookingDto) {
-    const result = await this.bookingsRepository.update(
-      {
+  async update(
+    id: string,
+    userId: string,
+    updateDto: UpdateBookingDto,
+  ) {
+    const booking = await this.bookingsRepository.findOne({
+      where: {
         id,
         userId,
-        status: BookingStatus.PENDING,
       },
-    
-        updateBookingDto,
-    );
+    });
 
-    if (result.affected === 0) {
+    if (!booking) {
       throw new NotFoundException(
         this.i18n.t('messages.BOOKING.NOT_FOUND'),
       );
     }
-    return {
-      message: this.i18n.t("messages.BOOKING.UPDATED_SUCCESS")
+
+    if (booking.status !== BookingStatus.PENDING) {
+      throw new BadRequestException(
+        this.i18n.t('messages.BOOKING.CANNOT_UPDATE'),
+      );
     }
+
+    const roomId = updateDto.roomId ?? booking.roomId;
+    const checkInDate =
+      updateDto.checkInDate ?? booking.checkInDate;
+    const checkOutDate =
+      updateDto.checkOutDate ?? booking.checkOutDate;
+
+    // Validate date
+    const today = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+    }).format(new Date());
+
+    if (checkInDate < today) {
+      throw new BadRequestException(
+        this.i18n.t('messages.BOOKING.CHECK_IN_DATE_IN_PAST'),
+      );
+    }
+
+    if (checkOutDate <= checkInDate) {
+      throw new BadRequestException(
+        this.i18n.t('messages.BOOKING.INVALID_DATE_RANGE'),
+      );
+    }
+
+    // Validate room
+    const room = await this.roomsRepository.findOne({
+      where: {
+        id: roomId,
+      },
+    });
+
+    if (!room) {
+      throw new NotFoundException(
+        this.i18n.t('messages.ROOM_NOT_FOUND'),
+      );
+    }
+
+    // Update booking data
+    booking.roomId = roomId;
+    booking.checkInDate = checkInDate;
+    booking.checkOutDate = checkOutDate;
+
+    // Price MUST be calculated by backend
+    booking.pricePerNight = room.pricePerNight;
+
+    const checkIn = new Date(`${checkInDate}T00:00:00Z`);
+    const checkOut = new Date(`${checkOutDate}T00:00:00Z`);
+
+    const nights =
+      (checkOut.getTime() - checkIn.getTime()) /
+      (1000 * 60 * 60 * 24);
+
+    booking.totalPrice =
+      nights * Number(room.pricePerNight);
+
+    await this.bookingsRepository.save(booking);
+
+    return {
+      message: this.i18n.t('messages.BOOKING.UPDATED_SUCCESS'),
+    };
   }
 
   async cancel(id: string, userId: string, reason: CancelBookingDto) {

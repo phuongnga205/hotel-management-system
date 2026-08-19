@@ -14,6 +14,7 @@
     "CANCEL_SUCCESS": "Booking request cancelled successfully.",
     "REQUEST_FAIL" : "Booking request failed.",
     "CANNOT_CANCEL": "Booking request cannot be cancelled.",
+    "CANNOT_UPDATE": "Booking request cannot be updated.",
     "CHECK_IN_DATE_IN_PAST": "Checkin date in the past.",
     "INVALID_DATE_RANGE": "Date range invalid."
 

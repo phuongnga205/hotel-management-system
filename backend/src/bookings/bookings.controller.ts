@@ -8,8 +8,6 @@ import {
   Req,
   UseGuards,
   Query,
-  DefaultValuePipe,
-  ParseIntPipe,
 } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
@@ -17,6 +15,7 @@ import { UpdateBookingDto } from './dto/update-booking.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
+import { BookingHistoryQueryDto } from './dto/booking-history-query.dto';
 
 @Controller('bookings')
 export class BookingsController {
@@ -53,10 +52,9 @@ export class BookingsController {
   })
   findHistory(
     @Req() req,
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query() query: BookingHistoryQueryDto
   ) {
-    return this.bookingsService.findHistory(req.user.id, page, limit);
+    return this.bookingsService.findHistory(req.user.id, query.page, query.limit);
   }
 
   @ApiBearerAuth('access-token')
