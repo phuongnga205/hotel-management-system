@@ -36,9 +36,11 @@ export class CreateRoomDto {
   @MaxLength(150)
   name!: string;
 
-  @ApiProperty({ description: 'Room type ID', example: '1' })
-  @IsNumberString({ no_symbols: true })
-  roomTypeId!: string;
+  @ApiProperty({ description: 'Room type', example: 'Deluxe' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(50)
+  roomType!: string;
 
   @ApiProperty({
     description: 'The description of the room',

@@ -4,8 +4,6 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
-  JoinColumn,
-  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -16,7 +14,6 @@ import { Image } from '../../images/entities/image.entity';
 import { Review } from '../../reviews/entities/review.entity';
 import { RoomViewType } from '../enums/room-view-type.enum';
 import { RoomStatus } from '../enums/room-status.enum';
-import { RoomType } from '../../room-types/entities/room-type.entity';
 import {
   ROOM_STATUS_CHECK_CONSTRAINT,
   ROOM_STATUS_CHECK_EXPRESSION,
@@ -34,15 +31,13 @@ export class Room {
   @Column({ length: 150 })
   name!: string;
 
-  @Column({ name: 'room_type_id', type: 'bigint' })
-  roomTypeId!: string;
-
-  @ManyToOne(() => RoomType, (roomType) => roomType.rooms, {
-    nullable: false,
-    onDelete: 'RESTRICT',
+  @Column({
+    name: 'room_type',
+    type: 'varchar',
+    length: 50,
+    nullable: true,
   })
-  @JoinColumn({ name: 'room_type_id' })
-  roomType!: RoomType;
+  roomType?: string | null;
 
   @Column({ type: 'text', nullable: true })
   description?: string | null;

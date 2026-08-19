@@ -13,15 +13,13 @@ import { Room } from './entities/room.entity';
 import { RoomStatus } from './enums/room-status.enum';
 import { RoomViewType } from './enums/room-view-type.enum';
 import { RoomsService } from './rooms.service';
-import { RoomType } from '../room-types/entities/room-type.entity';
 
 describe('RoomsService', () => {
   const room: Room = {
     id: '1',
     roomNumber: '101',
     name: 'Deluxe Room',
-    roomTypeId: '5',
-    roomType: { id: '5', name: 'Deluxe' } as RoomType,
+    roomType: 'Deluxe',
     description: null,
     viewType: RoomViewType.SEA_VIEW,
     pricePerNight: 1500000,
@@ -34,7 +32,7 @@ describe('RoomsService', () => {
   const createDto: CreateRoomDto = {
     roomNumber: room.roomNumber,
     name: room.name,
-    roomTypeId: room.roomTypeId,
+    roomType: room.roomType as string,
     viewType: room.viewType ?? undefined,
     pricePerNight: room.pricePerNight,
     capacity: room.capacity,
@@ -52,7 +50,6 @@ describe('RoomsService', () => {
     existsBy: jest.fn(),
   };
   const amenityRepository = { countBy: jest.fn() };
-  const roomTypeRepository = { existsBy: jest.fn() };
   const roomAmenityRepository = {
     create: jest.fn(),
     save: jest.fn(),
@@ -70,7 +67,6 @@ describe('RoomsService', () => {
     getRepository: jest.fn((entity: unknown) => {
       if (entity === Room) return roomRepository;
       if (entity === Amenity) return amenityRepository;
-      if (entity === RoomType) return roomTypeRepository;
       if (entity === RoomAmenity) return roomAmenityRepository;
       if (entity === Image) return imageRepository;
       throw new TypeError('Unexpected entity');
@@ -96,7 +92,6 @@ describe('RoomsService', () => {
   it('creates a room and amenity mappings in one transaction', async () => {
     roomRepository.findOneBy.mockResolvedValue(null);
     amenityRepository.countBy.mockResolvedValue(2);
-    roomTypeRepository.existsBy.mockResolvedValue(true);
     roomRepository.create.mockReturnValue(room);
     roomRepository.save.mockResolvedValue(room);
     roomAmenityRepository.create.mockImplementation((value: unknown) => value);

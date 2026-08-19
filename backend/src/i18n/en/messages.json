@@ -24,11 +24,6 @@
     "NOT_FOUND": "Amenity not found.",
     "NAME_EXISTS": "Amenity name already exists."
   },
-  "ROOM_TYPE": {
-    "NOT_FOUND": "Room type not found.",
-    "NAME_EXISTS": "Room type name already exists.",
-    "IN_USE": "Room type cannot be deleted while it is assigned to a room."
-  },
   "MAIL": {
     "LOG_NOT_FOUND": "Email log {id} not found."
   },

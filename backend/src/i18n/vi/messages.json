@@ -24,11 +24,6 @@
     "NOT_FOUND": "Không tìm thấy tiện nghi.",
     "NAME_EXISTS": "Tên tiện nghi đã tồn tại."
   },
-  "ROOM_TYPE": {
-    "NOT_FOUND": "Không tìm thấy loại phòng.",
-    "NAME_EXISTS": "Tên loại phòng đã tồn tại.",
-    "IN_USE": "Không thể xóa loại phòng đang được sử dụng."
-  },
   "MAIL": {
     "LOG_NOT_FOUND": "Không tìm thấy nhật ký email {id}."
   },

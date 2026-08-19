@@ -22,7 +22,6 @@ import { UpdateRoomDto } from './dto/update-room.dto';
 import { Room } from './entities/room.entity';
 import { ROOM_IMAGE } from './constants/room-image.constants';
 import { unlink } from 'node:fs/promises';
-import { RoomType } from '../room-types/entities/room-type.entity';
 
 @Injectable()
 export class RoomsService {
@@ -42,7 +41,6 @@ export class RoomsService {
       if (existingRoom) throw this.roomNumberExistsException();
 
       await this.assertAmenitiesExist(manager, amenityIds);
-      await this.assertRoomTypeExists(manager, roomPayload.roomTypeId);
       const savedRoom = await roomRepository.save(
         roomRepository.create(roomPayload),
       );
@@ -91,9 +89,6 @@ export class RoomsService {
 
   async update(id: string, dto: UpdateRoomDto): Promise<RoomResponseDto> {
     const repository = this.dataSource.getRepository(Room);
-    if (dto.roomTypeId) {
-      await this.assertRoomTypeExists(this.dataSource.manager, dto.roomTypeId);
-    }
     const room = await repository.preload({ id, ...dto });
     if (!room) throw this.roomNotFoundException();
     return this.toResponse(await repository.save(room));
@@ -237,15 +232,6 @@ export class RoomsService {
       id: In(amenityIds),
     });
     if (count !== amenityIds.length) throw this.amenityNotFoundException();
-  }
-
-  private async assertRoomTypeExists(
-    manager: EntityManager,
-    roomTypeId: string,
-  ): Promise<void> {
-    if (!(await manager.getRepository(RoomType).existsBy({ id: roomTypeId }))) {
-      throw new NotFoundException(this.i18n.t('messages.ROOM_TYPE.NOT_FOUND'));
-    }
   }
 
   private toResponse(room: Room): RoomResponseDto {
