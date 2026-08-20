@@ -35,5 +35,14 @@
     "NOT_EMPTY": "{property} should not be empty.",
     "MIN_LENGTH": "{property} must be longer than or equal to {constraints.0} characters.",
     "IS_STRING": "{property} must be a string."
+  },
+  "USERS":{
+    "PHONE_ALREADY_EXISTS":"phone already exists.",
+    "NOT_FOUND": "User not found.",
+    "INVALID_CURRENT_PASSWORD": "Current password invalid.",
+    "EMAIL_ALREADY_EXISTS" : "Email already exist.",
+    "USERNAME_ALREADY_EXISTS": "Username already exist.",
+    "NEW_PASSWORD_MUST_BE_DIFFERENT": "New password must be different.",
+    "CHANGE_PASSWORD_SUCCESS": "Password changed successfully."
   }
 }

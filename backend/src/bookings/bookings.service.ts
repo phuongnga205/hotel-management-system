@@ -62,9 +62,6 @@ export class BookingsService {
     //trên server đã có constraint excl_bookings_no_overlap để tránh lặp rồi nên không cần logic xét ngày trùng nữa
   }
 
-  findAll() {
-    return `This action returns all bookings`;
-  }
 
   async findOne(id: string, userId: string) {
     const booking = await this.bookingsRepository.findOne({
