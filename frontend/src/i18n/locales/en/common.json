@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "Hotel Management System",
+    "name": "Grandeur",
     "setupDescription": "Sample setup: Vite + React + Tailwind CSS + Ant Design + i18n (vi/en). Official routes and style guide will be added later."
   },
   "common": {
@@ -8,7 +8,8 @@
     "cancel": "Cancel",
     "confirm": "Confirm",
     "loading": "Loading...",
-    "search": "Search"
+    "search": "Search",
+    "name": "Name"
   },
   "auth": {
     "login": "Log in",
@@ -19,5 +20,13 @@
   "language": {
     "vi": "Tiếng Việt",
     "en": "English"
+  },
+  "navigation": {
+    "home": "Home",
+    "rooms": "Rooms",
+    "myBookings": "My Bookings",
+    "admin": "Admin",
+    "profile": "Profile",
+    "logout": "Log out"
   }
 }
