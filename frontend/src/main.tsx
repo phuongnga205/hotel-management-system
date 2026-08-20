@@ -9,15 +9,9 @@ import { router } from './router'
 import { ToastContainer } from 'react-toastify'
 import React from 'react'
 
-class ErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { error: Error | null }
-> {
-  state: { error: Error | null } = { error: null }
-
-  static getDerivedStateFromError(error: Error) {
-    return { error }
-  }
+class ErrorBoundary extends React.Component<{children: React.ReactNode}, {error: any}> {
+  constructor(props: any) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(error: any) { return { error }; }
   render() {
     if (this.state.error) {
       return (
