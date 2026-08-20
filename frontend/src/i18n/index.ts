@@ -4,12 +4,16 @@ import LanguageDetector from 'i18next-browser-languagedetector'
 
 import enCommon from './locales/en/common.json'
 import viCommon from './locales/vi/common.json'
+import enAuth from './locales/en/auth.json'
+import viAuth from './locales/vi/auth.json'
+import enProfile from './locales/en/profile.json'
+import viProfile from './locales/vi/profile.json'
 
 export const defaultNS = 'common'
 
 export const resources = {
-  en: { common: enCommon },
-  vi: { common: viCommon },
+  en: { common: enCommon, auth: enAuth, profile: enProfile },
+  vi: { common: viCommon, auth: viAuth, profile: viProfile },
 } as const
 
 i18n
@@ -19,7 +23,7 @@ i18n
     resources,
     fallbackLng: 'vi',
     defaultNS,
-    ns: ['common'],
+    ns: ['common', 'auth', 'profile'],
     interpolation: {
       escapeValue: false, // React đã tự escape XSS rồi
     },

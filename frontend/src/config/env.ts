@@ -16,4 +16,9 @@ function requireEnv(key: string, value: string | undefined): string {
 
 export const env = {
   apiBaseUrl: requireEnv('VITE_API_BASE_URL', import.meta.env.VITE_API_BASE_URL),
+  // Bật/tắt lớp mock cho các API chưa nối data thật (xem `src/api/mocks/`).
+  // Mặc định `true` — hiện chưa insert data thật/BE chưa xong hết endpoint.
+  // Khi sẵn sàng nối thật, set `VITE_USE_MOCK=false` trong `.env`, không cần
+  // sửa code ở page hay ở lớp `api/*.api.ts`.
+  useMock: import.meta.env.VITE_USE_MOCK !== 'false',
 } as const

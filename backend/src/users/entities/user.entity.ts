@@ -12,14 +12,21 @@ import { Exclude } from 'class-transformer';
 import { Booking } from '../../bookings/entities/booking.entity';
 import { Review } from '../../reviews/entities/review.entity';
 
-export enum UserRole {
-  USER = 'USER',
-  ADMIN = 'ADMIN',
-}
-export enum UserStatus {
-  ACTIVE = 'ACTIVE',
-  INACTIVE = 'INACTIVE',
-}
+// Cả `role` lẫn `status` đều là varchar + CHECK constraint (xem @Check bên
+// dưới), không phải Postgres enum — nên phía TS cũng không dùng `enum`, chỉ
+// dùng cặp type + const object: vẫn gọi được `UserRole.ADMIN` như enum cũ ở
+// mọi chỗ đang dùng, nhưng chỉ là plain string, khớp đúng bản chất cột DB.
+export type UserRole = 'USER' | 'ADMIN';
+export const UserRole = {
+  USER: 'USER',
+  ADMIN: 'ADMIN',
+} as const satisfies Record<string, UserRole>;
+
+export type UserStatus = 'ACTIVE' | 'INACTIVE';
+export const UserStatus = {
+  ACTIVE: 'ACTIVE',
+  INACTIVE: 'INACTIVE',
+} as const satisfies Record<string, UserStatus>;
 @Entity('users')
 @Check('chk_users_status', `"status" IN ('ACTIVE','INACTIVE')`)
 @Check('chk_users_role', `"role" IN ('USER','ADMIN')`)
