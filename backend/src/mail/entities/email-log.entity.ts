@@ -12,18 +12,27 @@ import {
   EMAIL_TYPE_MAX_LENGTH,
 } from '../mail.constants';
 
-export enum EmailStatus {
-  PENDING = 'PENDING',
-  SENT = 'SENT',
-  FAILED = 'FAILED',
-}
+// Cột `email_logs.status`/`.type` đều là varchar + CHECK (status) hoặc
+// varchar tự do quy ước theo EmailType (type) — không phải Postgres enum,
+// nên dùng type + const object thay vì TS `enum`, khớp đúng bản chất cột DB.
+export type EmailStatus = 'PENDING' | 'SENT' | 'FAILED';
+export const EmailStatus = {
+  PENDING: 'PENDING',
+  SENT: 'SENT',
+  FAILED: 'FAILED',
+} as const satisfies Record<string, EmailStatus>;
 
-export enum EmailType {
-  ACCOUNT_ACTIVATION = 'account-activation',
-  PASSWORD_RESET = 'password-reset',
-  BOOKING_STATUS_CHANGED = 'booking-status-changed',
-  REVIEW_DELETED = 'review-deleted',
-}
+export type EmailType =
+  | 'account-activation'
+  | 'password-reset'
+  | 'booking-status-changed'
+  | 'review-deleted';
+export const EmailType = {
+  ACCOUNT_ACTIVATION: 'account-activation',
+  PASSWORD_RESET: 'password-reset',
+  BOOKING_STATUS_CHANGED: 'booking-status-changed',
+  REVIEW_DELETED: 'review-deleted',
+} as const satisfies Record<string, EmailType>;
 
 @Entity('email_logs')
 @Check('chk_email_logs_retry_count', '"retry_count" >= 0')
