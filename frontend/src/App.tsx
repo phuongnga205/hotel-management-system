@@ -2,7 +2,7 @@ import { Button, Space } from 'antd'
 import { useTranslation } from 'react-i18next'
 
 function App() {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-8">
@@ -14,20 +14,6 @@ function App() {
         <Button>{t('common.cancel')}</Button>
       </Space>
 
-      <Space>
-        <Button
-          type={i18n.language.startsWith('vi') ? 'primary' : 'default'}
-          onClick={() => i18n.changeLanguage('vi')}
-        >
-          {t('language.vi')}
-        </Button>
-        <Button
-          type={i18n.language.startsWith('en') ? 'primary' : 'default'}
-          onClick={() => i18n.changeLanguage('en')}
-        >
-          {t('language.en')}
-        </Button>
-      </Space>
     </div>
   )
 }

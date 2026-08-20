@@ -1,12 +1,135 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+
 @import "tailwindcss";
 
-/*
- * Global styles.
- * Style guide (màu sắc, spacing, typography chuẩn) sẽ được bổ sung sau.
- * Hiện tại chỉ import Tailwind, không thêm custom theme để tránh xung đột
- * với style guide sẽ chốt sau này.
- */
+@theme {
+  --font-sans: "Inter", sans-serif;
+  --font-serif: "Playfair Display", serif;
+  
+  --color-navy: #0B2545;
+  --color-navy-light: #1A3A5C;
+  --color-navy-dark: #071B30;
+  --color-gold: #C9A84C;
+  --color-gold-light: #E0C97A;
+  --color-gold-dark: #A6832A;
+}
 
-body {
-  margin: 0;
+@layer base {
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    color: var(--color-navy);
+    background-color: #FAFAFA;
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    color: var(--color-navy);
+  }
+
+  h4, h5, h6 {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    color: var(--color-navy);
+  }
+}
+
+@layer components {
+  /* Buttons */
+  .btn-primary {
+    @apply !bg-navy !text-white !font-bold py-3 px-6 rounded-md transition-colors !border-none cursor-pointer;
+  }
+  .btn-primary:hover {
+    @apply !bg-navy-light;
+  }
+
+  .btn-gold {
+    @apply !bg-gold !text-white !font-bold py-3 px-6 rounded-md transition-colors !border-none cursor-pointer;
+  }
+  .btn-gold:hover {
+    @apply !bg-gold-dark;
+  }
+
+  .btn-outline {
+    @apply !bg-transparent border-2 !border-navy !text-navy !font-bold py-3 px-6 rounded-md transition-colors cursor-pointer;
+  }
+  .btn-outline:hover {
+    @apply !bg-navy !text-white;
+  }
+
+  /* Links */
+  .link-standard {
+    @apply font-bold text-navy underline underline-offset-4 decoration-[1.5px] transition-colors cursor-pointer;
+  }
+  .link-standard:hover {
+    @apply text-gold-dark;
+  }
+  
+  /* Form Inputs (Custom over Antd if needed) */
+  .ant-input, .ant-input-password {
+    @apply rounded-md border-gray-300;
+  }
+  .ant-input:focus, .ant-input-password:focus, .ant-input-focused, .ant-input-password-focused {
+    @apply border-navy shadow-none;
+  }
+
+  /* Auth Layout & Spacing */
+  .auth-layout {
+    @apply min-h-screen w-full flex items-center justify-center relative bg-cover bg-center;
+    background-image: url('/hotel-lobby-5801.jpeg');
+    animation: fadeIn 0.4s ease-out forwards;
+  }
+  .auth-overlay {
+    @apply absolute inset-0 bg-navy/60;
+  }
+  .auth-card {
+    @apply relative z-10 bg-white p-8 rounded-xl shadow-2xl w-full max-w-md border border-gray-100 mt-8 mb-8;
+  }
+  
+  /* Auth Typography & Components */
+  .auth-title {
+    @apply text-4xl text-center mb-8 font-sans;
+  }
+  .auth-title-small {
+    @apply text-4xl text-center mb-4 font-sans;
+  }
+  .auth-subtitle {
+    @apply text-gray-500 text-center mb-8;
+  }
+  .auth-label {
+    @apply font-medium text-gray-700;
+  }
+  .auth-link-wrapper {
+    @apply flex justify-end mb-6;
+  }
+  .auth-footer {
+    @apply text-center mt-6;
+  }
+  .auth-success-icon {
+    @apply text-green-500 text-5xl mb-4;
+  }
+  .auth-success-text {
+    @apply text-gray-600 mb-6 text-lg;
+  }
+  
+  /* Utilities */
+  .btn-large-full {
+    @apply w-full h-12 text-lg;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
