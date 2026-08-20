@@ -61,7 +61,9 @@ export class TokenUtil {
     userId: string,
     otp: string,
   ): Promise<boolean> {
-    const stored = await this.redisUtil.findOne(this.getOtpKey(purpose, userId));
+    const stored = await this.redisUtil.findOne(
+      this.getOtpKey(purpose, userId),
+    );
     return stored !== null && stored === otp;
   }
 

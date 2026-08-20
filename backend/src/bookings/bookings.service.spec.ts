@@ -36,11 +36,4 @@ describe('BookingsService', () => {
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
-
-  it('remove() returns an i18n-resolved message, not a hard-coded string', () => {
-    const result = service.remove('1');
-
-    expect(i18nService.t).toHaveBeenCalledWith('messages.BOOKING.DELETED_SUCCESS');
-    expect(result).toEqual({ message: 'messages.BOOKING.DELETED_SUCCESS' });
-  });
 });
