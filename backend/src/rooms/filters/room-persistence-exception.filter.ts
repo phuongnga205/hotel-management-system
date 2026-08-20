@@ -31,7 +31,7 @@ export class RoomPersistenceExceptionFilter implements ExceptionFilter<QueryFail
     ) {
       response.status(HttpStatus.CONFLICT).json({
         statusCode: HttpStatus.CONFLICT,
-        message: this.i18n.t('messages.ROOM_NUMBER_EXISTS'),
+        message: this.i18n.t('messages.ROOM.NUMBER_EXISTS'),
       });
       return;
     }
@@ -54,7 +54,7 @@ export class RoomPersistenceExceptionFilter implements ExceptionFilter<QueryFail
     });
     response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-      message: this.i18n.t('messages.ROOM_SAVE_FAILED'),
+      message: this.i18n.t('messages.ROOM.SAVE_FAILED'),
     });
   }
 }

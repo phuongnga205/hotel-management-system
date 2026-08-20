@@ -1,12 +1,10 @@
 {
   "HELLO": "Hello",
   "USER_NOT_FOUND": "User not found in the system.",
-  "ROOM_NOT_FOUND": "Room not found.",
-  "ROOM_NUMBER_EXISTS": "Room number already exists.",
-  "ROOM_SAVE_FAILED": "Unable to save room information. Please try again.",
   "ROOM": {
     "NOT_FOUND": "Room not found.",
     "NUMBER_EXISTS": "Room number already exists.",
+    "SAVE_FAILED": "Unable to save room information. Please try again.",
     "AMENITY_NOT_FOUND": "One or more amenities do not exist.",
     "ROOM_AMENITY_NOT_FOUND": "The amenity is not assigned to this room.",
     "AMENITIES_ADDED": "Amenities added to the room successfully.",
@@ -18,11 +16,23 @@
     "IMAGE_CONTENT_INVALID": "The uploaded file content is not a valid image.",
     "IMAGE_TOO_LARGE": "The room image must not exceed 5 MB.",
     "IMAGE_UPLOAD_FAILED": "Unable to upload the room image. Please try again.",
-    "THUMBNAIL_EXISTS": "Another thumbnail update is already in progress. Please retry."
+    "THUMBNAIL_EXISTS": "Another thumbnail update is already in progress. Please retry.",
+    "CREATE_SUCCESS": "Room created successfully.",
+    "FIND_ALL_SUCCESS": "Rooms retrieved successfully.",
+    "FIND_ONE_SUCCESS": "Room retrieved successfully.",
+    "UPDATE_SUCCESS": "Room updated successfully.",
+    "UPDATE_PRICE_SUCCESS": "Room price updated successfully.",
+    "REMOVE_SUCCESS": "Room removed successfully.",
+    "IMAGE_UPLOAD_SUCCESS": "Room image uploaded successfully."
   },
   "AMENITY": {
     "NOT_FOUND": "Amenity not found.",
-    "NAME_EXISTS": "Amenity name already exists."
+    "NAME_EXISTS": "Amenity name already exists.",
+    "CREATE_SUCCESS": "Amenity created successfully.",
+    "FIND_ALL_SUCCESS": "Amenities retrieved successfully.",
+    "FIND_ONE_SUCCESS": "Amenity retrieved successfully.",
+    "UPDATE_SUCCESS": "Amenity updated successfully.",
+    "REMOVE_SUCCESS": "Amenity removed successfully."
   },
   "MAIL": {
     "LOG_NOT_FOUND": "Email log {id} not found."

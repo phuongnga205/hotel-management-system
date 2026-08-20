@@ -15,9 +15,6 @@ import { Amenity } from './entities/amenity.entity';
 import { PostgresErrorCode } from '../common/enums/postgres-error-code.enum';
 import { AMENITY_DATABASE_CONSTRAINT } from './amenity.constants';
 
-const DEFAULT_AMENITY_TAKE = 50;
-const DEFAULT_AMENITY_SKIP = 0;
-
 @Injectable()
 export class AmenitiesService {
   constructor(
@@ -26,50 +23,73 @@ export class AmenitiesService {
     private readonly i18n: I18nService,
   ) {}
 
-  async create(dto: CreateAmenityDto): Promise<AmenityResponseDto> {
+  async create(dto: CreateAmenityDto) {
     if (await this.repository.existsBy({ name: dto.name })) {
       throw new ConflictException(this.i18n.t('messages.AMENITY.NAME_EXISTS'));
     }
-    return this.saveWithConflictHandling(this.repository.create(dto));
-  }
+    const savedAmenity = await this.saveWithConflictHandling(
+      this.repository.create(dto),
+    );
 
-  async findAll(query: ListAmenitiesDto): Promise<{
-    data: AmenityResponseDto[];
-    total: number;
-    skip: number;
-    take: number;
-  }> {
-    const skip = query.skip ?? DEFAULT_AMENITY_SKIP;
-    const take = query.take ?? DEFAULT_AMENITY_TAKE;
-    const [amenities, total] = await this.repository.findAndCount({
-      order: { id: 'ASC' },
-      skip,
-      take,
-    });
     return {
-      data: amenities.map((amenity) => this.toResponse(amenity)),
-      total,
-      skip,
-      take,
+      statusCode: 201,
+      message: this.i18n.t('messages.AMENITY.CREATE_SUCCESS'),
+      data: this.toResponse(savedAmenity),
     };
   }
 
-  async findOne(id: string): Promise<AmenityResponseDto> {
+  async findAll(query: ListAmenitiesDto) {
+    const { page, limit } = query;
+    const [amenities, total] = await this.repository.findAndCount({
+      order: { id: 'ASC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    return {
+      statusCode: 200,
+      message: this.i18n.t('messages.AMENITY.FIND_ALL_SUCCESS'),
+      data: {
+        items: amenities.map((amenity) => this.toResponse(amenity)),
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async findOne(id: string) {
     const amenity = await this.repository.findOneBy({ id });
     if (!amenity) throw this.notFoundException();
-    return this.toResponse(amenity);
+
+    return {
+      statusCode: 200,
+      message: this.i18n.t('messages.AMENITY.FIND_ONE_SUCCESS'),
+      data: this.toResponse(amenity),
+    };
   }
 
-  async update(id: string, dto: UpdateAmenityDto): Promise<AmenityResponseDto> {
+  async update(id: string, dto: UpdateAmenityDto) {
     const amenity = await this.repository.preload({ id, ...dto });
     if (!amenity) throw this.notFoundException();
-    return this.saveWithConflictHandling(amenity);
+    const savedAmenity = await this.saveWithConflictHandling(amenity);
+
+    return {
+      statusCode: 200,
+      message: this.i18n.t('messages.AMENITY.UPDATE_SUCCESS'),
+      data: this.toResponse(savedAmenity),
+    };
   }
 
-  async remove(id: string): Promise<{ deleted: true }> {
+  async remove(id: string) {
     const result = await this.repository.softDelete(id);
     if (!result.affected) throw this.notFoundException();
-    return { deleted: true };
+
+    return {
+      statusCode: 200,
+      message: this.i18n.t('messages.AMENITY.REMOVE_SUCCESS'),
+    };
   }
 
   private toResponse(amenity: Amenity): AmenityResponseDto {
@@ -82,11 +102,9 @@ export class AmenitiesService {
     return new NotFoundException(this.i18n.t('messages.AMENITY.NOT_FOUND'));
   }
 
-  private async saveWithConflictHandling(
-    amenity: Amenity,
-  ): Promise<AmenityResponseDto> {
+  private async saveWithConflictHandling(amenity: Amenity): Promise<Amenity> {
     try {
-      return this.toResponse(await this.repository.save(amenity));
+      return await this.repository.save(amenity);
     } catch (error: unknown) {
       if (this.isAmenityNameConflict(error)) {
         throw new ConflictException(

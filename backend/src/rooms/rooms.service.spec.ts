@@ -97,7 +97,10 @@ describe('RoomsService', () => {
     roomAmenityRepository.create.mockImplementation((value: unknown) => value);
     roomAmenityRepository.save.mockResolvedValue([]);
 
-    await expect(service.create(createDto)).resolves.toMatchObject({ id: '1' });
+    await expect(service.create(createDto)).resolves.toMatchObject({
+      statusCode: 201,
+      data: { id: '1' },
+    });
     expect(dataSource.transaction).toHaveBeenCalledTimes(1);
     expect(roomAmenityRepository.save).toHaveBeenCalledWith([
       { roomId: '1', amenityId: '10' },
@@ -127,7 +130,7 @@ describe('RoomsService', () => {
     roomRepository.save.mockResolvedValue({ ...room, pricePerNight: 200 });
     await expect(
       service.updatePrice(room.id, { pricePerNight: 200 }),
-    ).resolves.toMatchObject({ pricePerNight: 200 });
+    ).resolves.toMatchObject({ data: { pricePerNight: 200 } });
     expect(roomRepository.preload).toHaveBeenCalledWith({
       id: room.id,
       pricePerNight: 200,
@@ -146,7 +149,10 @@ describe('RoomsService', () => {
     roomRepository.softDelete.mockResolvedValue({ affected: 1 });
     imageRepository.softDelete.mockResolvedValue({ affected: 1 });
     roomAmenityRepository.delete.mockResolvedValue({ affected: 1 });
-    await expect(service.remove(room.id)).resolves.toEqual({ deleted: true });
+    await expect(service.remove(room.id)).resolves.toEqual({
+      statusCode: 200,
+      message: 'messages.ROOM.REMOVE_SUCCESS',
+    });
     expect(dataSource.transaction).toHaveBeenCalledTimes(1);
     expect(imageRepository.softDelete).toHaveBeenCalledWith({
       roomId: room.id,
@@ -162,6 +168,7 @@ describe('RoomsService', () => {
     imageRepository.softDelete.mockResolvedValue({ affected: 1 });
 
     await expect(service.removeImage(room.id, '20')).resolves.toEqual({
+      statusCode: 200,
       message: 'messages.ROOM.IMAGE_REMOVED',
     });
     expect(imageRepository.softDelete).toHaveBeenCalledWith({
@@ -212,7 +219,10 @@ describe('RoomsService', () => {
 
     await expect(
       service.addImage(room.id, file, { isThumbnail: true }),
-    ).resolves.toMatchObject({ imageUrl: '/uploads/rooms/room.webp' });
+    ).resolves.toMatchObject({
+      statusCode: 201,
+      data: { imageUrl: '/uploads/rooms/room.webp' },
+    });
     expect(queryBuilder.execute).toHaveBeenCalledTimes(1);
     expect(imageRepository.save).toHaveBeenCalled();
   });
