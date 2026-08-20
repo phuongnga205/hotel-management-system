@@ -71,7 +71,13 @@ Tất cả nằm dưới `AdminLayout` + `AdminGuard` (role !== admin → `/403`
 |---|---|---|
 | `/admin` | Admin Dashboard | Trang tổng quan sau khi admin login. |
 | `/admin/users` | Quản lý người dùng | Danh sách. |
-| `/admin/users/:userId` | Chi tiết user | |
+| `/admin/users/:userId` | Chi tiết user | Nút active/inactive gọi `PATCH /admin/users/:id`. |
+
+> 🆕 BE đã có sẵn `POST /admin/users` (tạo user) và `DELETE /admin/users/:id`
+> (xoá mềm) nhưng **chưa chốt route/UI FE** cho 2 hành động này — tương tự
+> pattern phòng (`/admin/rooms/new` cho tạo, popup xác nhận cho xoá) nếu cần
+> làm, xem `frontend/docs/DANH_SACH_MAN_HINH.md` mục F và
+> `backend/docs/DANH_SACH_API.md` mục 8.
 | `/admin/rooms` | Quản lý phòng | Search, filter, danh sách + nút Export Excel. |
 | `/admin/rooms/:roomId` | Xem chi tiết 1 phòng | |
 | `/admin/rooms/new` | Thêm phòng | Route riêng (form nhiều field), không dùng modal. |

@@ -4,6 +4,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Matches,
   MinLength,
 } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
@@ -19,7 +20,10 @@ export class CreateUserDto {
   })
   email!: string;
 
-  @ApiProperty({ example: '123456', description: 'Mật khẩu' })
+  @ApiProperty({
+    example: '123456',
+    description: 'Mật khẩu (tối thiểu 6 ký tự)',
+  })
   @IsString({ message: i18nValidationMessage('messages.VALIDATION.IS_STRING') })
   @IsNotEmpty({
     message: i18nValidationMessage('messages.VALIDATION.NOT_EMPTY'),
@@ -39,5 +43,8 @@ export class CreateUserDto {
   @ApiPropertyOptional({ example: '0987654321', description: 'Số điện thoại' })
   @IsOptional()
   @IsString({ message: i18nValidationMessage('messages.VALIDATION.IS_STRING') })
+  @Matches(/^(0|\+84)\d{9,10}$/, {
+    message: i18nValidationMessage('messages.VALIDATION.INVALID_PHONE'),
+  })
   phone?: string;
 }

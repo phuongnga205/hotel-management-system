@@ -33,6 +33,16 @@ export class Image {
   })
   imageUrl!: string;
 
+  // public_id trên Cloudinary — bắt buộc để xoá đúng asset khi remove()
+  // ảnh này. Khác users.avatarUrl (1 slot cố định/user, suy ra được
+  // public_id từ userId), 1 phòng có N ảnh nên phải lưu riêng từng dòng.
+  @Column({
+    name: 'image_public_id',
+    length: 255,
+    unique: true,
+  })
+  imagePublicId!: string;
+
   @Column({
     name: 'is_thumbnail',
     default: false,

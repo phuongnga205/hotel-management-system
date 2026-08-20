@@ -2,11 +2,7 @@
 // dùng type + const object thay vì TS `enum`, khớp đúng bản chất cột DB
 // (xem @Check ở booking.entity.ts).
 export type BookingStatus =
-  | 'PENDING'
-  | 'ACCEPTED'
-  | 'REJECTED'
-  | 'CANCELLED'
-  | 'EXPIRED';
+  'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED' | 'EXPIRED';
 export const BookingStatus = {
   PENDING: 'PENDING',
   ACCEPTED: 'ACCEPTED',
