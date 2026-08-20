@@ -82,6 +82,7 @@ export class Booking {
   totalPrice!: number;
 
   @Column({
+    type: 'varchar',
     length: 20,
     default: BookingStatus.PENDING,
   })

@@ -29,7 +29,14 @@
   },
   "BOOKING": {
     "NOT_FOUND": "Không tìm thấy yêu cầu đặt phòng.",
-    "DELETED_SUCCESS": "Đã xóa yêu cầu đặt phòng thành công."
+    "UPDATED_SUCCESS": "Đã cập nhật yêu cầu đặt phòng thành công.",
+    "DELETED_SUCCESS": "Đã xóa yêu cầu đặt phòng thành công.",
+    "CANCEL_SUCCESS": "Đã hủy yêu cầu đặt phòng thành công.",
+    "REQUEST_FAIL": "Yêu cầu đặt phòng thất bại.",
+    "CANNOT_CANCEL": "Yêu cầu đặt phòng không thể hủy.",
+    "CANNOT_UPDATE": "Yêu cầu không thể cập nhật.",
+    "CHECK_IN_DATE_IN_PAST": "Ngày checkin ở quá khứ.",
+    "INVALID_DATE_RANGE": "Thời gian không phù hợp."
   },
   "AUTH": {
     "EMAIL_EXISTED": "Email này đã được đăng ký trong hệ thống.",
@@ -46,6 +53,33 @@
     "IS_EMAIL": "Email không đúng định dạng.",
     "NOT_EMPTY": "{property} không được để trống.",
     "MIN_LENGTH": "{property} phải có ít nhất {constraints.0} ký tự.",
-    "IS_STRING": "{property} phải là chuỗi văn bản."
+    "MAX_LENGTH": "{property} không được vượt quá {constraints.0} ký tự.",
+    "IS_STRING": "{property} phải là chuỗi văn bản.",
+    "IS_NUMBER_STRING": "{property} phải là một chuỗi số.",
+    "IS_INT": "{property} phải là số nguyên.",
+    "IS_ENUM": "{property} không hợp lệ.",
+    "MIN": "{property} phải lớn hơn hoặc bằng {constraints.0}.",
+    "MAX": "{property} phải nhỏ hơn hoặc bằng {constraints.0}.",
+    "INVALID_PHONE": "Số điện thoại không đúng định dạng."
+  },
+  "USERS": {
+    "PHONE_ALREADY_EXISTS": "số điện thoại đã tồn tại.",
+    "NOT_FOUND": "Không tìm thấy người dùng.",
+    "INVALID_CURRENT_PASSWORD": "Mật khẩu hiện tại không hợp lệ.",
+    "EMAIL_ALREADY_EXISTS": "Email đã tồn tại.",
+    "USERNAME_ALREADY_EXISTS": "Username đã tồn tại.",
+    "NEW_PASSWORD_MUST_BE_DIFFERENT": "Mật khâu mới phải khác mật khẩu cũ.",
+    "CHANGE_PASSWORD_SUCCESS": "Password thay đổi thành công.",
+    "ALREADY_EXISTS": "Email, username hoặc số điện thoại này đã tồn tại.",
+    "CREATE_SUCCESS": "Tạo người dùng thành công.",
+    "FIND_ALL_SUCCESS": "Lấy danh sách người dùng thành công.",
+    "FIND_ONE_SUCCESS": "Lấy thông tin người dùng thành công.",
+    "UPDATE_SUCCESS": "Cập nhật người dùng thành công.",
+    "REMOVE_SUCCESS": "Xóa người dùng thành công.",
+    "AVATAR_INVALID_FILE": "File ảnh đại diện không hợp lệ (chỉ chấp nhận JPG, PNG, WEBP).",
+    "AVATAR_FILE_TOO_LARGE": "File ảnh đại diện vượt quá dung lượng cho phép.",
+    "AVATAR_UPLOAD_SUCCESS": "Cập nhật ảnh đại diện thành công.",
+    "AVATAR_NOT_FOUND": "Tài khoản chưa có ảnh đại diện để xoá.",
+    "AVATAR_REMOVE_SUCCESS": "Xoá ảnh đại diện thành công."
   }
 }

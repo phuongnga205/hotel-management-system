@@ -7,7 +7,7 @@ CREATE TABLE users (
   email          VARCHAR(255) NOT NULL UNIQUE,
   password_hash  VARCHAR(255) NOT NULL,
   full_name      VARCHAR(150),
-  phone          VARCHAR(20),
+  phone          VARCHAR(20) UNIQUE,
   avatar_url     VARCHAR(500),
   role           VARCHAR(20)  NOT NULL DEFAULT 'USER',    -- USER, ADMIN
   status         VARCHAR(20)  NOT NULL DEFAULT 'INACTIVE', -- ACTIVE, INACTIVE
@@ -20,19 +20,13 @@ CREATE TABLE users (
 );
 
 -- ============================================================
--- auth_tokens  (NEW — email verification + password reset)
+-- auth_tokens — ĐÃ XOÁ (migration DropAuthTokensTable), KHÔNG dùng Postgres
 -- ============================================================
-CREATE TABLE auth_tokens (
-  token_id     BIGSERIAL PRIMARY KEY,
-  user_id      BIGINT NOT NULL REFERENCES users(user_id),
-  type         VARCHAR(30) NOT NULL,   -- EMAIL_VERIFICATION, PASSWORD_RESET
-  token_hash   VARCHAR(255) NOT NULL UNIQUE,  -- hash the raw token, never store it plain
-  expires_at   TIMESTAMPTZ NOT NULL,
-  used_at      TIMESTAMPTZ,
-  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
-  CONSTRAINT chk_auth_tokens_type CHECK (type IN ('EMAIL_VERIFICATION','PASSWORD_RESET'))
-);
-CREATE INDEX idx_auth_tokens_user ON auth_tokens(user_id);
+-- OTP kích hoạt tài khoản (EMAIL_VERIFICATION) và đặt lại mật khẩu
+-- (PASSWORD_RESET) lưu ở Redis, không phải bảng riêng — dữ liệu tự hết hạn
+-- (TTL) nên không cần persist ở Postgres, nhất quán với cách JWT blacklist
+-- khi logout đã làm từ trước. Xem `src/token/token.util.ts`
+-- (`saveOtp`/`verifyOtp`/`consumeOtp`) và `src/token/redis.util.ts`.
 
 -- ============================================================
 -- rooms
@@ -59,17 +53,24 @@ CREATE TABLE rooms (
 -- images (room photos)
 -- ============================================================
 CREATE TABLE images (
-  image_id      BIGSERIAL PRIMARY KEY,
-  room_id       BIGINT NOT NULL REFERENCES rooms(room_id),
-  image_url     VARCHAR(500) NOT NULL,
-  is_thumbnail  BOOLEAN NOT NULL DEFAULT false,
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-  deleted_at    TIMESTAMPTZ
+  image_id         BIGSERIAL PRIMARY KEY,
+  room_id          BIGINT NOT NULL REFERENCES rooms(room_id),
+  image_url        VARCHAR(500) NOT NULL,
+  image_public_id  VARCHAR(255) NOT NULL UNIQUE, -- Cloudinary public_id, xem migration AddImagePublicIdToImages
+  is_thumbnail     BOOLEAN NOT NULL DEFAULT false,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  deleted_at       TIMESTAMPTZ
 );
 -- enforce max one active thumbnail per room:
 CREATE UNIQUE INDEX uq_images_one_thumbnail_per_room
   ON images(room_id) WHERE is_thumbnail = true AND deleted_at IS NULL;
+
+-- NOTE: image_public_id là public_id trên Cloudinary (khác users.avatar_url
+-- — 1 avatar/user nên suy ra được public_id từ user_id, không cần lưu; ở
+-- đây 1 phòng có N ảnh nên bắt buộc lưu riêng từng dòng để xoá đúng asset).
+-- Logic upload/xoá ảnh thật (ImagesModule) làm ở PR sau, xem
+-- backend/docs/DANH_SACH_API.md mục "Admin — Room Images".
 
 -- ============================================================
 -- amenities

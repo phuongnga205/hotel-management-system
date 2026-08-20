@@ -9,8 +9,15 @@
 - Path dùng `kebab-case`, tham số động dạng `:id` (ví dụ `:roomId`, `:bookingId`).
 - Query param dùng cho tìm kiếm/filter/pagination (`/rooms?location=...&checkin=...`),
   **không** tạo route riêng cho từng biến thể kết quả tìm kiếm.
-- Token nhận qua email (kích hoạt tài khoản, reset mật khẩu) luôn đi qua **query
-  param** trên 1 route thật (`?token=...`), vì user bấm từ ngoài app.
+- **Kích hoạt tài khoản và đặt lại mật khẩu dùng OTP nhập tay, không dùng link
+  token trong email.** Email chỉ chứa **mã OTP 6 số** (không phải link kèm
+  token) — user tự mở app (đã đang có sẵn tab, hoặc mở lại thủ công), vào route
+  tương ứng và **gõ email + mã OTP** vào form. Do đó `/activate` và
+  `/reset-password` **không nhận `?token=`**, chỉ nhận `?email=` (optional,
+  chỉ để prefill sẵn ô email cho tiện, không phải cơ chế xác thực) — xác thực
+  thật sự nằm ở việc user gõ đúng OTP, khớp `ActivateAccountDto`/
+  `ResetPasswordDto` ở `backend/docs/DANH_SACH_API.md` /
+  `frontend/docs/bridge.md`.
 - 3 layout gốc, bọc bằng route cha (dùng nested route của react-router):
   - `PublicLayout` — header/footer chung, có/không có user đều thấy.
   - `AuthGuard` (bọc trong `PublicLayout`) — chặn route cần đăng nhập, chưa
@@ -27,10 +34,10 @@
 |---|---|---|
 | `/` | Trang chủ | Nếu đã login: hiển thị thêm shortcut Profile/Lịch sử booking. Không tách route riêng cho 2 trạng thái. |
 | `/login` | Đăng nhập | Hỗ trợ `?redirect=` để quay lại đúng trang sau khi login. |
-| `/register` | Đăng ký | Submit xong → hiện **modal** "vui lòng kiểm tra email kích hoạt" ngay trên trang này, không đổi route. |
-| `/activate` | Kích hoạt tài khoản | Mở từ link trong email, `?token=...`. Kích hoạt xong → tự chuyển `/login` kèm toast thành công. |
-| `/forgot-password` | Quên mật khẩu | Modal/form nhập email ngay trên trang (hoặc mở từ `/login`), gửi email chứa link reset. |
-| `/reset-password` | Đặt lại mật khẩu | Mở từ link email, `?token=...`. Form nhập new + confirm password. Xong → redirect `/login` kèm toast "Đổi mật khẩu thành công, vui lòng đăng nhập". |
+| `/register` | Đăng ký | Submit xong → hiện **modal** "vui lòng kiểm tra email lấy mã OTP kích hoạt" ngay trên trang này, kèm nút chuyển sang `/activate?email=<email vừa đăng ký>` (không tự động chuyển route). |
+| `/activate` | Kích hoạt tài khoản | Form nhập **email + mã OTP 6 số** (gửi qua email, user tự gõ tay). `?email=` chỉ để prefill, không bắt buộc. Kích hoạt xong → tự chuyển `/login` kèm toast thành công. |
+| `/forgot-password` | Quên mật khẩu | Modal/form nhập email ngay trên trang, gửi email chứa **mã OTP** (không phải link). Sau khi gửi → hiện nút chuyển sang `/reset-password?email=<email>`. |
+| `/reset-password` | Đặt lại mật khẩu | Form nhập **email + mã OTP 6 số + mật khẩu mới + xác nhận**. `?email=` chỉ để prefill. Xong → redirect `/login` kèm toast "Đổi mật khẩu thành công, vui lòng đăng nhập". |
 | `/rooms` | Tìm phòng + danh sách phòng | 1 route duy nhất, filter/search qua query param. Không có danh sách mặc định và danh sách sau tìm kiếm là 2 route khác nhau. |
 | `/rooms/:roomId` | Chi tiết phòng | Nút "Đặt phòng": guest bấm → redirect `/login?redirect=/rooms/:roomId`; user đã login → mở flow đặt phòng (modal hoặc route con, xem mục B). |
 | `/403` | Không có quyền truy cập | Dùng khi user thường cố vào `/admin/**`. |
@@ -64,7 +71,13 @@ Tất cả nằm dưới `AdminLayout` + `AdminGuard` (role !== admin → `/403`
 |---|---|---|
 | `/admin` | Admin Dashboard | Trang tổng quan sau khi admin login. |
 | `/admin/users` | Quản lý người dùng | Danh sách. |
-| `/admin/users/:userId` | Chi tiết user | |
+| `/admin/users/:userId` | Chi tiết user | Nút active/inactive gọi `PATCH /admin/users/:id`. |
+
+> 🆕 BE đã có sẵn `POST /admin/users` (tạo user) và `DELETE /admin/users/:id`
+> (xoá mềm) nhưng **chưa chốt route/UI FE** cho 2 hành động này — tương tự
+> pattern phòng (`/admin/rooms/new` cho tạo, popup xác nhận cho xoá) nếu cần
+> làm, xem `frontend/docs/DANH_SACH_MAN_HINH.md` mục F và
+> `backend/docs/DANH_SACH_API.md` mục 8.
 | `/admin/rooms` | Quản lý phòng | Search, filter, danh sách + nút Export Excel. |
 | `/admin/rooms/:roomId` | Xem chi tiết 1 phòng | |
 | `/admin/rooms/new` | Thêm phòng | Route riêng (form nhiều field), không dùng modal. |
@@ -86,9 +99,9 @@ Tất cả nằm dưới `AdminLayout` + `AdminGuard` (role !== admin → `/403`
 /login                     (guest)
   ?redirect=<path>
 /register                  (guest)
-/activate?token=           (guest, từ email)
+/activate?email=           (guest, nhập OTP tay từ email)
 /forgot-password           (guest)
-/reset-password?token=     (guest, từ email)
+/reset-password?email=     (guest, nhập OTP tay từ email)
 /rooms                     (guest/user)
 /rooms/:roomId             (guest/user)
 /rooms/:roomId/book        (user — auth required)
@@ -128,8 +141,11 @@ Tất cả nằm dưới `AdminLayout` + `AdminGuard` (role !== admin → `/403`
 - **Bỏ route riêng cho "danh sách phòng sau khi tìm kiếm"**: gộp vào `/rooms`
   bằng query param, tránh nhân đôi trang không cần thiết.
 - **Modal "chờ kích hoạt email" không có route riêng**, nhưng **"kích hoạt" và
-  "đặt lại mật khẩu" bắt buộc phải có route thật** vì được mở từ link email
-  (ngoài phiên làm việc hiện tại của app).
+  "đặt lại mật khẩu" bắt buộc phải có route thật** — dù không còn mở từ link
+  trong email (đã đổi sang **nhập OTP tay**, xem "Quy ước chung"), user vẫn
+  cần 1 route độc lập, gõ được thẳng URL hoặc bookmark, để nhập email + mã OTP
+  bất cứ lúc nào sau khi nhận được mail, không phụ thuộc còn ở đúng tab lúc
+  bấm submit hay không.
 - **Thêm `/403` và `/404`** — cây gốc không đề cập nhưng bắt buộc phải có khi
   build thật, đặc biệt để chặn user thường vào khu vực admin.
 - **Tách namespace `/admin/**` rõ ràng**, có guard riêng theo role, thay vì để
