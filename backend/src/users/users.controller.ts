@@ -1,90 +1,66 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
-import { ChangePasswordDto } from "./dto/change-password.dto";
-import { UpdateUserDto } from "./dto/update-user.dto";
-import { CreateUserDto } from "./dto/create-user.dto";
-import { UserQueryDto } from "./dto/user-query.dto";
-import { UsersService } from "./users.service";
-import { ApiBearerAuth } from "@nestjs/swagger";
-import { RolesGuard } from "../auth/guards/roles.guard";
-import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
-import { Roles } from "../auth/decorators/roles.decorator";
-import { UserRole } from "./entities/user.entity";
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Patch,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import type { Request } from 'express';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { UsersService } from './users.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
+@ApiTags('Users - Profile')
+@ApiBearerAuth('access-token')
+@UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UsersController {
-  constructor(
-    private readonly usersService: UsersService
-  ) { }
+  constructor(private readonly usersService: UsersService) {}
 
-  @ApiBearerAuth('access-token')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @Post()
-  create(@Body() dto: CreateUserDto) {
-    return this.usersService.create(dto);
-  }
-
-  @ApiBearerAuth('access-token')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @Get()
-  findAll(@Query() query: UserQueryDto) {
-    return this.usersService.findAll(query);
-  }
-
-  @ApiBearerAuth('access-token')
-  @UseGuards(JwtAuthGuard)
   @Get('me')
-  findMe(@Req() req) {
+  @ApiOperation({ summary: 'Lấy thông tin profile của người dùng hiện tại' })
+  @ApiResponse({ status: 200, description: 'Trả về thông tin profile' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực' })
+  findMe(@Req() req: Request & { user: { id: string } }) {
     return this.usersService.findOne(req.user.id);
   }
 
-  @ApiBearerAuth('access-token')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(id);
-  }
-
-  @ApiBearerAuth('access-token')
-  @UseGuards(JwtAuthGuard)
-  @Patch('password')
-  changePassword(
-    @Req() req,
-    @Body() dto: ChangePasswordDto,
-  ) {
-    return this.usersService.changePassword(req.user.id, dto);
-  }
-
-  @ApiBearerAuth('access-token')
-  @UseGuards(JwtAuthGuard)
   @Patch('me')
+  @ApiOperation({
+    summary: 'Cập nhật profile của người dùng hiện tại',
+    description: 'Cho phép cập nhật fullName, phone, email, username',
+  })
+  @ApiResponse({ status: 200, description: 'Cập nhật thành công' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực' })
+  @ApiResponse({ status: 409, description: 'Email / username / phone đã tồn tại' })
   updateProfile(
-    @Req() req,
+    @Req() req: Request & { user: { id: string } },
     @Body() dto: UpdateUserDto,
   ) {
     return this.usersService.update(req.user.id, dto);
   }
 
-  @ApiBearerAuth('access-token')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() dto: UpdateUserDto,
+  @Patch('me/password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Đổi mật khẩu cho người dùng hiện tại' })
+  @ApiResponse({ status: 200, description: 'Đổi mật khẩu thành công' })
+  @ApiResponse({ status: 400, description: 'Mật khẩu mới trùng mật khẩu cũ' })
+  @ApiResponse({ status: 401, description: 'Mật khẩu hiện tại không đúng' })
+  changePassword(
+    @Req() req: Request & { user: { id: string } },
+    @Body() dto: ChangePasswordDto,
   ) {
-    return this.usersService.update(id, dto);
+    return this.usersService.changePassword(req.user.id, dto);
   }
-
-  @ApiBearerAuth('access-token')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.usersService.remove(id);
-  }
-
-
 }

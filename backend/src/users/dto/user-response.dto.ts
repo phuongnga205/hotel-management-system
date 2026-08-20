@@ -1,39 +1,38 @@
 import { User, UserRole, UserStatus } from '../entities/user.entity';
 
 export class UserResponseDto {
+  id!: string;
 
-    id!: string;
+  username!: string;
 
-    username!: string;
+  email!: string;
 
-    email!: string;
+  phone!: string | null;
 
-    phone!: string | null;
+  fullName!: string | null;
 
-    fullName!: string | null;
+  role!: UserRole;
 
-    role!: UserRole;
+  status!: UserStatus;
 
-    status!: UserStatus;
+  avatarUrl!: string | null;
 
-    avatarUrl!: string | null;
+  activatedAt!: Date | null;
 
-    activatedAt!: Date | null;
+  createdAt?: Date;
 
-    createdAt?: Date;
-
-    updatedAt?: Date;
-    constructor(user: User){
+  updatedAt?: Date;
+  constructor(user: User) {
     this.id = user.id;
     this.username = user.username;
     this.email = user.email;
     this.phone = user.phone;
-    this.fullName = user.fullName?? null;
+    this.fullName = user.fullName ?? null;
     this.role = user.role;
-    this.status= user.status;
-    this.avatarUrl= user.avatarUrl??null;
-    this.activatedAt= user.activatedAt??null;
-    this.createdAt= user.createdAt;
-    this.updatedAt= user.updatedAt;
-    }
+    this.status = user.status;
+    this.avatarUrl = user.avatarUrl ?? null;
+    this.activatedAt = user.activatedAt ?? null;
+    this.createdAt = user.createdAt;
+    this.updatedAt = user.updatedAt;
+  }
 }

@@ -1,15 +1,21 @@
-import { Repository } from "typeorm";
-import { ChangePasswordDto } from "./dto/change-password.dto";
-import { UpdateUserDto } from "./dto/update-user.dto";
-import { User } from "./entities/user.entity";
-import { CreateUserDto } from "./dto/create-user.dto";
-import { I18nService } from "nestjs-i18n";
-import { InjectRepository } from "@nestjs/typeorm";
-import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
-import { UserQueryDto } from "./dto/user-query.dto";
+import { Repository } from 'typeorm';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { User } from './entities/user.entity';
+import { CreateUserDto } from './dto/create-user.dto';
+import { I18nService } from 'nestjs-i18n';
+import { InjectRepository } from '@nestjs/typeorm';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { UserQueryDto } from './dto/user-query.dto';
 import * as bcrypt from 'bcrypt';
-import { BCRYPT_SALT_ROUNDS } from "../auth/auth.service";
-import { UserResponseDto } from "./dto/user-response.dto";
+import { BCRYPT_SALT_ROUNDS } from '../auth/auth.service';
+import { UserResponseDto } from './dto/user-response.dto';
 
 @Injectable()
 export class UsersService {
@@ -18,7 +24,7 @@ export class UsersService {
     private readonly usersRepository: Repository<User>,
 
     private readonly i18n: I18nService,
-  ) { }
+  ) {}
 
   async create(dto: CreateUserDto) {
     // 1. Check duplicate email
@@ -66,36 +72,31 @@ export class UsersService {
     }
 
     // 4. Hash password
-    const passwordHash = await bcrypt.hash(
-      dto.password,
-      BCRYPT_SALT_ROUNDS,
-    );
+    const passwordHash = await bcrypt.hash(dto.password, BCRYPT_SALT_ROUNDS);
 
-    // 5. Create entity
+    // 5. Create entity — admin creates users as ACTIVE immediately, set activatedAt
+    const now = new Date();
     const user = this.usersRepository.create({
       email: dto.email,
       username: dto.username,
       phone: dto.phone ?? null,
       password: passwordHash,
-      status: "ACTIVE",
+      status: 'ACTIVE',
+      activatedAt: now,
     });
 
     // 6. Save database
     const savedUser = await this.usersRepository.save(user);
 
-    // 7. Never return password
-
-    return new UserResponseDto(savedUser);
+    return {
+      statusCode: 201,
+      message: this.i18n.t('messages.USERS.CREATE_SUCCESS'),
+      data: new UserResponseDto(savedUser),
+    };
   }
 
   async findAll(query: UserQueryDto) {
-    const {
-      page = 1,
-      limit = 10,
-      search,
-      status,
-      role,
-    } = query;
+    const { page = 1, limit = 10, search, status, role } = query;
 
     const skip = (page - 1) * limit;
 
@@ -133,41 +134,31 @@ export class UsersService {
 
     // Filter status
     if (status) {
-      queryBuilder.andWhere(
-        'user.status = :status',
-        {
-          status,
-        },
-      );
+      queryBuilder.andWhere('user.status = :status', {
+        status,
+      });
     }
 
     // Filter role
     if (role) {
-      queryBuilder.andWhere(
-        'user.role = :role',
-        {
-          role,
-        },
-      );
+      queryBuilder.andWhere('user.role = :role', {
+        role,
+      });
     }
 
     // Pagination
-    queryBuilder
-      .skip(skip)
-      .take(limit);
+    queryBuilder.skip(skip).take(limit);
 
     // Sort
-    queryBuilder.orderBy(
-      'user.createdAt',
-      'DESC',
-    );
+    queryBuilder.orderBy('user.createdAt', 'DESC');
 
-    const [users, total] =
-      await queryBuilder.getManyAndCount();
+    const [users, total] = await queryBuilder.getManyAndCount();
 
     return {
-      data: users,
-      meta: {
+      statusCode: 200,
+      message: this.i18n.t('messages.USERS.FIND_ALL_SUCCESS'),
+      data: {
+        items: users.map((u) => new UserResponseDto(u)),
         page,
         limit,
         total,
@@ -197,27 +188,24 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException(
-        this.i18n.t('messages.USERS.NOT_FOUND'),
-      );
+      throw new NotFoundException(this.i18n.t('messages.USERS.NOT_FOUND'));
     }
 
-    return new UserResponseDto(user);
+    return {
+      statusCode: 200,
+      message: this.i18n.t('messages.USERS.FIND_ONE_SUCCESS'),
+      data: new UserResponseDto(user),
+    };
   }
 
-  async update(
-    id: string,
-    dto: UpdateUserDto,
-  ): Promise<UserResponseDto> {
+  async update(id: string, dto: UpdateUserDto) {
     // 1. Find user
     const user = await this.usersRepository.findOne({
       where: { id },
     });
 
     if (!user) {
-      throw new NotFoundException(
-        this.i18n.t('messages.USERS.NOT_FOUND'),
-      );
+      throw new NotFoundException(this.i18n.t('messages.USERS.NOT_FOUND'));
     }
 
     // 2. Check duplicate email
@@ -273,7 +261,11 @@ export class UsersService {
 
     const updatedUser = await this.usersRepository.save(user);
 
-    return new UserResponseDto(updatedUser);
+    return {
+      statusCode: 200,
+      message: this.i18n.t('messages.USERS.UPDATE_SUCCESS'),
+      data: new UserResponseDto(updatedUser),
+    };
   }
 
   async remove(id: string) {
@@ -283,24 +275,18 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException(
-        this.i18n.t('messages.USERS.NOT_FOUND'),
-      );
+      throw new NotFoundException(this.i18n.t('messages.USERS.NOT_FOUND'));
     }
 
     await this.usersRepository.softDelete(id);
 
     return {
-      message: this.i18n.t(
-        'messages.USERS.REMOVE_SUCCESS',
-      ),
+      statusCode: 200,
+      message: this.i18n.t('messages.USERS.REMOVE_SUCCESS'),
     };
   }
 
-  async changePassword(
-    id: string,
-    dto: ChangePasswordDto,
-  ) {
+  async changePassword(id: string, dto: ChangePasswordDto) {
     // 1. Find user including password
     const user = await this.usersRepository.findOne({
       where: { id },
@@ -311,9 +297,7 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException(
-        this.i18n.t('messages.USERS.NOT_FOUND'),
-      );
+      throw new NotFoundException(this.i18n.t('messages.USERS.NOT_FOUND'));
     }
 
     // 2. Compare current password
@@ -324,38 +308,27 @@ export class UsersService {
 
     if (!isPasswordValid) {
       throw new UnauthorizedException(
-        this.i18n.t(
-          'messages.USERS.INVALID_CURRENT_PASSWORD',
-        ),
+        this.i18n.t('messages.USERS.INVALID_CURRENT_PASSWORD'),
       );
     }
 
     // 3. Prevent using the same password
-    const isSamePassword = await bcrypt.compare(
-      dto.newPassword,
-      user.password,
-    );
+    const isSamePassword = await bcrypt.compare(dto.newPassword, user.password);
 
     if (isSamePassword) {
       throw new BadRequestException(
-        this.i18n.t(
-          'messages.USERS.NEW_PASSWORD_MUST_BE_DIFFERENT',
-        ),
+        this.i18n.t('messages.USERS.NEW_PASSWORD_MUST_BE_DIFFERENT'),
       );
     }
 
     // 4. Hash new password
-    user.password = await bcrypt.hash(
-      dto.newPassword,
-      BCRYPT_SALT_ROUNDS,
-    );
+    user.password = await bcrypt.hash(dto.newPassword, BCRYPT_SALT_ROUNDS);
 
     await this.usersRepository.save(user);
 
     return {
-      message: this.i18n.t(
-        'messages.USERS.CHANGE_PASSWORD_SUCCESS',
-      ),
+      statusCode: 200,
+      message: this.i18n.t('messages.USERS.CHANGE_PASSWORD_SUCCESS'),
     };
   }
 }
