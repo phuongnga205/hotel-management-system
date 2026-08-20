@@ -1,5 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  ArrayUnique,
+  IsArray,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -9,6 +11,7 @@ import {
   IsString,
   MaxLength,
   Min,
+  IsNumberString,
 } from 'class-validator';
 import { RoomStatus } from '../enums/room-status.enum';
 import { Type } from 'class-transformer';
@@ -32,6 +35,12 @@ export class CreateRoomDto {
   @IsNotEmpty()
   @MaxLength(150)
   name!: string;
+
+  @ApiProperty({ description: 'Room type', example: 'Deluxe' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(50)
+  roomType!: string;
 
   @ApiProperty({
     description: 'The description of the room',
@@ -76,4 +85,16 @@ export class CreateRoomDto {
   @IsOptional()
   @IsEnum(RoomStatus)
   status?: RoomStatus;
+
+  @ApiProperty({
+    description: 'Amenity IDs assigned when the room is created',
+    example: ['1', '2'],
+    required: false,
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsNumberString({}, { each: true })
+  amenityIds?: string[];
 }

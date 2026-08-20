@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { I18nValidationExceptionFilter, I18nValidationPipe } from 'nestjs-i18n';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -7,10 +8,12 @@ import {
   DEFAULT_SERVER_PORT,
   ENVIRONMENT_KEYS,
 } from './config/environment.constants';
+import { resolve } from 'node:path';
+import { ROOM_IMAGE } from './rooms/constants/room-image.constants';
 // AppDataSource is intentionally not imported here; migrations are run via scripts
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const configService = app.get(ConfigService);
 
   app.setGlobalPrefix('api/v1');
@@ -46,6 +49,21 @@ async function bootstrap() {
   SwaggerModule.setup(API_DOCS_PATH, app, document);
 
   // Migrations are not run automatically on startup. Use `npm run migration:run` to apply migrations.
+
+  // Serve ảnh phòng upload local disk (feature/be-admin-room-management) —
+  // KHÔNG liên quan avatar user (đã chuyển sang Cloudinary, xem
+  // cloudinary/cloudinary.service.ts). 2 cơ chế lưu ảnh khác nhau đang tồn
+  // tại song song, cần thống nhất lại sau merge — xem ghi chú trao đổi với
+  // team.
+  const roomUploadDirectory = resolve(
+    configService.get<string>(
+      ENVIRONMENT_KEYS.ROOM_UPLOAD_DIRECTORY,
+      ROOM_IMAGE.DEFAULT_UPLOAD_DIRECTORY,
+    ),
+  );
+  app.useStaticAssets(roomUploadDirectory, {
+    prefix: ROOM_IMAGE.PUBLIC_PREFIX,
+  });
 
   const port = configService.get<number>(
     ENVIRONMENT_KEYS.PORT,

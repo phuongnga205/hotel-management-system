@@ -56,7 +56,7 @@ CREATE TABLE images (
   image_id         BIGSERIAL PRIMARY KEY,
   room_id          BIGINT NOT NULL REFERENCES rooms(room_id),
   image_url        VARCHAR(500) NOT NULL,
-  image_public_id  VARCHAR(255) NOT NULL UNIQUE, -- Cloudinary public_id, xem migration AddImagePublicIdToImages
+  image_public_id  VARCHAR(255) UNIQUE, -- Cloudinary public_id (nullable), xem migration MakeImagePublicIdNullable
   is_thumbnail     BOOLEAN NOT NULL DEFAULT false,
   created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -66,11 +66,13 @@ CREATE TABLE images (
 CREATE UNIQUE INDEX uq_images_one_thumbnail_per_room
   ON images(room_id) WHERE is_thumbnail = true AND deleted_at IS NULL;
 
--- NOTE: image_public_id là public_id trên Cloudinary (khác users.avatar_url
--- — 1 avatar/user nên suy ra được public_id từ user_id, không cần lưu; ở
--- đây 1 phòng có N ảnh nên bắt buộc lưu riêng từng dòng để xoá đúng asset).
--- Logic upload/xoá ảnh thật (ImagesModule) làm ở PR sau, xem
--- backend/docs/DANH_SACH_API.md mục "Admin — Room Images".
+-- NOTE: image_public_id là public_id trên Cloudinary — cột nullable vì
+-- logic upload/xoá ảnh phòng thật hiện tại (RoomsController/RoomsService,
+-- xem backend/src/rooms/) đang lưu file trên LOCAL DISK
+-- (ROOM_UPLOAD_DIRECTORY), không dùng Cloudinary, nên không set cột này.
+-- Cột được giữ lại (không xoá) phòng trường hợp team quyết định chuyển ảnh
+-- phòng sang Cloudinary sau (đồng bộ cách avatar user đang lưu) — lúc đó
+-- mới cần NOT NULL trở lại + set giá trị thật khi upload.
 
 -- ============================================================
 -- amenities
