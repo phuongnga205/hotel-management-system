@@ -1,9 +1,5 @@
-<<<<<<< HEAD
 /* sunlint-disable */
-import { Injectable } from '@nestjs/common';
-=======
 import { Injectable, NotImplementedException } from '@nestjs/common';
->>>>>>> main
 import { I18nService } from 'nestjs-i18n';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';

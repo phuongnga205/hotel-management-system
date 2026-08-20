@@ -4,6 +4,13 @@
   "ROOM_NOT_FOUND": "Không tìm thấy phòng.",
   "ROOM_NUMBER_EXISTS": "Số phòng đã tồn tại.",
   "ROOM_SAVE_FAILED": "Không thể lưu thông tin phòng. Vui lòng thử lại.",
+  "ROOM_CREATE_SUCCESS": "Tạo phòng thành công.",
+  "ROOM_FIND_ALL_SUCCESS": "Lấy danh sách phòng thành công.",
+  "ROOM_FIND_ONE_SUCCESS": "Lấy thông tin phòng thành công.",
+  "ROOM_UPDATE_SUCCESS": "Cập nhật phòng thành công.",
+  "ROOM_REMOVE_SUCCESS": "Xóa phòng thành công.",
+  "ROOM_AVAILABLE_SUCCESS": "Tìm phòng còn trống thành công.",
+  "ROOM_INVALID_DATE_RANGE": "Ngày check-out phải sau ngày check-in.",
   "MAIL": {
     "LOG_NOT_FOUND": "Không tìm thấy nhật ký email {id}."
   },
@@ -40,7 +47,9 @@
     "IS_ENUM": "{property} không hợp lệ.",
     "MIN": "{property} phải lớn hơn hoặc bằng {constraints.0}.",
     "MAX": "{property} phải nhỏ hơn hoặc bằng {constraints.0}.",
-    "INVALID_PHONE": "Số điện thoại không đúng định dạng."
+    "INVALID_PHONE": "Số điện thoại không đúng định dạng.",
+    "IS_DATE_STRING": "{property} phải là ngày hợp lệ (YYYY-MM-DD).",
+    "IS_NUMBER": "{property} phải là số."
   },
   "USERS": {
     "PHONE_ALREADY_EXISTS": "số điện thoại đã tồn tại.",

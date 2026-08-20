@@ -3,7 +3,11 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { RoomsService } from './rooms.service';
 import { Room } from './entities/room.entity';
 import { I18nService } from 'nestjs-i18n';
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { RoomStatus } from './enums/room-status.enum';
 import { RoomViewType } from './enums/room-view-type.enum';
 import { CreateRoomDto } from './dto/create-room.dto';
@@ -16,12 +20,13 @@ describe('RoomsService', () => {
   const preload = jest.fn();
   const save = jest.fn();
   const softDelete = jest.fn();
+  const createQueryBuilder = jest.fn();
 
   const room: Room = {
     id: '1',
     roomNumber: '101',
     name: 'Deluxe Room',
-    roomType: null,
+    roomType: 'Deluxe',
     description: null,
     viewType: RoomViewType.SEA_VIEW,
     pricePerNight: 1500000,
@@ -35,6 +40,7 @@ describe('RoomsService', () => {
   const createDto: CreateRoomDto = {
     roomNumber: room.roomNumber,
     name: room.name,
+    roomType: room.roomType ?? undefined,
     description: room.description ?? undefined,
     viewType: room.viewType ?? undefined,
     pricePerNight: room.pricePerNight,
@@ -56,6 +62,7 @@ describe('RoomsService', () => {
             preload,
             save,
             softDelete,
+            createQueryBuilder,
           },
         },
         {
@@ -77,9 +84,15 @@ describe('RoomsService', () => {
     create.mockReturnValue(room);
     save.mockResolvedValue(room);
 
-    await expect(service.create(createDto)).resolves.toMatchObject({
-      id: room.id,
-      roomNumber: room.roomNumber,
+    const result = await service.create(createDto);
+
+    expect(result).toMatchObject({
+      statusCode: 201,
+      data: {
+        id: room.id,
+        roomNumber: room.roomNumber,
+        roomType: room.roomType,
+      },
     });
     expect(save).toHaveBeenCalledWith(room);
   });
@@ -104,7 +117,66 @@ describe('RoomsService', () => {
   it('soft deletes a room', async () => {
     softDelete.mockResolvedValue({ affected: 1 });
 
-    await expect(service.remove(room.id)).resolves.toEqual({ deleted: true });
+    await expect(service.remove(room.id)).resolves.toEqual({
+      statusCode: 200,
+      message: 'messages.ROOM_REMOVE_SUCCESS',
+    });
     expect(softDelete).toHaveBeenCalledWith(room.id);
+  });
+
+  it('findAll (admin) returns every status with page/limit pagination', async () => {
+    findAndCount.mockResolvedValue([[room], 1]);
+
+    const result = await service.findAll({ page: 1, limit: 10 });
+
+    expect(findAndCount).toHaveBeenCalledWith(
+      expect.objectContaining({ where: {}, take: 10, skip: 0 }),
+    );
+    expect(result).toMatchObject({
+      statusCode: 200,
+      data: {
+        items: [expect.objectContaining({ id: room.id })],
+        total: 1,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
+      },
+    });
+  });
+
+  it('findAll (admin) applies an optional status filter', async () => {
+    findAndCount.mockResolvedValue([[], 0]);
+
+    await service.findAll({
+      page: 1,
+      limit: 10,
+      status: RoomStatus.MAINTENANCE,
+    });
+
+    expect(findAndCount).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { status: RoomStatus.MAINTENANCE } }),
+    );
+  });
+
+  it('findPublicList (public) always forces status=ACTIVE', async () => {
+    findAndCount.mockResolvedValue([[room], 1]);
+
+    await service.findPublicList({ page: 1, limit: 10 });
+
+    expect(findAndCount).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { status: RoomStatus.ACTIVE } }),
+    );
+  });
+
+  it('findAvailableRooms rejects checkOut <= checkIn', async () => {
+    await expect(
+      service.findAvailableRooms({
+        page: 1,
+        limit: 10,
+        checkIn: '2026-09-05',
+        checkOut: '2026-09-01',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(createQueryBuilder).not.toHaveBeenCalled();
   });
 });

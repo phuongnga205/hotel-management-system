@@ -7,10 +7,6 @@ const REDIS_REVOKED_VALUE = '1';
 
 const OTP_PREFIX = 'otp:';
 
-// Thay cho bảng `auth_tokens` (đã xoá — team dùng Redis cho mọi loại token,
-// không lưu ở Postgres). 2 mục đích y hệt cột `type` cũ của bảng đó
-// (`EMAIL_VERIFICATION`, `PASSWORD_RESET`), chỉ khác là plain string union
-// thay vì Postgres CHECK constraint.
 export type OtpPurpose = 'EMAIL_VERIFICATION' | 'PASSWORD_RESET';
 
 @Injectable()
@@ -61,7 +57,9 @@ export class TokenUtil {
     userId: string,
     otp: string,
   ): Promise<boolean> {
-    const stored = await this.redisUtil.findOne(this.getOtpKey(purpose, userId));
+    const stored = await this.redisUtil.findOne(
+      this.getOtpKey(purpose, userId),
+    );
     return stored !== null && stored === otp;
   }
 

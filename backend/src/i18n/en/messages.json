@@ -4,6 +4,13 @@
   "ROOM_NOT_FOUND": "Room not found.",
   "ROOM_NUMBER_EXISTS": "Room number already exists.",
   "ROOM_SAVE_FAILED": "Unable to save room information. Please try again.",
+  "ROOM_CREATE_SUCCESS": "Room created successfully.",
+  "ROOM_FIND_ALL_SUCCESS": "Rooms retrieved successfully.",
+  "ROOM_FIND_ONE_SUCCESS": "Room retrieved successfully.",
+  "ROOM_UPDATE_SUCCESS": "Room updated successfully.",
+  "ROOM_REMOVE_SUCCESS": "Room removed successfully.",
+  "ROOM_AVAILABLE_SUCCESS": "Available rooms retrieved successfully.",
+  "ROOM_INVALID_DATE_RANGE": "Check-out date must be after check-in date.",
   "MAIL": {
     "LOG_NOT_FOUND": "Email log {id} not found."
   },
@@ -41,7 +48,9 @@
     "IS_ENUM": "{property} is invalid.",
     "MIN": "{property} must not be less than {constraints.0}.",
     "MAX": "{property} must not be greater than {constraints.0}.",
-    "INVALID_PHONE": "Phone number format is invalid."
+    "INVALID_PHONE": "Phone number format is invalid.",
+    "IS_DATE_STRING": "{property} must be a valid date string (YYYY-MM-DD).",
+    "IS_NUMBER": "{property} must be a number."
   },
   "USERS":{
     "PHONE_ALREADY_EXISTS":"phone already exists.",

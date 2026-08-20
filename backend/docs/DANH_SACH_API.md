@@ -186,6 +186,19 @@ chung toàn app), không thêm field tuỳ biến:
 > chồng ngày trong khoảng yêu cầu — 2 điều kiện độc lập, không thể thay thế
 > nhau, nên endpoint riêng vẫn cần giữ.
 
+> **Đã implement**: cả 3 endpoint đều dùng chung envelope
+> `{statusCode, message, data}` (mục "Response envelope" ở trên), pagination
+> `page`/`limit` (không phải `skip`/`take`), list trả `data.items` +
+> `total`/`page`/`limit`/`totalPages`.
+>
+> - `GET /rooms` và `GET /rooms/:id` (public): **chỉ trả phòng
+>   `status = ACTIVE`** — ép cứng ở service, không nhận `status` từ query
+>   client. Khác `GET /admin/rooms` (mục 6): admin thấy được cả
+>   `INACTIVE`/`MAINTENANCE`, có thêm query `status` optional để tự lọc.
+> - `GET /rooms/available`: `checkIn`/`checkOut` là **bắt buộc** (400 nếu
+>   thiếu, hoặc nếu `checkOut <= checkIn`) — khác 2 endpoint kia, tìm phòng
+>   "còn trống" luôn phải gắn với 1 khoảng ngày cụ thể.
+
 ## 4. Bookings (user)
 
 | Chức năng | Method | URL | Quyền | Auth |
@@ -215,7 +228,13 @@ chung toàn app), không thêm field tuỳ biến:
 | Tạo phòng | POST | `/api/v1/admin/rooms` | Admin | JWT + RolesGuard(ADMIN) |
 | Chỉnh sửa thông tin phòng | PATCH | `/api/v1/admin/rooms/:id` | Admin | JWT + RolesGuard(ADMIN) |
 | Xoá phòng | DELETE | `/api/v1/admin/rooms/:id` | Admin | JWT + RolesGuard(ADMIN) |
-| 🚧 Export danh sách phòng ra Excel | GET | `/api/v1/admin/rooms/export` | Admin | JWT + RolesGuard(ADMIN) |
+| Export danh sách phòng ra Excel | GET | `/api/v1/admin/rooms/export` | Admin | JWT + RolesGuard(ADMIN) |
+
+> **Đã implement.** `GET /admin/rooms` trả **mọi status** (mặc định không
+> lọc), có thêm query `status` optional để admin tự thu hẹp theo 1 trạng
+> thái. `roomType` là field tự do (`varchar`, không phải bảng danh mục
+> riêng) — set/sửa được qua `CreateRoomDto`/`UpdateRoomDto` khi
+> tạo/sửa phòng, không có endpoint quản lý danh mục riêng cho nó.
 
 ## 7. Admin — Room Images
 
@@ -354,11 +373,9 @@ chung toàn app), không thêm field tuỳ biến:
       `ReviewsController`).
 - [ ] Bổ sung các endpoint còn 🚧: room images (upload/xoá/đặt thumbnail,
       xem mục 7 — schema đã chuẩn bị sẵn, chỉ còn thiếu logic), danh sách
-      booking Admin, accept/reject booking, danh sách review Admin, export
-      Excel phòng.
-- [ ] Implement `GET /rooms/available` bằng cách kết hợp `rooms.status =
-      ACTIVE` + kiểm tra không có booking `ACCEPTED` chồng ngày (không chỉ
-      lọc theo cột `status`) — xem ghi chú ở mục Rooms.
+      booking Admin, accept/reject booking, danh sách review Admin.
+- [x] `GET /rooms`, `GET /rooms/available`, `GET /rooms/:id`, toàn bộ
+      `/admin/rooms/**` (kể cả export Excel) đã implement — xem mục 3 và 6.
 - [ ] Emit đủ 5 event gửi mail: `UserRegistered`, `PasswordResetRequested`,
       `BookingStatusChanged`, `ReviewDeleted`, + cron báo cáo doanh thu —
       xem mục 13.
