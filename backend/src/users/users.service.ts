@@ -1,7 +1,7 @@
 import { Repository } from "typeorm";
 import { ChangePasswordDto } from "./dto/change-password.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
-import { User } from "./entities/user.entity";
+import { User, UserStatus } from "./entities/user.entity";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { I18nService } from "nestjs-i18n";
 import { InjectRepository } from "@nestjs/typeorm";
@@ -10,13 +10,16 @@ import { UserQueryDto } from "./dto/user-query.dto";
 import * as bcrypt from 'bcrypt';
 import { BCRYPT_SALT_ROUNDS } from "../auth/auth.service";
 import { UserResponseDto } from "./dto/user-response.dto";
+import { AdminUpdateUserDto } from "./dto/admin-update-user.dto";
+import * as jwt from 'jsonwebtoken';
+import { TokenUtil } from "../token/token.util";
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
-
+    private readonly tokenUtil: TokenUtil,
     private readonly i18n: I18nService,
   ) { }
 
@@ -77,7 +80,7 @@ export class UsersService {
       username: dto.username,
       phone: dto.phone ?? null,
       password: passwordHash,
-      status: "ACTIVE",
+      status: UserStatus.ACTIVE,
     });
 
     // 6. Save database
@@ -166,7 +169,9 @@ export class UsersService {
       await queryBuilder.getManyAndCount();
 
     return {
-      data: users,
+      data: users.map(
+        (user) => new UserResponseDto(user),
+      ),
       meta: {
         page,
         limit,
@@ -276,6 +281,77 @@ export class UsersService {
     return new UserResponseDto(updatedUser);
   }
 
+  async adminUpdate(
+    id: string,
+    dto: AdminUpdateUserDto,
+  ): Promise<UserResponseDto> {
+    // 1. Find user
+    const user = await this.usersRepository.findOne({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new NotFoundException(
+        this.i18n.t('messages.USERS.NOT_FOUND'),
+      );
+    }
+
+    // 2. Check duplicate email
+    if (dto.email && dto.email !== user.email) {
+      const existingEmail = await this.usersRepository.findOne({
+        where: {
+          email: dto.email,
+        },
+        withDeleted: true,
+      });
+
+      if (existingEmail) {
+        throw new ConflictException(
+          this.i18n.t('messages.USERS.EMAIL_ALREADY_EXISTS'),
+        );
+      }
+    }
+
+    // 3. Check duplicate username
+    if (dto.username && dto.username !== user.username) {
+      const existingUsername = await this.usersRepository.findOne({
+        where: {
+          username: dto.username,
+        },
+        withDeleted: true,
+      });
+
+      if (existingUsername) {
+        throw new ConflictException(
+          this.i18n.t('messages.USERS.USERNAME_ALREADY_EXISTS'),
+        );
+      }
+    }
+
+    // 4. Check duplicate phone
+    if (dto.phone && dto.phone !== user.phone) {
+      const existingPhone = await this.usersRepository.findOne({
+        where: {
+          phone: dto.phone,
+        },
+        withDeleted: true,
+      });
+
+      if (existingPhone) {
+        throw new ConflictException(
+          this.i18n.t('messages.USERS.PHONE_ALREADY_EXISTS'),
+        );
+      }
+    }
+
+    // 5. Update user
+    Object.assign(user, dto);
+
+    const updatedUser = await this.usersRepository.save(user);
+
+    return new UserResponseDto(updatedUser);
+  }
+
   async remove(id: string) {
     // Check user exists
     const user = await this.usersRepository.findOne({
@@ -297,9 +373,12 @@ export class UsersService {
     };
   }
 
+
+
   async changePassword(
     id: string,
     dto: ChangePasswordDto,
+    token: string,
   ) {
     // 1. Find user including password
     const user = await this.usersRepository.findOne({
@@ -351,6 +430,17 @@ export class UsersService {
     );
 
     await this.usersRepository.save(user);
+
+    const payload = jwt.decode(token) as { exp?: number } | null;
+
+    if (payload?.exp) {
+      const currentTime = Math.floor(Date.now() / 1000);
+      const ttl = payload.exp - currentTime;
+
+      if (ttl > 0) {
+        await this.tokenUtil.revokeAuthToken(token, ttl);
+      }
+    }
 
     return {
       message: this.i18n.t(

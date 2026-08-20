@@ -9,6 +9,7 @@ import { RolesGuard } from "../auth/guards/roles.guard";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { UserRole } from "./entities/user.entity";
+import { AdminUpdateUserDto } from "./dto/admin-update-user.dto";
 
 @Controller('users')
 export class UsersController {
@@ -54,7 +55,8 @@ export class UsersController {
     @Req() req,
     @Body() dto: ChangePasswordDto,
   ) {
-    return this.usersService.changePassword(req.user.id, dto);
+    const token = req.headers.authorization?.split(' ')[1];
+    return this.usersService.changePassword(req.user.id, dto,token);
   }
 
   @ApiBearerAuth('access-token')
@@ -73,9 +75,9 @@ export class UsersController {
   @Patch(':id')
   update(
     @Param('id') id: string,
-    @Body() dto: UpdateUserDto,
+    @Body() dto: AdminUpdateUserDto,
   ) {
-    return this.usersService.update(id, dto);
+    return this.usersService.adminUpdate(id, dto);
   }
 
   @ApiBearerAuth('access-token')
