@@ -81,8 +81,9 @@ Tất cả nằm dưới `AdminLayout` + `AdminGuard` (role !== admin → `/403`
 | `/admin/rooms` | Quản lý phòng | Search, filter, danh sách + nút Export Excel. |
 | `/admin/rooms/:roomId` | Xem chi tiết 1 phòng | |
 | `/admin/rooms/new` | Thêm phòng | Route riêng (form nhiều field), không dùng modal. |
-| `/admin/rooms/:roomId/edit` | Sửa phòng | |
+| `/admin/rooms/:roomId/edit` | Sửa phòng | Gồm cả gán/gỡ tiện nghi và đổi ảnh đại diện (1 ảnh/phòng, xem `frontend/docs/bridge.md` mục 4) — không tách route con. |
 | — Xoá phòng | Popup xác nhận | Modal, kiểm tra và báo lỗi nếu đang có người đặt/ở tại thời điểm xoá — BE trả lỗi, FE hiện toast/modal lỗi. |
+| `/admin/amenities` | Quản lý tiện nghi | 🆕 Danh sách + tạo/sửa qua modal + xoá qua popup xác nhận, không có route con — cùng pattern với `/admin/reviews`. |
 | `/admin/bookings` | Quản lý booking | Danh sách. |
 | `/admin/bookings/:bookingId` | Chi tiết booking | Action Từ chối (popup, có lý do) / Chấp nhận — không cần route riêng. |
 | `/admin/reviews` | Quản lý đánh giá | Danh sách có sort. |
@@ -121,6 +122,7 @@ Tất cả nằm dưới `AdminLayout` + `AdminGuard` (role !== admin → `/403`
 /admin/rooms/:roomId            (admin)
 /admin/rooms/new                (admin)
 /admin/rooms/:roomId/edit       (admin)
+/admin/amenities                (admin)
 /admin/bookings                 (admin)
 /admin/bookings/:bookingId      (admin)
 /admin/reviews                  (admin)

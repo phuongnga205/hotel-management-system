@@ -7,6 +7,7 @@
  * `frontend/docs/bridge.md` (không có address/gender/nationality/dob).
  */
 import type { ChangePasswordPayload, MessageResponse, UpdateProfilePayload, UserProfile } from '../types'
+import { getMockRole } from './mockSession'
 
 const MOCK_DELAY_MS = 500
 const MOCK_AVATAR_URL = 'https://i.pravatar.cc/150?img=11'
@@ -31,7 +32,9 @@ let mockProfile: UserProfile = {
 
 export const userMockApi = {
   getProfile: async (): Promise<UserProfile> => {
-    return mockDelay(mockProfile)
+    // Role phai khop voi role da suy ra luc login (mock) - xem mockSession.ts
+    // va authMockApi.login o auth.mock.ts.
+    return mockDelay({ ...mockProfile, role: getMockRole() })
   },
   updateProfile: async (data: UpdateProfilePayload): Promise<UserProfile> => {
     mockProfile = { ...mockProfile, ...data }

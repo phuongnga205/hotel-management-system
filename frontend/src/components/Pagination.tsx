@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next'
+
 interface Props {
     page: number
     total: number
@@ -11,6 +13,7 @@ export default function Pagination({
     perPage = 10,
     onChange,
 }: Props) {
+    const { t } = useTranslation('common')
     const pages = Math.ceil(total / perPage)
 
     if (pages <= 1) return null
@@ -18,8 +21,11 @@ export default function Pagination({
     return (
         <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
             <span className="text-xs text-slate-400">
-                Showing {(page - 1) * perPage + 1}–
-                {Math.min(page * perPage, total)} of {total}
+                {t('pagination.showing', {
+                    from: (page - 1) * perPage + 1,
+                    to: Math.min(page * perPage, total),
+                    total,
+                })}
             </span>
 
             <div className="flex gap-1">
@@ -28,7 +34,7 @@ export default function Pagination({
                     disabled={page === 1}
                     className="px-3 py-1.5 text-xs border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-40"
                 >
-                    ← Prev
+                    {t('pagination.prev')}
                 </button>
 
                 {Array.from(
@@ -52,7 +58,7 @@ export default function Pagination({
                     disabled={page === pages}
                     className="px-3 py-1.5 text-xs border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-40"
                 >
-                    Next →
+                    {t('pagination.next')}
                 </button>
             </div>
         </div>

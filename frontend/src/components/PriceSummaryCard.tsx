@@ -1,3 +1,6 @@
+import { useTranslation } from 'react-i18next'
+import { colors } from '../tokens/colors'
+
 interface PriceSummaryCardProps {
   pricePerNight: number
   nights: number
@@ -15,12 +18,13 @@ export default function PriceSummaryCard({
   nights,
   taxRate = 0.12,
   onBook,
-  bookLabel = 'Book This Room',
+  bookLabel,
   loading = false,
   sticky = false,
   meta,
   footer,
 }: PriceSummaryCardProps) {
+  const { t } = useTranslation('common')
   const subtotal = nights * pricePerNight
   const taxes = Math.round(subtotal * taxRate)
   const total = subtotal + taxes
@@ -29,7 +33,7 @@ export default function PriceSummaryCard({
     <div className={`bg-white rounded-2xl border border-slate-100 shadow-sm p-6 ${sticky ? 'sticky top-24' : ''}`}>
       <div className="mb-4">
         <div className="text-2xl font-bold text-navy">${pricePerNight}</div>
-        <div className="text-xs text-slate-400">per night · taxes not included</div>
+        <div className="text-xs text-slate-400">{t('priceSummary.perNight')}</div>
       </div>
 
       {meta && meta.length > 0 && (
@@ -50,14 +54,14 @@ export default function PriceSummaryCard({
             <span className="font-semibold text-navy">${subtotal.toLocaleString()}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-slate-500">Taxes &amp; fees</span>
+            <span className="text-slate-500">{t('priceSummary.taxesFees')}</span>
             <span className="font-semibold text-navy">${taxes.toLocaleString()}</span>
           </div>
           <div className="flex justify-between pt-2 mt-1 border-t border-slate-100">
-            <span className="font-bold text-navy">Total</span>
+            <span className="font-bold text-navy">{t('priceSummary.total')}</span>
             <span className="font-bold text-navy text-lg">${total.toLocaleString()}</span>
           </div>
-          <div className="text-xs text-slate-400 text-right">USD · includes all taxes</div>
+          <div className="text-xs text-slate-400 text-right">{t('priceSummary.currencyNote')}</div>
         </div>
       )}
 
@@ -66,9 +70,9 @@ export default function PriceSummaryCard({
           onClick={onBook}
           disabled={loading || nights === 0}
           className="w-full py-3 rounded-xl font-semibold text-sm text-white transition-all hover:opacity-90 active:scale-95 disabled:opacity-60 mb-3"
-          style={{ background: 'linear-gradient(135deg, #0B2545 0%, #1A3A5C 100%)' }}
+          style={{ background: `linear-gradient(135deg, ${colors.navy} 0%, ${colors.navyLight} 100%)` }}
         >
-          {loading ? 'Processing…' : bookLabel}
+          {loading ? t('priceSummary.processing') : (bookLabel ?? t('priceSummary.bookThisRoom'))}
         </button>
       )}
 

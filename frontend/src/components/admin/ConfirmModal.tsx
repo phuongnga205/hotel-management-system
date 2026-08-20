@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next'
+
 // ---------------------------------------------------------------------------
 // ConfirmModal — reusable confirmation dialog (delete / reject / etc.)
 // ---------------------------------------------------------------------------
@@ -6,7 +8,7 @@ export const ConfirmModal = ({
   open,
   title,
   desc,
-  confirmLabel = 'Confirm',
+  confirmLabel,
   danger = true,
   onConfirm,
   onCancel,
@@ -21,6 +23,7 @@ export const ConfirmModal = ({
   onCancel: () => void
   children?: React.ReactNode
 }) => {
+  const { t } = useTranslation('common')
   if (!open) return null
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy/50">
@@ -39,13 +42,13 @@ export const ConfirmModal = ({
         {children && <div className="mb-4">{children}</div>}
         <div className="flex gap-3">
           <button onClick={onCancel} className="flex-1 py-2.5 text-sm font-semibold border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors">
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             onClick={onConfirm}
             className={`flex-1 py-2.5 text-sm font-semibold rounded-xl transition-colors ${danger ? 'bg-danger text-white hover:opacity-90' : 'bg-navy text-white hover:opacity-90'}`}
           >
-            {confirmLabel}
+            {confirmLabel ?? t('common.confirm')}
           </button>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
+import { colors, withAlpha } from '../tokens/colors'
 
 export interface DropdownOption {
   value: string
@@ -85,7 +86,7 @@ export default function Dropdown({
           ${padX} ${padY} ${textSize}
           text-navy font-medium
           transition-all duration-150
-          ${open ? 'border-[#0B2545] ring-2 ring-[#0B2545]/20' : 'border-slate-200 hover:border-[#0B2545]/40'}
+          ${open ? 'border-navy ring-2 ring-navy/20' : 'border-slate-200 hover:border-navy/40'}
           ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
         `}
       >
@@ -111,7 +112,7 @@ export default function Dropdown({
             top: pos.top,
             left: pos.left,
             width: pos.width,
-            boxShadow: '0 8px 28px rgba(11,37,69,0.14)',
+            boxShadow: `0 8px 28px ${withAlpha(colors.navy, 0.14)}`,
           }}
           onMouseDown={(e) => e.stopPropagation()}
         >
@@ -127,7 +128,7 @@ export default function Dropdown({
                     w-full flex items-center gap-2.5 text-left transition-colors
                     ${itemPad} ${textSize}
                     ${isActive
-                      ? 'bg-[#0B2545] text-white font-semibold'
+                      ? 'bg-navy text-white font-semibold'
                       : 'text-slate-700 hover:bg-slate-50 hover:text-navy'}
                   `}
                 >

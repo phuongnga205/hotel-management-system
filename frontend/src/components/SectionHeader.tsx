@@ -15,8 +15,12 @@ export default function SectionHeader({
   action,
   as: Tag = 'h2',
 }: SectionHeaderProps) {
+  // center=true doi ca huong flex lan align/justify - khong duoc cong don
+  // 'items-end justify-between' voi 'items-center' vi 2 utility cung thuoc
+  // tinh align-items se ganh nhau theo thu tu CSS output cua Tailwind
+  // (khong theo thu tu class trong chuoi), gay center bi lech.
   return (
-    <div className={`flex items-end justify-between gap-4 ${center ? 'flex-col items-center text-center' : ''}`}>
+    <div className={`flex gap-4 ${center ? 'flex-col items-center text-center' : 'items-end justify-between'}`}>
       <div className={center ? 'text-center' : ''}>
         {eyebrow && (
           <p className="text-gold text-xs font-semibold uppercase tracking-widest mb-1">{eyebrow}</p>

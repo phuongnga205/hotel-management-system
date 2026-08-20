@@ -23,6 +23,7 @@ import type {
   ResetPasswordPayload,
   UserProfile,
 } from '../types'
+import { roleForMockEmail, setMockRole } from './mockSession'
 
 const MOCK_DELAY_MS = 500
 
@@ -46,10 +47,14 @@ function buildMockUser(overrides: Partial<UserProfile>): UserProfile {
 
 export const authMockApi = {
   login: async (data: LoginPayload): Promise<LoginResponse> => {
+    // Mock khong co mat khau/role that o dau ca - suy role tu email dang
+    // nhap de test duoc man hinh admin cuc bo, xem mockSession.ts.
+    const role = roleForMockEmail(data.email)
+    setMockRole(role)
     return mockDelay({
       message: 'Đăng nhập thành công (mock).',
       accessToken: 'fake_mock_token',
-      user: buildMockUser({ email: data.email }),
+      user: buildMockUser({ email: data.email, role }),
     })
   },
   register: async (data: RegisterPayload): Promise<RegisterResponse> => {

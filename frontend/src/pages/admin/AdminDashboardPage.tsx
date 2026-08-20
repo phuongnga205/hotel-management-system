@@ -1,55 +1,84 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { ALL_BOOKINGS, REVENUE_DATA, BOOKINGS_BY_TYPE } from '../../data/mock'
-import { BookingStatusBadge, PageHeader, Card } from '../../components/ui'
-import { StatTile } from '../../components/admin'
-import PaymentBadge from '../../components/PaymentBadge'
+import PageHeader from '../../components/PageHeader'
+import Card from '../../components/Card'
+import { PageLoader } from '../../components/common/PageLoader'
+import { StatTile, AdminTable, StatusBadge, BOOKING_STATUS_CONFIG } from '../../components/admin'
 import { colors } from '../../tokens/colors'
-import { PATHS } from '../../routes/paths'
-
-const STATS = [
-  { label: 'Total Revenue', value: '$142k', sub: '+12.4% vs last month', color: colors.navy },
-  { label: 'New Bookings', value: String(ALL_BOOKINGS.length), sub: `${ALL_BOOKINGS.filter((b) => b.status === 'PENDING').length} pending review`, color: colors.gold },
-  { label: 'Active Guests', value: '38', sub: '6 checking in today', color: colors.success },
-  { label: 'Pending Reviews', value: '2', sub: 'Awaiting moderation', color: colors.accent },
-]
+import { ROUTES } from '../../router/paths'
+import { statisticsApi } from '../../api/statistics.api'
+import { bookingApi } from '../../api/booking.api'
+import { getErrorMessage } from '../../api/errorMessage'
+import type { Booking, BookingStatistics, RevenueStatistics } from '../../api/types'
 
 export default function AdminDashboardPage() {
-  const recentBookings = ALL_BOOKINGS.slice(0, 5)
+  const { t, i18n } = useTranslation('admin')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [bookingStats, setBookingStats] = useState<BookingStatistics | null>(null)
+  const [revenueStats, setRevenueStats] = useState<RevenueStatistics | null>(null)
+  const [recentBookings, setRecentBookings] = useState<Booking[]>([])
+
+  useEffect(() => {
+    let cancelled = false
+    Promise.all([statisticsApi.bookings(), statisticsApi.revenue(), bookingApi.adminList({ page: 1, limit: 5 })])
+      .then(([bs, rs, recent]) => {
+        if (cancelled) return
+        setBookingStats(bs)
+        setRevenueStats(rs)
+        setRecentBookings(recent.items)
+      })
+      .catch((err) => { if (!cancelled) setError(getErrorMessage(err, t('common.notFoundGeneric'))) })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [t])
+
+  if (loading) return <PageLoader />
+  if (error || !bookingStats || !revenueStats) return <p className="text-danger text-sm">{error}</p>
+
+  const statusData = (Object.entries(bookingStats.byStatus) as [keyof typeof bookingStats.byStatus, number][]).map(([status, count]) => ({
+    status,
+    count,
+  }))
 
   return (
     <div className="space-y-6">
-      <PageHeader eyebrow="Overview" title="Dashboard" subtitle="August 18, 2026" />
+      <PageHeader eyebrow={t('dashboard.eyebrow')} title={t('dashboard.title')} />
 
-      {/* Stat tiles */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {STATS.map((s) => (
-          <StatTile key={s.label} label={s.label} value={s.value} sub={s.sub} color={s.color} />
-        ))}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+        <StatTile label={t('dashboard.totalRevenue')} value={`$${(revenueStats.totalRevenue / 1000).toFixed(0)}k`} color={colors.navy} />
+        <StatTile
+          label={t('dashboard.newBookings')}
+          value={String(bookingStats.totalBookings)}
+          sub={t('dashboard.pendingBookingsSub', { count: bookingStats.byStatus.PENDING })}
+          color={colors.gold}
+        />
+        <StatTile label={t('statistics.bookings.tileAccepted')} value={String(bookingStats.byStatus.ACCEPTED)} color={colors.success} />
       </div>
 
-      {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <Card className="p-5">
-          <h3 className="font-semibold text-navy text-sm mb-4">Monthly Revenue</h3>
+          <h3 className="font-semibold text-navy text-sm mb-4">{t('dashboard.monthlyRevenue')}</h3>
           <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={REVENUE_DATA}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v / 1000}k`} />
-              <Tooltip formatter={(v: number) => [`$${v.toLocaleString()}`, 'Revenue']} />
+            <LineChart data={revenueStats.monthly}>
+              <CartesianGrid strokeDasharray="3 3" stroke={colors.border} />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fill: colors.muted }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: colors.muted }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${v / 1000}k`} />
+              <Tooltip formatter={(v) => [`$${Number(v).toLocaleString()}`, t('dashboard.totalRevenue')]} />
               <Line type="monotone" dataKey="revenue" stroke={colors.navy} strokeWidth={2} dot={{ r: 4, fill: colors.gold }} />
             </LineChart>
           </ResponsiveContainer>
         </Card>
 
         <Card className="p-5">
-          <h3 className="font-semibold text-navy text-sm mb-4">Bookings by Room Type</h3>
+          <h3 className="font-semibold text-navy text-sm mb-4">{t('statistics.bookings.statusBreakdownTitle')}</h3>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={BOOKINGS_BY_TYPE}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="type" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+            <BarChart data={statusData}>
+              <CartesianGrid strokeDasharray="3 3" stroke={colors.border} />
+              <XAxis dataKey="status" tick={{ fontSize: 11, fill: colors.muted }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: colors.muted }} axisLine={false} tickLine={false} />
               <Tooltip />
               <Bar dataKey="count" fill={colors.navy} radius={[4, 4, 0, 0]} />
             </BarChart>
@@ -57,37 +86,28 @@ export default function AdminDashboardPage() {
         </Card>
       </div>
 
-      {/* Recent bookings */}
       <Card>
         <div className="flex items-center justify-between p-5 border-b border-slate-100">
-          <h3 className="font-semibold text-navy text-sm">Recent Bookings</h3>
-          <Link to={PATHS.ADMIN.BOOKINGS} className="text-xs text-gold hover:underline">View all →</Link>
+          <h3 className="font-semibold text-navy text-sm">{t('dashboard.recentBookings')}</h3>
+          <Link to={ROUTES.ADMIN.BOOKINGS} className="text-xs text-gold hover:underline">{t('dashboard.viewAll')}</Link>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-100 text-left">
-                {['ID', 'Guest', 'Room', 'Dates', 'Total', 'Status'].map((h) => (
-                  <th key={h} className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {recentBookings.map((b, i) => (
-                <tr key={b.id} className={`border-b border-slate-50 hover:bg-surface transition-colors ${i % 2 === 1 ? 'bg-slate-50/30' : ''}`}>
-                  <td className="px-4 py-3 font-mono text-xs font-semibold text-navy">#{b.id}</td>
-                  <td className="px-4 py-3 font-medium text-navy whitespace-nowrap">{b.guestName}</td>
-                  <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{b.roomName}</td>
-                  <td className="px-4 py-3 text-slate-500 text-xs whitespace-nowrap">
-                    {new Date(b.checkIn).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} → {new Date(b.checkOut).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  </td>
-                  <td className="px-4 py-3 font-semibold text-navy">${b.totalPrice.toLocaleString()}</td>
-                  <td className="px-4 py-3"><BookingStatusBadge status={b.status} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <AdminTable
+          rowKey={(b: Booking) => b.id}
+          rows={recentBookings}
+          columns={[
+            { key: 'id', header: t('table.id'), render: (b) => <span className="font-mono text-xs font-semibold text-navy">#{b.id}</span> },
+            { key: 'guest', header: t('table.guest'), render: (b) => b.user?.fullName ?? b.user?.email ?? '—' },
+            { key: 'room', header: t('table.room'), render: (b) => b.room?.name ?? '—' },
+            {
+              key: 'dates',
+              header: t('table.dates'),
+              render: (b) =>
+                `${new Date(b.checkInDate).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' })} → ${new Date(b.checkOutDate).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' })}`,
+            },
+            { key: 'total', header: t('table.total'), render: (b) => `$${b.totalPrice.toLocaleString()}` },
+            { key: 'status', header: t('common.status'), render: (b) => <StatusBadge status={b.status} config={BOOKING_STATUS_CONFIG} /> },
+          ]}
+        />
       </Card>
     </div>
   )

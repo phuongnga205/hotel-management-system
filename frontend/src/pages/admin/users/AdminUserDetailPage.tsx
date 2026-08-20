@@ -1,37 +1,71 @@
-import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
-import { MY_BOOKINGS } from '../../../data/mock'
-import { BookingStatusBadge, Card, PageHeader } from '../../../components/ui'
-import { Breadcrumb, StatusBadge, USER_STATUS_CONFIG } from '../../../components/admin'
+import { useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import { toast } from 'react-toastify'
+import PageHeader from '../../../components/PageHeader'
+import Card from '../../../components/Card'
 import DetailGrid from '../../../components/DetailGrid'
 import RoleBadge from '../../../components/RoleBadge'
-import { PATHS } from '../../../routes/paths'
-
-const USERS: Record<string, { id: string; name: string; email: string; phone: string; role: string; status: 'ACTIVE' | 'INACTIVE'; bookings: number; joined: string }> = {
-  u1: { id: 'u1', name: 'Alex Johnson', email: 'alex.johnson@email.com', phone: '+1 (555) 234-5678', role: 'user', status: 'ACTIVE', bookings: 4, joined: '2025-03-15' },
-  u2: { id: 'u2', name: 'Isabella Romano', email: 'i.romano@mail.com', phone: '+39 02 1234 5678', role: 'user', status: 'ACTIVE', bookings: 2, joined: '2025-06-22' },
-}
+import { PageLoader } from '../../../components/common/PageLoader'
+import { Breadcrumb, StatusBadge, USER_STATUS_CONFIG, AdminTable, BOOKING_STATUS_CONFIG } from '../../../components/admin'
+import { ROUTES } from '../../../router/paths'
+import { adminUserApi } from '../../../api/admin-user.api'
+import { bookingApi } from '../../../api/booking.api'
+import { getErrorMessage } from '../../../api/errorMessage'
+import type { AdminUserListItem, Booking } from '../../../api/types'
 
 export default function AdminUserDetailPage() {
+  const { t, i18n } = useTranslation('admin')
   const { userId } = useParams()
-  const user = USERS[userId ?? ''] ?? { id: userId ?? '', name: 'Unknown User', email: '-', phone: '-', role: 'user', status: 'ACTIVE' as const, bookings: 0, joined: '2025-01-01' }
-  const [status, setStatus] = useState<'ACTIVE' | 'INACTIVE'>(user.status)
-  const userBookings = MY_BOOKINGS.filter((b) => b.guestEmail === user.email)
+  const [user, setUser] = useState<AdminUserListItem | null>(null)
+  const [bookings, setBookings] = useState<Booking[]>([])
+  const [loading, setLoading] = useState(true)
+  const [toggling, setToggling] = useState(false)
+
+  useEffect(() => {
+    if (!userId) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-with-loading-flag pattern, xem AdminBookingListPage.tsx
+    setLoading(true)
+    // Chua co filter theo userId o admin bookings list API - tam lay 1 trang
+    // lon roi loc phia client, chap nhan gioi han nay cho toi khi BE co
+    // query rieng (vd ?userId=).
+    Promise.all([adminUserApi.getById(userId), bookingApi.adminList({ page: 1, limit: 100 })])
+      .then(([u, b]) => { setUser(u); setBookings(b.items.filter((booking) => booking.user?.id === userId)) })
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false))
+  }, [userId])
+
+  if (loading) return <PageLoader />
+  if (!user) return <p className="text-slate-500">{t('common.notFoundGeneric')}</p>
+
+  const handleToggleStatus = async () => {
+    setToggling(true)
+    try {
+      const nextStatus = user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
+      const updated = await adminUserApi.update(user.id, { status: nextStatus })
+      setUser(updated)
+    } catch (err) {
+      toast.error(getErrorMessage(err, t('common.notFoundGeneric')))
+    } finally {
+      setToggling(false)
+    }
+  }
 
   return (
     <div className="space-y-5">
-      <Breadcrumb items={[{ label: 'Users', to: PATHS.ADMIN.USERS }, { label: user.name }]} />
-      <PageHeader eyebrow="Management" title={user.name} />
+      <Breadcrumb items={[{ label: t('users.list.title'), to: ROUTES.ADMIN.USERS }, { label: user.fullName ?? user.username }]} />
+      <PageHeader eyebrow={t('users.list.eyebrow')} title={user.fullName ?? user.username} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* User info */}
         <Card className="p-5">
           <div className="text-center mb-5">
-            <div className="w-16 h-16 rounded-full bg-navy/10 flex items-center justify-center text-navy font-bold text-2xl mx-auto mb-3">{user.name[0]}</div>
-            <h2 className="font-bold text-navy text-lg">{user.name}</h2>
+            <div className="w-16 h-16 rounded-full bg-navy/10 flex items-center justify-center text-navy font-bold text-2xl mx-auto mb-3">
+              {(user.fullName ?? user.username)[0]}
+            </div>
+            <h2 className="font-bold text-navy text-lg">{user.fullName ?? user.username}</h2>
             <p className="text-xs text-slate-400 mt-0.5">{user.email}</p>
             <div className="mt-2">
-              <StatusBadge status={status} config={USER_STATUS_CONFIG} />
+              <StatusBadge status={user.status} config={USER_STATUS_CONFIG} />
             </div>
           </div>
 
@@ -39,59 +73,47 @@ export default function AdminUserDetailPage() {
             cols={2}
             className="mb-5"
             items={[
-              { label: 'Phone', value: user.phone },
-              { label: 'Role', value: <RoleBadge role={user.role} /> },
-              { label: 'Joined', value: new Date(user.joined).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) },
-              { label: 'Total Bookings', value: String(user.bookings) },
+              { label: t('users.detail.fieldPhone'), value: user.phone ?? '—' },
+              { label: t('users.detail.fieldRole'), value: <RoleBadge role={user.role} /> },
+              { label: t('users.detail.fieldJoined'), value: new Date(user.createdAt).toLocaleDateString(i18n.language, { month: 'long', day: 'numeric', year: 'numeric' }) },
+              { label: t('users.detail.fieldTotalBookings'), value: String(bookings.length) },
             ]}
           />
 
           <div className="flex gap-2">
             <button
-              onClick={() => setStatus(status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE')}
-              className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-colors ${
-                status === 'ACTIVE'
+              onClick={handleToggleStatus}
+              disabled={toggling}
+              className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-colors disabled:opacity-60 ${
+                user.status === 'ACTIVE'
                   ? 'border border-red-300 text-red-600 hover:bg-red-50'
                   : 'bg-emerald-500 text-white hover:bg-emerald-600'
               }`}
             >
-              {status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+              {user.status === 'ACTIVE' ? t('users.detail.deactivate') : t('users.detail.activate')}
             </button>
           </div>
         </Card>
 
-        {/* Booking history */}
         <Card className="lg:col-span-2">
           <div className="p-5 border-b border-slate-100">
-            <h3 className="font-semibold text-navy text-sm">Booking History</h3>
-            <p className="text-xs text-slate-400 mt-0.5">{userBookings.length} booking{userBookings.length !== 1 ? 's' : ''}</p>
+            <h3 className="font-semibold text-navy text-sm">{t('users.detail.bookingHistoryTitle')}</h3>
+            <p className="text-xs text-slate-400 mt-0.5">{t('users.detail.bookingCount', { count: bookings.length })}</p>
           </div>
-          {userBookings.length === 0 ? (
-            <div className="p-10 text-center text-slate-400 text-sm">No bookings found for this user.</div>
+          {bookings.length === 0 ? (
+            <div className="p-10 text-center text-slate-400 text-sm">{t('users.detail.noBookings')}</div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-100 text-left">
-                    {['Booking ID', 'Room', 'Check-in', 'Nights', 'Total', 'Status'].map((h) => (
-                      <th key={h} className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {userBookings.map((b) => (
-                    <tr key={b.id} className="border-b border-slate-50 hover:bg-surface transition-colors">
-                      <td className="px-4 py-3 font-mono text-xs font-semibold text-navy">#{b.id}</td>
-                      <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{b.roomName}</td>
-                      <td className="px-4 py-3 text-slate-500 whitespace-nowrap text-xs">{new Date(b.checkIn).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
-                      <td className="px-4 py-3 text-slate-600">{b.nights}</td>
-                      <td className="px-4 py-3 font-semibold text-navy">${b.totalPrice.toLocaleString()}</td>
-                      <td className="px-4 py-3"><BookingStatusBadge status={b.status} /></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <AdminTable
+              rowKey={(b: Booking) => b.id}
+              rows={bookings}
+              columns={[
+                { key: 'id', header: t('table.id'), render: (b) => <span className="font-mono text-xs font-semibold text-navy">#{b.id}</span> },
+                { key: 'room', header: t('table.room'), render: (b) => b.room?.name ?? '—' },
+                { key: 'checkIn', header: t('table.checkIn'), className: 'text-slate-500 whitespace-nowrap text-xs', render: (b) => new Date(b.checkInDate).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric', year: 'numeric' }) },
+                { key: 'total', header: t('table.total'), render: (b) => `$${b.totalPrice.toLocaleString()}` },
+                { key: 'status', header: t('common.status'), render: (b) => <StatusBadge status={b.status} config={BOOKING_STATUS_CONFIG} /> },
+              ]}
+            />
           )}
         </Card>
       </div>

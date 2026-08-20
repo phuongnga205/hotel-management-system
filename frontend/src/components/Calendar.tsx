@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
+import { colors, withAlpha } from '../tokens/colors'
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -78,9 +79,9 @@ export function CalendarPanel({ value, onChange, minDate, maxDate, rangeStart, r
   const isRangeE   = (day: number) => !!reD && reD.getFullYear() === year && reD.getMonth() === month && reD.getDate() === day
 
   return (
-    <div className="w-72 bg-white rounded-2xl overflow-hidden select-none" style={{ boxShadow: '0 8px 28px rgba(11,37,69,0.14)' }}>
+    <div className="w-72 bg-white rounded-2xl overflow-hidden select-none" style={{ boxShadow: `0 8px 28px ${withAlpha(colors.navy, 0.14)}` }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3" style={{ background: '#0B2545' }}>
+      <div className="flex items-center justify-between px-4 py-3" style={{ background: colors.navy }}>
         <button type="button" onClick={prevMonth} className="w-7 h-7 rounded-lg flex items-center justify-center text-white/70 hover:bg-white/15 transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -123,7 +124,7 @@ export function CalendarPanel({ value, onChange, minDate, maxDate, rangeStart, r
               onClick={() => !dis && onChange(toYMD(new Date(year, month, day)))}
               className={`
                 relative flex items-center justify-center h-8 w-full text-xs transition-all duration-100
-                ${rang ? 'bg-[#0B2545]/8' : ''}
+                ${rang ? 'bg-navy/8' : ''}
                 ${rs ? 'rounded-l-lg' : ''} ${re ? 'rounded-r-lg' : ''}
                 ${!endpoint && !dis ? 'hover:rounded-lg hover:bg-slate-100 cursor-pointer' : ''}
                 ${dis ? 'cursor-not-allowed' : ''}
@@ -131,13 +132,13 @@ export function CalendarPanel({ value, onChange, minDate, maxDate, rangeStart, r
             >
               <span
                 className="w-7 h-7 flex items-center justify-center rounded-lg z-10 text-xs"
-                style={endpoint ? { background: '#0B2545' } : {}}
+                style={endpoint ? { background: colors.navy } : {}}
               >
                 <span className={
                   endpoint ? 'text-white font-semibold'
                   : dis ? 'text-slate-300'
                   : rang ? 'text-navy font-medium'
-                  : tod ? 'text-[#C9A84C] font-semibold'
+                  : tod ? 'text-gold font-semibold'
                   : 'text-slate-700'
                 }>
                   {day}
@@ -242,8 +243,8 @@ export default function DatePicker({
           ${error
             ? 'border-red-400 bg-red-50'
             : open
-              ? 'border-[#0B2545] ring-2 ring-[#0B2545]/20'
-              : 'border-slate-200 hover:border-[#0B2545]/40'}
+              ? 'border-navy ring-2 ring-navy/20'
+              : 'border-slate-200 hover:border-navy/40'}
           ${disabled ? 'opacity-50' : ''}
         `}
       >
