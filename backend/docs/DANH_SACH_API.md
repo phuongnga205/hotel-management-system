@@ -145,7 +145,7 @@ chung toàn app), không thêm field tuỳ biến:
 > phải dùng `TokenUtil.saveOtp`/`verifyOtp`/`consumeOtp`
 > (`src/token/token.util.ts`), **không** tạo lại entity/table cho việc này.
 > 3 endpoint này hiện vẫn chỉ là hợp đồng API đã chốt — code thật (sinh OTP,
-> so khớp, emit event gửi mail) chưa implement, xem mục 12.
+> so khớp, emit event gửi mail) chưa implement, xem mục 13.
 
 ## 2. Users (self-service)
 
@@ -155,7 +155,15 @@ chung toàn app), không thêm field tuỳ biến:
 | Chỉnh sửa thông tin cá nhân | PATCH | `/api/v1/users/me` | User | JWT |
 | Đổi mật khẩu (đã đăng nhập) | PATCH | `/api/v1/users/me/password` | User | JWT |
 | Thêm/thay ảnh đại diện | POST | `/api/v1/users/me/avatar` | User | JWT |
-| 🚧 Xoá ảnh đại diện | DELETE | `/api/v1/users/me/avatar` | User | JWT |
+| Xoá ảnh đại diện | DELETE | `/api/v1/users/me/avatar` | User | JWT |
+
+> **Đã implement (Cloudinary)**: file ảnh gửi dạng `multipart/form-data`
+> (field `file`, JPG/PNG/WEBP, tối đa `AVATAR_MAX_FILE_SIZE_BYTES`). Lưu
+> trên Cloudinary với `public_id` cố định `avatars/user-<userId>` +
+> `overwrite: true` — mỗi user chỉ 1 slot ảnh, thay avatar = ghi đè, không
+> cần lưu `public_id` riêng trong DB (khác room images bên dưới, xem mục 6b).
+> `avatarUrl` lưu trong `users.avatar_url` là URL tuyệt đối trên CDN
+> Cloudinary, không phải path local.
 
 ## 3. Rooms (public / user)
 
@@ -209,7 +217,43 @@ chung toàn app), không thêm field tuỳ biến:
 | Xoá phòng | DELETE | `/api/v1/admin/rooms/:id` | Admin | JWT + RolesGuard(ADMIN) |
 | 🚧 Export danh sách phòng ra Excel | GET | `/api/v1/admin/rooms/export` | Admin | JWT + RolesGuard(ADMIN) |
 
-## 7. Admin — Bookings
+## 7. Admin — Room Images
+
+| Chức năng | Method | URL | Quyền | Auth |
+|---|---|---|---|---|
+| 🚧 Upload nhiều ảnh cho 1 phòng | POST | `/api/v1/admin/rooms/:roomId/images` | Admin | JWT + RolesGuard(ADMIN) |
+| 🚧 Xoá 1 ảnh của phòng | DELETE | `/api/v1/admin/rooms/:roomId/images/:id` | Admin | JWT + RolesGuard(ADMIN) |
+| 🚧 Đặt 1 ảnh làm ảnh đại diện phòng | PATCH | `/api/v1/admin/rooms/:roomId/images/:id/thumbnail` | Admin | JWT + RolesGuard(ADMIN) |
+
+> **Chưa implement — mới chuẩn bị schema ở phiên này** (migration
+> `AddImagePublicIdToImages`, cột `images.image_public_id`, xem
+> `backend/db.md`). `ImagesModule` hiện tại (`src/images/`) vẫn là scaffold
+> mặc định của Nest CLI (`nest g resource`), chưa wire vào `RoomsModule`,
+> chưa có logic thật — 3 endpoint trên là hợp đồng dự kiến cho PR sau.
+>
+> **Khác avatar user ở chỗ nào**: `users.avatar_url` là 1 slot cố định/user
+> nên `public_id` Cloudinary suy ra được trực tiếp từ `userId`
+> (`avatars/user-<userId>`), không cần lưu. Room có **N ảnh/phòng** nên
+> **bắt buộc** lưu `image_public_id` riêng từng dòng (đã có cột) để biết
+> xoá đúng asset nào trên Cloudinary khi gọi `DELETE .../images/:id`.
+>
+> **Multipart upload**: dùng `FilesInterceptor('files', maxCount)` (số
+> nhiều) thay vì `FileInterceptor` như avatar — 1 request nhận nhiều ảnh
+> cùng lúc, mỗi ảnh validate + upload Cloudinary riêng (không có khái niệm
+> "ghi đè" như avatar, luôn là ảnh mới).
+>
+> **Đổi ảnh đại diện phòng (`isThumbnail`) cần transaction**: unset ảnh
+> thumbnail cũ + set ảnh mới là 2 thao tác ghi DB — khác avatar/hầu hết
+> endpoint khác trong hệ thống (chỉ 1 thao tác ghi/lần), đây là chỗ **bắt
+> buộc bọc transaction** theo quy tắc DB của dự án. DB đã có sẵn lưới an
+> toàn `uq_images_one_thumbnail_per_room` (unique partial index) chống race
+> condition nếu 2 request đổi thumbnail cùng lúc.
+>
+> **Dọn rác khi xoá phòng**: khi 1 `Room` bị xoá, cần loop xoá toàn bộ ảnh
+> Cloudinary liên quan (best-effort) — tránh rác tồn trên Cloudinary vĩnh
+> viễn không ai dọn. Chưa implement.
+
+## 8. Admin — Bookings
 
 | Chức năng | Method | URL | Quyền | Auth |
 |---|---|---|---|---|
@@ -218,7 +262,7 @@ chung toàn app), không thêm field tuỳ biến:
 | 🚧 Chấp nhận request đặt phòng | PATCH | `/api/v1/admin/bookings/:id/accept` | Admin | JWT + RolesGuard(ADMIN) |
 | 🚧 Từ chối request đặt phòng (kèm lý do) | PATCH | `/api/v1/admin/bookings/:id/reject` | Admin | JWT + RolesGuard(ADMIN) |
 
-## 8. Admin — Users
+## 9. Admin — Users
 
 | Chức năng | Method | URL | Quyền | Auth |
 |---|---|---|---|---|
@@ -250,7 +294,7 @@ chung toàn app), không thêm field tuỳ biến:
 > làm UI khi cần (vd nút "Tạo người dùng" ở trang danh sách, nút "Xoá" ở
 > trang chi tiết).
 
-## 9. Admin — Reviews
+## 10. Admin — Reviews
 
 | Chức năng | Method | URL | Quyền | Auth |
 |---|---|---|---|---|
@@ -258,17 +302,17 @@ chung toàn app), không thêm field tuỳ biến:
 | Xoá đánh giá | DELETE | `/api/v1/admin/reviews/:id` | Admin | JWT + RolesGuard(ADMIN) |
 
 > **Chốt**: `DELETE /admin/reviews/:id` không nhận body, chỉ cần `id` trên
-> path. Email thông báo cho User (event `ReviewDeleted`, xem mục 12) dùng
+> path. Email thông báo cho User (event `ReviewDeleted`, xem mục 13) dùng
 > **1 mẫu (template) cố định**, không có phần lý do tuỳ chỉnh từ Admin.
 
-## 10. Admin — Statistics
+## 11. Admin — Statistics
 
 | Chức năng | Method | URL | Quyền | Auth |
 |---|---|---|---|---|
 | Thống kê booking (theo tháng/quý/loại phòng/trạng thái) | GET | `/api/v1/admin/statistics/bookings` | Admin | JWT + RolesGuard(ADMIN) |
 | Thống kê doanh thu (theo thời gian/loại phòng) | GET | `/api/v1/admin/statistics/revenue` | Admin | JWT + RolesGuard(ADMIN) |
 
-## 11. Admin — Email Log
+## 12. Admin — Email Log
 
 | Chức năng | Method | URL | Quyền | Auth |
 |---|---|---|---|---|
@@ -278,7 +322,7 @@ chung toàn app), không thêm field tuỳ biến:
 
 ---
 
-## 12. Sự kiện & Job nội bộ (KHÔNG phải REST API)
+## 13. Sự kiện & Job nội bộ (KHÔNG phải REST API)
 
 > Các mục này **không có URL/method HTTP**, FE **không** gọi trực tiếp. Ghi
 > lại ở đây để team biết luồng gửi email tự động vận hành thế nào, tránh
@@ -308,16 +352,18 @@ chung toàn app), không thêm field tuỳ biến:
       `AdminStatisticsController`, `AdminEmailLogsController`), tách khỏi
       controller public (`RoomsController`, `BookingsController`,
       `ReviewsController`).
-- [ ] Bổ sung các endpoint còn 🚧: xoá avatar, danh sách booking Admin,
-      accept/reject booking, danh sách review Admin, export Excel phòng.
+- [ ] Bổ sung các endpoint còn 🚧: room images (upload/xoá/đặt thumbnail,
+      xem mục 7 — schema đã chuẩn bị sẵn, chỉ còn thiếu logic), danh sách
+      booking Admin, accept/reject booking, danh sách review Admin, export
+      Excel phòng.
 - [ ] Implement `GET /rooms/available` bằng cách kết hợp `rooms.status =
       ACTIVE` + kiểm tra không có booking `ACCEPTED` chồng ngày (không chỉ
       lọc theo cột `status`) — xem ghi chú ở mục Rooms.
 - [ ] Emit đủ 5 event gửi mail: `UserRegistered`, `PasswordResetRequested`,
       `BookingStatusChanged`, `ReviewDeleted`, + cron báo cáo doanh thu —
-      xem mục 12.
+      xem mục 13.
 - [ ] Soạn sẵn nội dung template email `ReviewDeleted` (tiêu đề + nội dung
-      cố định, không có phần lý do tuỳ chỉnh) — xem mục 12 và mục Admin
+      cố định, không có phần lý do tuỳ chỉnh) — xem mục 13 và mục Admin
       Reviews.
 - [ ] Đảm bảo `GET /bookings/:id` chặn user xem booking không phải của mình
       (403), khác với `GET /admin/bookings/:id` không bị chặn theo chủ sở
