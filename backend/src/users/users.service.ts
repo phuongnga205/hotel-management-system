@@ -1,8 +1,9 @@
 import { Repository } from 'typeorm';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User } from './entities/user.entity';
+import { User, UserStatus } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
+import { AdminUpdateUserDto } from './dto/admin-update-user.dto';
 import { I18nService } from 'nestjs-i18n';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
@@ -12,55 +13,67 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { UserQueryDto } from './dto/user-query.dto';
 import * as bcrypt from 'bcrypt';
 import { BCRYPT_SALT_ROUNDS } from '../auth/auth.service';
+import { PostgresErrorCode } from '../common/enums/postgres-error-code.enum';
 import { UserResponseDto } from './dto/user-response.dto';
+import { TokenUtil } from '../token/token.util';
+
+type UniqueFieldsDto = {
+  email?: string;
+  username?: string;
+  phone?: string;
+};
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
-
+    private readonly tokenUtil: TokenUtil,
+    private readonly jwtService: JwtService,
     private readonly i18n: I18nService,
   ) {}
 
-  async create(dto: CreateUserDto) {
-    // 1. Check duplicate email
-    const existingEmail = await this.usersRepository.findOne({
-      where: {
-        email: dto.email,
-      },
-      withDeleted: false,
-    });
+  // Dùng chung cho create/update/adminUpdate: báo lỗi 409 sớm (UX tốt hơn,
+  // thấy được field nào trùng) trước khi chạm DB. Không thay thế được
+  // try/catch 23505 ở saveUser() — 2 request đồng thời vẫn có thể vượt qua
+  // bước check này rồi mới đụng unique constraint lúc save().
+  private async ensureNoDuplicates(
+    dto: UniqueFieldsDto,
+    currentUser?: Pick<User, 'email' | 'username' | 'phone'>,
+  ): Promise<void> {
+    if (dto.email && dto.email !== currentUser?.email) {
+      const existingEmail = await this.usersRepository.findOne({
+        where: { email: dto.email },
+        withDeleted: true,
+      });
 
-    if (existingEmail) {
-      throw new ConflictException(
-        this.i18n.t('messages.USERS.EMAIL_ALREADY_EXISTS'),
-      );
+      if (existingEmail) {
+        throw new ConflictException(
+          this.i18n.t('messages.USERS.EMAIL_ALREADY_EXISTS'),
+        );
+      }
     }
 
-    // 2. Check duplicate username
-    const existingUsername = await this.usersRepository.findOne({
-      where: {
-        username: dto.username,
-      },
-      withDeleted: true,
-    });
+    if (dto.username && dto.username !== currentUser?.username) {
+      const existingUsername = await this.usersRepository.findOne({
+        where: { username: dto.username },
+        withDeleted: true,
+      });
 
-    if (existingUsername) {
-      throw new ConflictException(
-        this.i18n.t('messages.USERS.USERNAME_ALREADY_EXISTS'),
-      );
+      if (existingUsername) {
+        throw new ConflictException(
+          this.i18n.t('messages.USERS.USERNAME_ALREADY_EXISTS'),
+        );
+      }
     }
 
-    // 3. Check duplicate phone
-    if (dto.phone) {
+    if (dto.phone && dto.phone !== currentUser?.phone) {
       const existingPhone = await this.usersRepository.findOne({
-        where: {
-          phone: dto.phone,
-        },
+        where: { phone: dto.phone },
         withDeleted: true,
       });
 
@@ -70,23 +83,46 @@ export class UsersService {
         );
       }
     }
+  }
 
-    // 4. Hash password
+  // Lưới an toàn cuối cùng cho race condition: 2 request cùng qua được
+  // ensureNoDuplicates() ở trên rồi mới cùng save() thì vẫn có 1 request
+  // đụng unique constraint (23505) — bắt ở đây, giống AuthService.register().
+  private async saveUser(user: User): Promise<User> {
+    try {
+      return await this.usersRepository.save(user);
+    } catch (error: unknown) {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'code' in error &&
+        error.code === PostgresErrorCode.UNIQUE_VIOLATION
+      ) {
+        throw new ConflictException(
+          this.i18n.t('messages.USERS.ALREADY_EXISTS'),
+        );
+      }
+      throw error;
+    }
+  }
+
+  async create(dto: CreateUserDto) {
+    await this.ensureNoDuplicates(dto);
+
     const passwordHash = await bcrypt.hash(dto.password, BCRYPT_SALT_ROUNDS);
 
-    // 5. Create entity — admin creates users as ACTIVE immediately, set activatedAt
-    const now = new Date();
+    // Admin tạo user thì kích hoạt luôn (status=ACTIVE), nên phải set luôn
+    // activatedAt — nếu không cột này sẽ mãi là null dù tài khoản đã active.
     const user = this.usersRepository.create({
       email: dto.email,
       username: dto.username,
       phone: dto.phone ?? null,
       password: passwordHash,
-      status: 'ACTIVE',
-      activatedAt: now,
+      status: UserStatus.ACTIVE,
+      activatedAt: new Date(),
     });
 
-    // 6. Save database
-    const savedUser = await this.usersRepository.save(user);
+    const savedUser = await this.saveUser(user);
 
     return {
       statusCode: 201,
@@ -198,68 +234,43 @@ export class UsersService {
     };
   }
 
-  async update(id: string, dto: UpdateUserDto) {
-    // 1. Find user
-    const user = await this.usersRepository.findOne({
-      where: { id },
-    });
+  // Dùng chung cho update() (self-service) và adminUpdate() — 2 hàm này chỉ
+  // khác nhau ở kiểu DTO (Admin có thêm role/status) và message trả về.
+  private async applyUpdate(
+    id: string,
+    dto: UpdateUserDto | AdminUpdateUserDto,
+  ): Promise<User> {
+    const user = await this.usersRepository.findOne({ where: { id } });
 
     if (!user) {
       throw new NotFoundException(this.i18n.t('messages.USERS.NOT_FOUND'));
     }
 
-    // 2. Check duplicate email
-    if (dto.email && dto.email !== user.email) {
-      const existingEmail = await this.usersRepository.findOne({
-        where: {
-          email: dto.email,
-        },
-        withDeleted: true,
-      });
+    await this.ensureNoDuplicates(dto, user);
 
-      if (existingEmail) {
-        throw new ConflictException(
-          this.i18n.t('messages.USERS.EMAIL_ALREADY_EXISTS'),
-        );
-      }
-    }
-
-    // 3. Check duplicate username
-    if (dto.username && dto.username !== user.username) {
-      const existingUsername = await this.usersRepository.findOne({
-        where: {
-          username: dto.username,
-        },
-        withDeleted: true,
-      });
-
-      if (existingUsername) {
-        throw new ConflictException(
-          this.i18n.t('messages.USERS.USERNAME_ALREADY_EXISTS'),
-        );
-      }
-    }
-
-    // 4. Check duplicate phone
-    if (dto.phone && dto.phone !== user.phone) {
-      const existingPhone = await this.usersRepository.findOne({
-        where: {
-          phone: dto.phone,
-        },
-        withDeleted: true,
-      });
-
-      if (existingPhone) {
-        throw new ConflictException(
-          this.i18n.t('messages.USERS.PHONE_ALREADY_EXISTS'),
-        );
-      }
-    }
-
-    // 5. Update user
     Object.assign(user, dto);
 
-    const updatedUser = await this.usersRepository.save(user);
+    // Admin đổi status sang ACTIVE mà tài khoản chưa từng active thì set
+    // luôn activatedAt, tránh mãi null giống lúc create().
+    if (user.status === UserStatus.ACTIVE && !user.activatedAt) {
+      user.activatedAt = new Date();
+    }
+
+    return this.saveUser(user);
+  }
+
+  async update(id: string, dto: UpdateUserDto) {
+    const updatedUser = await this.applyUpdate(id, dto);
+
+    return {
+      statusCode: 200,
+      message: this.i18n.t('messages.USERS.UPDATE_SUCCESS'),
+      data: new UserResponseDto(updatedUser),
+    };
+  }
+
+  async adminUpdate(id: string, dto: AdminUpdateUserDto) {
+    const updatedUser = await this.applyUpdate(id, dto);
 
     return {
       statusCode: 200,
@@ -286,7 +297,7 @@ export class UsersService {
     };
   }
 
-  async changePassword(id: string, dto: ChangePasswordDto) {
+  async changePassword(id: string, dto: ChangePasswordDto, token: string) {
     // 1. Find user including password
     const user = await this.usersRepository.findOne({
       where: { id },
@@ -325,6 +336,19 @@ export class UsersService {
     user.password = await bcrypt.hash(dto.newPassword, BCRYPT_SALT_ROUNDS);
 
     await this.usersRepository.save(user);
+
+    // 5. Revoke the token used to change the password — buộc phải đăng nhập
+    // lại bằng mật khẩu mới, giống cơ chế logout ở AuthService.
+    const payload = this.jwtService.decode<{ exp?: number } | null>(token);
+
+    if (payload?.exp) {
+      const currentTime = Math.floor(Date.now() / 1000);
+      const ttl = payload.exp - currentTime;
+
+      if (ttl > 0) {
+        await this.tokenUtil.revokeAuthToken(token, ttl);
+      }
+    }
 
     return {
       statusCode: 200,

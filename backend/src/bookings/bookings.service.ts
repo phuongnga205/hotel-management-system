@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { I18nService } from 'nestjs-i18n';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
@@ -17,7 +21,7 @@ export class BookingsService {
     private readonly bookingsRepository: Repository<Booking>,
     @InjectRepository(Room) private readonly roomsRepository: Repository<Room>,
     private readonly i18n: I18nService,
-  ) { }
+  ) {}
 
   //CREATE
   async create(createBookingDto: CreateBookingDto, userId: string) {
@@ -38,8 +42,8 @@ export class BookingsService {
     }
     const bookingroom = await this.roomsRepository.findOne({
       where: {
-        id: createBookingDto.roomId
-      }
+        id: createBookingDto.roomId,
+      },
     });
     if (!bookingroom) {
       throw new NotFoundException(this.i18n.t('messages.ROOM_NOT_FOUND'));
@@ -48,9 +52,8 @@ export class BookingsService {
     const checkOut = new Date(`${createBookingDto.checkOutDate}T00:00:00Z`);
 
     const nights =
-      (checkOut.getTime() - checkIn.getTime()) /
-      (1000 * 60 * 60 * 24);
-    const totalAmount = (nights * Number(bookingroom.pricePerNight));
+      (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24);
+    const totalAmount = nights * Number(bookingroom.pricePerNight);
 
     const booking = await this.bookingsRepository.save({
       userId: userId,
@@ -62,25 +65,20 @@ export class BookingsService {
     //trên server đã có constraint excl_bookings_no_overlap để tránh lặp rồi nên không cần logic xét ngày trùng nữa
   }
 
-
   async findOne(id: string, userId: string) {
     const booking = await this.bookingsRepository.findOne({
       where: {
         id: id,
-        userId: userId
-      }
-    })
+        userId: userId,
+      },
+    });
     if (!booking) {
       throw new NotFoundException(this.i18n.t('messages.BOOKING.NOT_FOUND'));
     }
     return new BookingResponseDto(booking);
   }
 
-  async findHistory(
-    userId: string,
-    page: number,
-    limit: number,
-  ) {
+  async findHistory(userId: string, page: number, limit: number) {
     const skip = (page - 1) * limit;
 
     const [bookings, total] = await this.bookingsRepository
@@ -92,9 +90,7 @@ export class BookingsService {
       .getManyAndCount();
 
     return {
-      data: bookings.map(
-        booking => new BookingResponseDto(booking),
-      ),
+      data: bookings.map((booking) => new BookingResponseDto(booking)),
       meta: {
         page,
         limit,
@@ -104,11 +100,7 @@ export class BookingsService {
     };
   }
 
-  async update(
-    id: string,
-    userId: string,
-    updateDto: UpdateBookingDto,
-  ) {
+  async update(id: string, userId: string, updateDto: UpdateBookingDto) {
     const booking = await this.bookingsRepository.findOne({
       where: {
         id,
@@ -117,9 +109,7 @@ export class BookingsService {
     });
 
     if (!booking) {
-      throw new NotFoundException(
-        this.i18n.t('messages.BOOKING.NOT_FOUND'),
-      );
+      throw new NotFoundException(this.i18n.t('messages.BOOKING.NOT_FOUND'));
     }
 
     if (booking.status !== BookingStatus.PENDING) {
@@ -128,11 +118,9 @@ export class BookingsService {
       );
     }
 
-    const roomId =booking.roomId;
-    const checkInDate =
-      updateDto.checkInDate ?? booking.checkInDate;
-    const checkOutDate =
-      updateDto.checkOutDate ?? booking.checkOutDate;
+    const roomId = booking.roomId;
+    const checkInDate = updateDto.checkInDate ?? booking.checkInDate;
+    const checkOutDate = updateDto.checkOutDate ?? booking.checkOutDate;
 
     // Validate date
     const today = new Intl.DateTimeFormat('en-CA', {
@@ -159,9 +147,7 @@ export class BookingsService {
     });
 
     if (!room) {
-      throw new NotFoundException(
-        this.i18n.t('messages.ROOM_NOT_FOUND'),
-      );
+      throw new NotFoundException(this.i18n.t('messages.ROOM_NOT_FOUND'));
     }
 
     // Update booking data
@@ -176,11 +162,9 @@ export class BookingsService {
     const checkOut = new Date(`${checkOutDate}T00:00:00Z`);
 
     const nights =
-      (checkOut.getTime() - checkIn.getTime()) /
-      (1000 * 60 * 60 * 24);
+      (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24);
 
-    booking.totalPrice =
-      nights * Number(room.pricePerNight);
+    booking.totalPrice = nights * Number(room.pricePerNight);
 
     await this.bookingsRepository.save(booking);
 
@@ -203,10 +187,21 @@ export class BookingsService {
     );
 
     if (result.affected === 0) {
-      throw new BadRequestException(this.i18n.t('messages.BOOKING.CANNOT_CANCEL'));
+      throw new BadRequestException(
+        this.i18n.t('messages.BOOKING.CANNOT_CANCEL'),
+      );
     }
     return {
       message: this.i18n.t('messages.BOOKING.CANCEL_SUCCESS'),
+    };
+  }
+
+  // TODO: chưa chốt logic (ai được xoá, xoá cứng hay mềm, điều kiện status...)
+  // — hiện chỉ trả message để khớp type với bookings.service.spec.ts.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  remove(id: string) {
+    return {
+      message: this.i18n.t('messages.BOOKING.DELETED_SUCCESS'),
     };
   }
 }

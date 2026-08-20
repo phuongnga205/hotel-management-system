@@ -19,6 +19,7 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { GetRawToken } from '../auth/decorators/get-token.decorator';
 
 @ApiTags('Users - Profile')
 @ApiBearerAuth('access-token')
@@ -43,7 +44,10 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'Cập nhật thành công' })
   @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ' })
   @ApiResponse({ status: 401, description: 'Chưa xác thực' })
-  @ApiResponse({ status: 409, description: 'Email / username / phone đã tồn tại' })
+  @ApiResponse({
+    status: 409,
+    description: 'Email / username / phone đã tồn tại',
+  })
   updateProfile(
     @Req() req: Request & { user: { id: string } },
     @Body() dto: UpdateUserDto,
@@ -60,7 +64,8 @@ export class UsersController {
   changePassword(
     @Req() req: Request & { user: { id: string } },
     @Body() dto: ChangePasswordDto,
+    @GetRawToken() token: string,
   ) {
-    return this.usersService.changePassword(req.user.id, dto);
+    return this.usersService.changePassword(req.user.id, dto, token);
   }
 }

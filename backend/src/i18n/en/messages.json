@@ -34,7 +34,14 @@
     "IS_EMAIL": "Email format is invalid.",
     "NOT_EMPTY": "{property} should not be empty.",
     "MIN_LENGTH": "{property} must be longer than or equal to {constraints.0} characters.",
-    "IS_STRING": "{property} must be a string."
+    "MAX_LENGTH": "{property} must be shorter than or equal to {constraints.0} characters.",
+    "IS_STRING": "{property} must be a string.",
+    "IS_NUMBER_STRING": "{property} must be a number string.",
+    "IS_INT": "{property} must be an integer number.",
+    "IS_ENUM": "{property} is invalid.",
+    "MIN": "{property} must not be less than {constraints.0}.",
+    "MAX": "{property} must not be greater than {constraints.0}.",
+    "INVALID_PHONE": "Phone number format is invalid."
   },
   "USERS":{
     "PHONE_ALREADY_EXISTS":"phone already exists.",
@@ -43,6 +50,12 @@
     "EMAIL_ALREADY_EXISTS" : "Email already exist.",
     "USERNAME_ALREADY_EXISTS": "Username already exist.",
     "NEW_PASSWORD_MUST_BE_DIFFERENT": "New password must be different.",
-    "CHANGE_PASSWORD_SUCCESS": "Password changed successfully."
+    "CHANGE_PASSWORD_SUCCESS": "Password changed successfully.",
+    "ALREADY_EXISTS": "This email, username or phone number already exists.",
+    "CREATE_SUCCESS": "User created successfully.",
+    "FIND_ALL_SUCCESS": "Users retrieved successfully.",
+    "FIND_ONE_SUCCESS": "User retrieved successfully.",
+    "UPDATE_SUCCESS": "User updated successfully.",
+    "REMOVE_SUCCESS": "User removed successfully."
   }
 }

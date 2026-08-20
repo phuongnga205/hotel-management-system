@@ -20,7 +20,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { AdminUpdateUserDto } from './dto/admin-update-user.dto';
+import { UserIdParamDto } from './dto/user-id-param.dto';
 import { UserQueryDto } from './dto/user-query.dto';
 import { UsersService } from './users.service';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -46,7 +47,10 @@ export class AdminUsersController {
   @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ' })
   @ApiResponse({ status: 401, description: 'Chưa xác thực' })
   @ApiResponse({ status: 403, description: 'Không có quyền' })
-  @ApiResponse({ status: 409, description: 'Email / username / phone đã tồn tại' })
+  @ApiResponse({
+    status: 409,
+    description: 'Email / username / phone đã tồn tại',
+  })
   create(@Body() dto: CreateUserDto) {
     return this.usersService.create(dto);
   }
@@ -111,12 +115,15 @@ export class AdminUsersController {
   @ApiResponse({ status: 401, description: 'Chưa xác thực' })
   @ApiResponse({ status: 403, description: 'Không có quyền' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy người dùng' })
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(id);
+  findOne(@Param() params: UserIdParamDto) {
+    return this.usersService.findOne(params.id);
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: '[Admin] Cập nhật thông tin người dùng' })
+  @ApiOperation({
+    summary: '[Admin] Cập nhật thông tin người dùng',
+    description: 'Cho phép sửa fullName, phone, email, username, role, status',
+  })
   @ApiParam({
     name: 'id',
     type: String,
@@ -128,9 +135,12 @@ export class AdminUsersController {
   @ApiResponse({ status: 401, description: 'Chưa xác thực' })
   @ApiResponse({ status: 403, description: 'Không có quyền' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy người dùng' })
-  @ApiResponse({ status: 409, description: 'Email / username / phone đã tồn tại' })
-  update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
-    return this.usersService.update(id, dto);
+  @ApiResponse({
+    status: 409,
+    description: 'Email / username / phone đã tồn tại',
+  })
+  update(@Param() params: UserIdParamDto, @Body() dto: AdminUpdateUserDto) {
+    return this.usersService.adminUpdate(params.id, dto);
   }
 
   @Delete(':id')
@@ -146,7 +156,7 @@ export class AdminUsersController {
   @ApiResponse({ status: 401, description: 'Chưa xác thực' })
   @ApiResponse({ status: 403, description: 'Không có quyền' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy người dùng' })
-  remove(@Param('id') id: string) {
-    return this.usersService.remove(id);
+  remove(@Param() params: UserIdParamDto) {
+    return this.usersService.remove(params.id);
   }
 }

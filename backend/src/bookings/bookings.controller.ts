@@ -19,21 +19,18 @@ import { BookingHistoryQueryDto } from './dto/booking-history-query.dto';
 
 @Controller('bookings')
 export class BookingsController {
-  constructor(private readonly bookingsService: BookingsService) { }
+  constructor(private readonly bookingsService: BookingsService) {}
 
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard)
   @Post()
-  create(
-    @Req() req,
-    @Body() createBookingDto: CreateBookingDto) {
+  create(@Req() req, @Body() createBookingDto: CreateBookingDto) {
     return this.bookingsService.create(createBookingDto, req.user.id);
   }
 
-
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard)
-  @Get("history")
+  @Get('history')
   @ApiQuery({
     name: 'page',
     required: false,
@@ -46,23 +43,20 @@ export class BookingsController {
     type: Number,
     example: 10,
   })
-  findHistory(
-    @Req() req,
-    @Query() query: BookingHistoryQueryDto
-  ) {
-    return this.bookingsService.findHistory(req.user.id, query.page, query.limit);
+  findHistory(@Req() req, @Query() query: BookingHistoryQueryDto) {
+    return this.bookingsService.findHistory(
+      req.user.id,
+      query.page,
+      query.limit,
+    );
   }
 
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard)
   @Get(':id')
-  findOne(
-    @Param('id') id: string,
-    @Req() req,
-  ) {
+  findOne(@Param('id') id: string, @Req() req) {
     return this.bookingsService.findOne(id, req.user.id);
   }
-
 
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard)

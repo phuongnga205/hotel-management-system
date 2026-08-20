@@ -222,9 +222,33 @@ chung toàn app), không thêm field tuỳ biến:
 
 | Chức năng | Method | URL | Quyền | Auth |
 |---|---|---|---|---|
+| Tạo người dùng mới | POST | `/api/v1/admin/users` | Admin | JWT + RolesGuard(ADMIN) |
 | Xem danh sách người dùng | GET | `/api/v1/admin/users` | Admin | JWT + RolesGuard(ADMIN) |
 | Xem chi tiết người dùng | GET | `/api/v1/admin/users/:id` | Admin | JWT + RolesGuard(ADMIN) |
-| Thay đổi trạng thái người dùng (active/inactive) | PATCH | `/api/v1/admin/users/:id/status` | Admin | JWT + RolesGuard(ADMIN) |
+| Chỉnh sửa thông tin người dùng (gồm cả đổi trạng thái/role) | PATCH | `/api/v1/admin/users/:id` | Admin | JWT + RolesGuard(ADMIN) |
+| Xoá người dùng | DELETE | `/api/v1/admin/users/:id` | Admin | JWT + RolesGuard(ADMIN) |
+
+> 🆕 **Optional — vượt phạm vi tối thiểu ban đầu của mục này** (bản đầu chỉ
+> định nghĩa 3 API: xem danh sách/chi tiết + đổi trạng thái qua
+> `PATCH .../status`). `AdminUsersController`
+> (`backend/src/users/admin-users.controller.ts`) đã implement đầy đủ CRUD
+> thay vì chỉ 3 API đó — đã hoàn thiện, sẵn dùng, không bắt buộc FE phải làm
+> UI ngay nếu chưa cần:
+> - `POST /admin/users` — Admin tạo tài khoản mới, tài khoản được **kích
+>   hoạt ngay** (`status=ACTIVE`, `activatedAt` được set), khác với
+>   `POST /auth/register` (phải qua OTP kích hoạt).
+> - `PATCH /admin/users/:id` — **thay cho** `.../status` dự kiến ban đầu:
+>   nhận `AdminUpdateUserDto` (`username`, `email`, `fullName`, `phone`,
+>   `role`, `status`), đổi được bất kỳ field nào — kể cả riêng `status` bằng
+>   cách chỉ gửi `{ "status": "..." }` — trong 1 endpoint duy nhất, không cần
+>   route con `/status` riêng.
+> - `DELETE /admin/users/:id` — **xoá mềm** (`@DeleteDateColumn`), không xoá
+>   cứng, giống quy ước xoá mềm dùng chung toàn hệ thống.
+>
+> FE hiện **chưa có trang nào gọi `POST`/`DELETE` này** (xem
+> `frontend/docs/DANH_SACH_MAN_HINH.md` mục F) — 2 API này coi là optional,
+> làm UI khi cần (vd nút "Tạo người dùng" ở trang danh sách, nút "Xoá" ở
+> trang chi tiết).
 
 ## 9. Admin — Reviews
 

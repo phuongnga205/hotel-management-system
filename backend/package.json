@@ -24,7 +24,8 @@
     "lint:security": "sunlint --security --input=src",
     "migration:run": "ts-node -r tsconfig-paths/register src/migration-runner.ts",
     "migration:revert": "ts-node -r tsconfig-paths/register -e \"(async()=>{const ds=(await import('./src/data-source')).default;await ds.initialize();await ds.undoLastMigration();await ds.destroy();})()\"",
-    "db:check": "ts-node -r tsconfig-paths/register -r dotenv/config src/db-check.ts"
+    "db:check": "ts-node -r tsconfig-paths/register -r dotenv/config src/db-check.ts",
+    "seed:admin": "ts-node -r tsconfig-paths/register src/seed-admin.ts"
   },
   "dependencies": {
     "@nestjs/bullmq": "^11.0.5",

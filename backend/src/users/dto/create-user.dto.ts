@@ -20,7 +20,10 @@ export class CreateUserDto {
   })
   email!: string;
 
-  @ApiProperty({ example: '123456', description: 'Mật khẩu (tối thiểu 6 ký tự)' })
+  @ApiProperty({
+    example: '123456',
+    description: 'Mật khẩu (tối thiểu 6 ký tự)',
+  })
   @IsString({ message: i18nValidationMessage('messages.VALIDATION.IS_STRING') })
   @IsNotEmpty({
     message: i18nValidationMessage('messages.VALIDATION.NOT_EMPTY'),
