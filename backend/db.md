@@ -7,7 +7,7 @@ CREATE TABLE users (
   email          VARCHAR(255) NOT NULL UNIQUE,
   password_hash  VARCHAR(255) NOT NULL,
   full_name      VARCHAR(150),
-  phone          VARCHAR(20),
+  phone          VARCHAR(20) UNIQUE,
   avatar_url     VARCHAR(500),
   role           VARCHAR(20)  NOT NULL DEFAULT 'USER',    -- USER, ADMIN
   status         VARCHAR(20)  NOT NULL DEFAULT 'INACTIVE', -- ACTIVE, INACTIVE
@@ -53,17 +53,24 @@ CREATE TABLE rooms (
 -- images (room photos)
 -- ============================================================
 CREATE TABLE images (
-  image_id      BIGSERIAL PRIMARY KEY,
-  room_id       BIGINT NOT NULL REFERENCES rooms(room_id),
-  image_url     VARCHAR(500) NOT NULL,
-  is_thumbnail  BOOLEAN NOT NULL DEFAULT false,
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-  deleted_at    TIMESTAMPTZ
+  image_id         BIGSERIAL PRIMARY KEY,
+  room_id          BIGINT NOT NULL REFERENCES rooms(room_id),
+  image_url        VARCHAR(500) NOT NULL,
+  image_public_id  VARCHAR(255) NOT NULL UNIQUE, -- Cloudinary public_id, xem migration AddImagePublicIdToImages
+  is_thumbnail     BOOLEAN NOT NULL DEFAULT false,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  deleted_at       TIMESTAMPTZ
 );
 -- enforce max one active thumbnail per room:
 CREATE UNIQUE INDEX uq_images_one_thumbnail_per_room
   ON images(room_id) WHERE is_thumbnail = true AND deleted_at IS NULL;
+
+-- NOTE: image_public_id là public_id trên Cloudinary (khác users.avatar_url
+-- — 1 avatar/user nên suy ra được public_id từ user_id, không cần lưu; ở
+-- đây 1 phòng có N ảnh nên bắt buộc lưu riêng từng dòng để xoá đúng asset).
+-- Logic upload/xoá ảnh thật (ImagesModule) làm ở PR sau, xem
+-- backend/docs/DANH_SACH_API.md mục "Admin — Room Images".
 
 -- ============================================================
 -- amenities
