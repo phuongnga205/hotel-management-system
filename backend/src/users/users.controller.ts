@@ -1,25 +1,32 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
   Patch,
-  Req,
+  Post,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
   ApiOperation,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import type { Request } from 'express';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetRawToken } from '../auth/decorators/get-token.decorator';
+import { GetUser } from '../auth/decorators/get-user.decorator';
+import { AvatarFileValidationPipe } from './pipes/avatar-file-validation.pipe';
 
 @ApiTags('Users - Profile')
 @ApiBearerAuth('access-token')
@@ -32,8 +39,8 @@ export class UsersController {
   @ApiOperation({ summary: 'Lấy thông tin profile của người dùng hiện tại' })
   @ApiResponse({ status: 200, description: 'Trả về thông tin profile' })
   @ApiResponse({ status: 401, description: 'Chưa xác thực' })
-  findMe(@Req() req: Request & { user: { id: string } }) {
-    return this.usersService.findOne(req.user.id);
+  findMe(@GetUser('id') userId: string) {
+    return this.usersService.findOne(userId);
   }
 
   @Patch('me')
@@ -48,11 +55,8 @@ export class UsersController {
     status: 409,
     description: 'Email / username / phone đã tồn tại',
   })
-  updateProfile(
-    @Req() req: Request & { user: { id: string } },
-    @Body() dto: UpdateUserDto,
-  ) {
-    return this.usersService.update(req.user.id, dto);
+  updateProfile(@GetUser('id') userId: string, @Body() dto: UpdateUserDto) {
+    return this.usersService.update(userId, dto);
   }
 
   @Patch('me/password')
@@ -62,10 +66,41 @@ export class UsersController {
   @ApiResponse({ status: 400, description: 'Mật khẩu mới trùng mật khẩu cũ' })
   @ApiResponse({ status: 401, description: 'Mật khẩu hiện tại không đúng' })
   changePassword(
-    @Req() req: Request & { user: { id: string } },
+    @GetUser('id') userId: string,
     @Body() dto: ChangePasswordDto,
     @GetRawToken() token: string,
   ) {
-    return this.usersService.changePassword(req.user.id, dto, token);
+    return this.usersService.changePassword(userId, dto, token);
+  }
+
+  @Post('me/avatar')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({ summary: 'Thêm/thay ảnh đại diện của người dùng hiện tại' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Cập nhật ảnh đại diện thành công' })
+  @ApiResponse({ status: 400, description: 'File không hợp lệ' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực' })
+  uploadAvatar(
+    @GetUser('id') userId: string,
+    @UploadedFile(AvatarFileValidationPipe) file: Express.Multer.File,
+  ) {
+    return this.usersService.updateAvatar(userId, file);
+  }
+
+  @Delete('me/avatar')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Xoá ảnh đại diện của người dùng hiện tại' })
+  @ApiResponse({ status: 200, description: 'Xoá ảnh đại diện thành công' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực' })
+  @ApiResponse({ status: 404, description: 'Chưa có ảnh đại diện để xoá' })
+  removeAvatar(@GetUser('id') userId: string) {
+    return this.usersService.removeAvatar(userId);
   }
 }

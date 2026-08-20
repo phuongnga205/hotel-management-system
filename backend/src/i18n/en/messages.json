@@ -56,6 +56,11 @@
     "FIND_ALL_SUCCESS": "Users retrieved successfully.",
     "FIND_ONE_SUCCESS": "User retrieved successfully.",
     "UPDATE_SUCCESS": "User updated successfully.",
-    "REMOVE_SUCCESS": "User removed successfully."
+    "REMOVE_SUCCESS": "User removed successfully.",
+    "AVATAR_INVALID_FILE": "Invalid avatar file (only JPG, PNG, WEBP are accepted).",
+    "AVATAR_FILE_TOO_LARGE": "Avatar file exceeds the allowed size.",
+    "AVATAR_UPLOAD_SUCCESS": "Avatar updated successfully.",
+    "AVATAR_NOT_FOUND": "This account has no avatar to remove.",
+    "AVATAR_REMOVE_SUCCESS": "Avatar removed successfully."
   }
 }

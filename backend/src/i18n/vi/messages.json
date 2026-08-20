@@ -55,6 +55,11 @@
     "FIND_ALL_SUCCESS": "Lấy danh sách người dùng thành công.",
     "FIND_ONE_SUCCESS": "Lấy thông tin người dùng thành công.",
     "UPDATE_SUCCESS": "Cập nhật người dùng thành công.",
-    "REMOVE_SUCCESS": "Xóa người dùng thành công."
+    "REMOVE_SUCCESS": "Xóa người dùng thành công.",
+    "AVATAR_INVALID_FILE": "File ảnh đại diện không hợp lệ (chỉ chấp nhận JPG, PNG, WEBP).",
+    "AVATAR_FILE_TOO_LARGE": "File ảnh đại diện vượt quá dung lượng cho phép.",
+    "AVATAR_UPLOAD_SUCCESS": "Cập nhật ảnh đại diện thành công.",
+    "AVATAR_NOT_FOUND": "Tài khoản chưa có ảnh đại diện để xoá.",
+    "AVATAR_REMOVE_SUCCESS": "Xoá ảnh đại diện thành công."
   }
 }

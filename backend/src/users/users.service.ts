@@ -20,6 +20,8 @@ import { BCRYPT_SALT_ROUNDS } from '../auth/auth.service';
 import { PostgresErrorCode } from '../common/enums/postgres-error-code.enum';
 import { UserResponseDto } from './dto/user-response.dto';
 import { TokenUtil } from '../token/token.util';
+import { buildAvatarPublicId } from '../config/environment.constants';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 type UniqueFieldsDto = {
   email?: string;
@@ -35,6 +37,7 @@ export class UsersService {
     private readonly tokenUtil: TokenUtil,
     private readonly jwtService: JwtService,
     private readonly i18n: I18nService,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   // Dùng chung cho create/update/adminUpdate: báo lỗi 409 sớm (UX tốt hơn,
@@ -353,6 +356,64 @@ export class UsersService {
     return {
       statusCode: 200,
       message: this.i18n.t('messages.USERS.CHANGE_PASSWORD_SUCCESS'),
+    };
+  }
+
+  async updateAvatar(id: string, file: Express.Multer.File) {
+    // Tìm user trước khi gọi Cloudinary — tránh tốn 1 lượt upload cho
+    // request nhắm vào user không tồn tại.
+    const user = await this.usersRepository.findOne({ where: { id } });
+
+    if (!user) {
+      throw new NotFoundException(this.i18n.t('messages.USERS.NOT_FOUND'));
+    }
+
+    // public_id cố định theo userId + overwrite:true → Cloudinary tự đè
+    // avatar cũ tại đúng chỗ, không cần lưu/tra public_id cũ để dọn rác.
+    const uploadResult = await this.cloudinaryService.uploadBuffer(
+      file.buffer,
+      {
+        public_id: buildAvatarPublicId(id),
+        overwrite: true,
+        resource_type: 'image',
+      },
+    );
+
+    user.avatarUrl = uploadResult.secure_url;
+
+    const updatedUser = await this.saveUser(user);
+
+    return {
+      statusCode: 200,
+      message: this.i18n.t('messages.USERS.AVATAR_UPLOAD_SUCCESS'),
+      data: new UserResponseDto(updatedUser),
+    };
+  }
+
+  async removeAvatar(id: string) {
+    const user = await this.usersRepository.findOne({ where: { id } });
+
+    if (!user) {
+      throw new NotFoundException(this.i18n.t('messages.USERS.NOT_FOUND'));
+    }
+
+    if (!user.avatarUrl) {
+      throw new NotFoundException(
+        this.i18n.t('messages.USERS.AVATAR_NOT_FOUND'),
+      );
+    }
+
+    user.avatarUrl = null;
+
+    await this.saveUser(user);
+
+    // public_id suy ra được từ userId (xem updateAvatar) — không cần đọc
+    // lại từ DB. Best-effort: không tồn tại trên Cloudinary thì bỏ qua.
+    await this.cloudinaryService.destroy(buildAvatarPublicId(id));
+
+    return {
+      statusCode: 200,
+      message: this.i18n.t('messages.USERS.AVATAR_REMOVE_SUCCESS'),
     };
   }
 }

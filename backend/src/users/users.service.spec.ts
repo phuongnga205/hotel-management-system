@@ -5,6 +5,7 @@ import { I18nService } from 'nestjs-i18n';
 import { UsersService } from './users.service';
 import { User } from './entities/user.entity';
 import { TokenUtil } from '../token/token.util';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -28,6 +29,10 @@ describe('UsersService', () => {
         {
           provide: I18nService,
           useValue: { t: jest.fn() },
+        },
+        {
+          provide: CloudinaryService,
+          useValue: { uploadBuffer: jest.fn(), destroy: jest.fn() },
         },
       ],
     }).compile();
