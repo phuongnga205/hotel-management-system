@@ -122,11 +122,30 @@ chung toàn app), không thêm field tuỳ biến:
 | Chức năng | Method | URL | Quyền | Auth |
 |---|---|---|---|---|
 | Đăng ký | POST | `/api/v1/auth/register` | Guest | Không cần |
-| Kích hoạt tài khoản (từ link email) | GET | `/api/v1/auth/activate?token={token}` | Guest | Không cần (token 1 lần dùng, truyền qua query) |
+| Kích hoạt tài khoản (nhập OTP tay) | POST | `/api/v1/auth/activate` | Guest | Không cần (body `{ email, otp }`, `ActivateAccountDto` — `otp` là chuỗi số đúng 6 ký tự, xem `frontend/docs/bridge.md`) |
 | Đăng nhập | POST | `/api/v1/auth/login` | Guest | Không cần |
 | Đăng xuất | POST | `/api/v1/auth/logout` | User | JWT |
-| Quên mật khẩu | POST | `/api/v1/auth/forgot-password` | Guest | Không cần |
-| Đặt lại mật khẩu | POST | `/api/v1/auth/reset-password` | Guest (xác thực bằng reset token trong body) | Không cần |
+| Quên mật khẩu | POST | `/api/v1/auth/forgot-password` | Guest | Không cần (body `{ email }`, `ForgotPasswordDto` — luôn trả response giống nhau kể cả email không tồn tại, tránh lộ thông tin) |
+| Đặt lại mật khẩu | POST | `/api/v1/auth/reset-password` | Guest (xác thực bằng `email` + `otp` trong body) | Không cần (body `{ email, otp, newPassword }`, `ResetPasswordDto`) |
+
+> **Chốt: kích hoạt tài khoản và đặt lại mật khẩu dùng OTP 6 số gửi qua
+> email, không dùng link kèm token.** User tự mở app, vào route
+> `/activate` hoặc `/reset-password` và gõ tay email + OTP (xem
+> `frontend/docs/CAU_TRUC_ROUTE.md`). Do đó `GET /auth/activate?token=`
+> (kiểu cũ) không còn dùng — thay bằng `POST /auth/activate` nhận body,
+> nhất quán với `ResetPasswordDto` đã có sẵn ở `bridge.md` từ trước (2 tài
+> liệu trước đây mô tả lệch nhau — link/token ở đây, OTP ở `bridge.md` — nay
+> đã thống nhất theo OTP).
+>
+> **Lưu OTP ở Redis, không có bảng Postgres riêng.** Bảng `auth_tokens` (dự
+> định ban đầu cho việc này, xem `backend/db.md`) đã bị xoá hẳn (migration
+> `DropAuthTokensTable`) — team quyết định mọi loại token có TTL (JWT
+> blacklist khi logout, và giờ cả OTP) đều lưu Redis, không persist Postgres.
+> BE implement `/auth/activate`, `/auth/forgot-password`, `/auth/reset-password`
+> phải dùng `TokenUtil.saveOtp`/`verifyOtp`/`consumeOtp`
+> (`src/token/token.util.ts`), **không** tạo lại entity/table cho việc này.
+> 3 endpoint này hiện vẫn chỉ là hợp đồng API đã chốt — code thật (sinh OTP,
+> so khớp, emit event gửi mail) chưa implement, xem mục 12.
 
 ## 2. Users (self-service)
 
@@ -244,8 +263,8 @@ chung toàn app), không thêm field tuỳ biến:
 | Chức năng | Cơ chế | Trigger | Ghi chú |
 |---|---|---|---|
 | Gửi email khi booking đổi trạng thái | Event Listener nội bộ (`EventEmitter2`) | Event `BookingStatusChanged` (emit khi accept/reject/sửa booking) | Gửi cho User khi booking chuyển `ACCEPTED` / `REJECTED` / đổi thông tin (ngày, phòng...). Mỗi lần gửi tạo 1 record trong `email-logs`. |
-| Gửi email kích hoạt tài khoản | Event Listener nội bộ (`EventEmitter2`) | Event `UserRegistered` (emit khi `POST /auth/register` thành công) | Sinh token kích hoạt, gửi link `GET /auth/activate?token=`. |
-| 🆕 Gửi email đặt lại mật khẩu | Event Listener nội bộ (`EventEmitter2`) | Event `PasswordResetRequested` (emit khi `POST /auth/forgot-password` thành công, kể cả khi email không tồn tại — vẫn trả response giống nhau để tránh lộ thông tin tài khoản nào tồn tại) | Sinh reset token, gửi link `POST /auth/reset-password` (FE mở `/reset-password?token=`). |
+| Gửi email kích hoạt tài khoản | Event Listener nội bộ (`EventEmitter2`) | Event `UserRegistered` (emit khi `POST /auth/register` thành công) | Sinh mã OTP 6 số (không phải link), email chỉ hiển thị mã để user tự gõ vào form ở route `/activate`, xác thực qua `POST /auth/activate`. |
+| 🆕 Gửi email đặt lại mật khẩu | Event Listener nội bộ (`EventEmitter2`) | Event `PasswordResetRequested` (emit khi `POST /auth/forgot-password` thành công, kể cả khi email không tồn tại — vẫn trả response giống nhau để tránh lộ thông tin tài khoản nào tồn tại) | Sinh mã OTP 6 số (không phải link), email chỉ hiển thị mã để user tự gõ vào form ở route `/reset-password`, xác thực qua `POST /auth/reset-password`. |
 | 🆕 Gửi email khi đánh giá bị Admin xoá | Event Listener nội bộ (`EventEmitter2`) | Event `ReviewDeleted` (emit khi `DELETE /admin/reviews/:id` thành công, payload chỉ gồm `reviewId` + `userId` chủ review) | Thông báo cho User biết đánh giá của họ đã bị gỡ, dùng **1 template email cố định** (không có phần lý do tuỳ chỉnh). |
 | Gửi báo cáo doanh thu cuối tháng | Cron job (`@Cron`) | `@Cron('0 55 23 * * *', { timeZone: 'Asia/Ho_Chi_Minh' })`, chỉ chạy khi `isLastDayOfMonth() === true` | Tổng hợp doanh thu tháng, gửi email cho Admin. Không liên quan route FE. |
 

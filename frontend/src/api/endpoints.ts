@@ -5,4 +5,10 @@
  */
 export const API_ENDPOINTS = {
   AUTH_LOGIN: '/auth/login',
+  AUTH_REGISTER: '/auth/register',
+  AUTH_ACTIVATE: '/auth/activate',
+  AUTH_FORGOT_PASSWORD: '/auth/forgot-password',
+  AUTH_RESET_PASSWORD: '/auth/reset-password',
+  USERS_ME: '/users/me',
+  USERS_ME_PASSWORD: '/users/me/password',
 } as const
