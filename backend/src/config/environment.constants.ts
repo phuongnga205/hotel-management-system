@@ -26,3 +26,15 @@ export const DEFAULT_AVATAR_MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 export function buildAvatarPublicId(userId: string): string {
   return `avatars/user-${userId}`;
 }
+
+// Khác avatar: 1 phòng có N ảnh (không phải 1 slot cố định) nên public_id
+// phải duy nhất theo từng ảnh, không chỉ theo roomId — gộp roomId (thư mục
+// theo phòng, tiện dọn rác khi xoá phòng) + uuid ảnh. public_id được lưu
+// lại ở `images.image_public_id` (không suy ra lại được như avatar) để biết
+// đúng asset nào cần xoá khi remove 1 ảnh cụ thể.
+export function buildRoomImagePublicId(
+  roomId: string,
+  imageUuid: string,
+): string {
+  return `rooms/room-${roomId}/${imageUuid}`;
+}

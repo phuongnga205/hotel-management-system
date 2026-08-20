@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { I18nValidationExceptionFilter, I18nValidationPipe } from 'nestjs-i18n';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -10,7 +11,7 @@ import {
 // AppDataSource is intentionally not imported here; migrations are run via scripts
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const configService = app.get(ConfigService);
 
   app.setGlobalPrefix('api/v1');
@@ -46,6 +47,10 @@ async function bootstrap() {
   SwaggerModule.setup(API_DOCS_PATH, app, document);
 
   // Migrations are not run automatically on startup. Use `npm run migration:run` to apply migrations.
+
+  // Ảnh phòng và avatar đều lưu Cloudinary (xem
+  // cloudinary/cloudinary.service.ts) — không còn phục vụ file tĩnh cục bộ
+  // nào (team làm việc nhiều máy, ảnh phải ở chung 1 nơi trên CDN).
 
   const port = configService.get<number>(
     ENVIRONMENT_KEYS.PORT,

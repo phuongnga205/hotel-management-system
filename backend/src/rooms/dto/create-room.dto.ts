@@ -1,5 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  ArrayUnique,
+  IsArray,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -9,6 +11,7 @@ import {
   IsString,
   MaxLength,
   Min,
+  IsNumberString,
 } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
 import { RoomStatus } from '../enums/room-status.enum';
@@ -42,16 +45,18 @@ export class CreateRoomDto {
   })
   name!: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Loại phòng (nhãn tự do, vd "Deluxe", "Suite")',
     example: 'Deluxe',
   })
-  @IsOptional()
   @IsString({ message: i18nValidationMessage('messages.VALIDATION.IS_STRING') })
+  @IsNotEmpty({
+    message: i18nValidationMessage('messages.VALIDATION.NOT_EMPTY'),
+  })
   @MaxLength(50, {
     message: i18nValidationMessage('messages.VALIDATION.MAX_LENGTH'),
   })
-  roomType?: string;
+  roomType!: string;
 
   @ApiPropertyOptional({
     description: 'The description of the room',
@@ -109,4 +114,16 @@ export class CreateRoomDto {
     message: i18nValidationMessage('messages.VALIDATION.IS_ENUM'),
   })
   status?: RoomStatus;
+
+  @ApiProperty({
+    description: 'Amenity IDs assigned when the room is created',
+    example: ['1', '2'],
+    required: false,
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsNumberString({}, { each: true })
+  amenityIds?: string[];
 }
