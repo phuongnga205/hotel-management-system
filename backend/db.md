@@ -20,19 +20,13 @@ CREATE TABLE users (
 );
 
 -- ============================================================
--- auth_tokens  (NEW — email verification + password reset)
+-- auth_tokens — ĐÃ XOÁ (migration DropAuthTokensTable), KHÔNG dùng Postgres
 -- ============================================================
-CREATE TABLE auth_tokens (
-  token_id     BIGSERIAL PRIMARY KEY,
-  user_id      BIGINT NOT NULL REFERENCES users(user_id),
-  type         VARCHAR(30) NOT NULL,   -- EMAIL_VERIFICATION, PASSWORD_RESET
-  token_hash   VARCHAR(255) NOT NULL UNIQUE,  -- hash the raw token, never store it plain
-  expires_at   TIMESTAMPTZ NOT NULL,
-  used_at      TIMESTAMPTZ,
-  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
-  CONSTRAINT chk_auth_tokens_type CHECK (type IN ('EMAIL_VERIFICATION','PASSWORD_RESET'))
-);
-CREATE INDEX idx_auth_tokens_user ON auth_tokens(user_id);
+-- OTP kích hoạt tài khoản (EMAIL_VERIFICATION) và đặt lại mật khẩu
+-- (PASSWORD_RESET) lưu ở Redis, không phải bảng riêng — dữ liệu tự hết hạn
+-- (TTL) nên không cần persist ở Postgres, nhất quán với cách JWT blacklist
+-- khi logout đã làm từ trước. Xem `src/token/token.util.ts`
+-- (`saveOtp`/`verifyOtp`/`consumeOtp`) và `src/token/redis.util.ts`.
 
 -- ============================================================
 -- rooms
