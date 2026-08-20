@@ -40,7 +40,9 @@ describe('BookingsService', () => {
   it('remove() returns an i18n-resolved message, not a hard-coded string', () => {
     const result = service.remove('1');
 
-    expect(i18nService.t).toHaveBeenCalledWith('messages.BOOKING.DELETED_SUCCESS');
+    expect(i18nService.t).toHaveBeenCalledWith(
+      'messages.BOOKING.DELETED_SUCCESS',
+    );
     expect(result).toEqual({ message: 'messages.BOOKING.DELETED_SUCCESS' });
   });
 });
