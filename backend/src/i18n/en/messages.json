@@ -4,6 +4,14 @@
   "ROOM_NOT_FOUND": "Room not found.",
   "ROOM_NUMBER_EXISTS": "Room number already exists.",
   "ROOM_SAVE_FAILED": "Unable to save room information. Please try again.",
+  "STATISTICS": {
+    "INVALID_PERIOD": "Period must be DAY, MONTH, or QUARTER.",
+    "INVALID_YEAR": "Year must be an integer between 2000 and 2100.",
+    "INVALID_MONTH": "Month is required for daily statistics and is not allowed for monthly or quarterly statistics.",
+    "CACHE_UNAVAILABLE": "Statistics cache is temporarily unavailable. Please try again later.",
+    "GENERATION_IN_PROGRESS": "Statistics are being generated. Please try again shortly.",
+    "INVALID_REVENUE_DATA": "Revenue data is invalid. Please contact the system administrator."
+  },
   "MAIL": {
     "LOG_NOT_FOUND": "Email log {id} not found."
   },
