@@ -26,7 +26,7 @@ export class UsersService {
       where: {
         email: dto.email,
       },
-      withDeleted: true,
+      withDeleted: false,
     });
 
     if (existingEmail) {
@@ -77,15 +77,15 @@ export class UsersService {
       username: dto.username,
       phone: dto.phone ?? null,
       password: passwordHash,
+      status: "ACTIVE",
     });
 
     // 6. Save database
     const savedUser = await this.usersRepository.save(user);
 
     // 7. Never return password
-    const { password, ...result } = savedUser;
 
-    return result;
+    return new UserResponseDto(savedUser);
   }
 
   async findAll(query: UserQueryDto) {

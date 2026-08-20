@@ -13,7 +13,7 @@ import { UserRole } from "./entities/user.entity";
 @Controller('users')
 export class UsersController {
   constructor(
-    private readonly userService: UsersService
+    private readonly usersService: UsersService
   ) { }
 
   @ApiBearerAuth('access-token')
@@ -21,7 +21,7 @@ export class UsersController {
   @Roles(UserRole.ADMIN)
   @Post()
   create(@Body() dto: CreateUserDto) {
-    return this.userService.create(dto);
+    return this.usersService.create(dto);
   }
 
   @ApiBearerAuth('access-token')
@@ -29,14 +29,14 @@ export class UsersController {
   @Roles(UserRole.ADMIN)
   @Get()
   findAll(@Query() query: UserQueryDto) {
-    return this.userService.findAll(query);
+    return this.usersService.findAll(query);
   }
 
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard)
   @Get('me')
   findMe(@Req() req) {
-    return this.userService.findOne(req.user.id);
+    return this.usersService.findOne(req.user.id);
   }
 
   @ApiBearerAuth('access-token')
@@ -44,7 +44,7 @@ export class UsersController {
   @Roles(UserRole.ADMIN)
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.userService.findOne(id);
+    return this.usersService.findOne(id);
   }
 
   @ApiBearerAuth('access-token')
@@ -54,7 +54,17 @@ export class UsersController {
     @Req() req,
     @Body() dto: ChangePasswordDto,
   ) {
-    return this.userService.changePassword(req.user.id, dto);
+    return this.usersService.changePassword(req.user.id, dto);
+  }
+
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard)
+  @Patch('me')
+  updateProfile(
+    @Req() req,
+    @Body() dto: UpdateUserDto,
+  ) {
+    return this.usersService.update(req.user.id, dto);
   }
 
   @ApiBearerAuth('access-token')
@@ -65,7 +75,7 @@ export class UsersController {
     @Param('id') id: string,
     @Body() dto: UpdateUserDto,
   ) {
-    return this.userService.update(id, dto);
+    return this.usersService.update(id, dto);
   }
 
   @ApiBearerAuth('access-token')
@@ -73,7 +83,7 @@ export class UsersController {
   @Roles(UserRole.ADMIN)
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.userService.remove(id);
+    return this.usersService.remove(id);
   }
 
 
