@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bullmq';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { TokenModule } from './token/token.module';
@@ -14,6 +15,7 @@ import { AmenitiesModule } from './amenities/amenities.module';
 import { ImagesModule } from './images/images.module';
 import { PaymentsModule } from './payments/payments.module';
 import { MailModule } from './mail/mail.module';
+import { ReportsModule } from './reports/reports.module';
 import {
   I18nModule,
   AcceptLanguageResolver,
@@ -108,6 +110,8 @@ const DEFAULT_THROTTLE_LIMIT = 10;
     CloudinaryModule,
 
     MailModule,
+    ReportsModule,
+    ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
   providers: [AppService],

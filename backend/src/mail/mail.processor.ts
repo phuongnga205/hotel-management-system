@@ -1,4 +1,3 @@
-/* sunlint-disable */
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -75,9 +74,10 @@ export class MailProcessor extends WorkerHost {
         lastError: null,
       });
 
-      this.logger.log(
-        `Email ${emailLogId} sent to ${to} (messageId=${info.messageId})`,
-      );
+      this.logger.log('Email sent successfully', {
+        emailLogId,
+        messageId: info.messageId,
+      });
       return info.messageId;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -89,8 +89,11 @@ export class MailProcessor extends WorkerHost {
         lastError: message,
       });
 
-      this.logger.error(`Email ${emailLogId} to ${to} failed: ${message}`);
-      throw error;
+      this.logger.error('Email delivery failed', {
+        emailLogId,
+        error: message,
+      });
+      throw new Error(`Email delivery failed: ${message}`);
     }
   }
 }
