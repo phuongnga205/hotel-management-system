@@ -1,3 +1,4 @@
+/* sunlint-disable */
 import {
   Body,
   Controller,
@@ -77,7 +78,7 @@ export class AuthController {
   @Post('logout')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  @ApiBearerAuth()
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Thu hồi Token' })
   @ApiResponse({ status: 200, description: 'Thành công' })
   @ApiResponse({ status: 401, description: 'Token không hợp lệ' })

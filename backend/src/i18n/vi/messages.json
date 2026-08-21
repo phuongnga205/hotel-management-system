@@ -23,7 +23,10 @@
     "UPDATE_SUCCESS": "Cập nhật phòng thành công.",
     "UPDATE_PRICE_SUCCESS": "Cập nhật giá phòng thành công.",
     "REMOVE_SUCCESS": "Xóa phòng thành công.",
-    "IMAGE_UPLOAD_SUCCESS": "Tải ảnh phòng lên thành công."
+    "IMAGE_UPLOAD_SUCCESS": "Tải ảnh phòng lên thành công.",
+    "AVAILABLE_SUCCESS": "Tìm phòng còn trống thành công.",
+    "INVALID_DATE_RANGE": "Ngày check-out phải sau ngày check-in.",
+    "THUMBNAIL_SET_SUCCESS": "Cập nhật ảnh đại diện thành công."
   },
   "AMENITY": {
     "NOT_FOUND": "Không tìm thấy tiện nghi.",
@@ -70,7 +73,13 @@
     "IS_ENUM": "{property} không hợp lệ.",
     "MIN": "{property} phải lớn hơn hoặc bằng {constraints.0}.",
     "MAX": "{property} phải nhỏ hơn hoặc bằng {constraints.0}.",
-    "INVALID_PHONE": "Số điện thoại không đúng định dạng."
+    "INVALID_PHONE": "Số điện thoại không đúng định dạng.",
+    "IS_DATE_STRING": "{property} phải là ngày hợp lệ (YYYY-MM-DD).",
+    "IS_NUMBER": "{property} phải là số.",
+    "IS_BOOLEAN": "{property} phải là giá trị boolean.",
+    "IS_ARRAY": "{property} phải là một mảng.",
+    "ARRAY_NOT_EMPTY": "{property} không được để trống.",
+    "ARRAY_UNIQUE": "{property} không được chứa giá trị trùng lặp."
   },
   "USERS": {
     "PHONE_ALREADY_EXISTS": "số điện thoại đã tồn tại.",

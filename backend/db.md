@@ -66,13 +66,14 @@ CREATE TABLE images (
 CREATE UNIQUE INDEX uq_images_one_thumbnail_per_room
   ON images(room_id) WHERE is_thumbnail = true AND deleted_at IS NULL;
 
--- NOTE: image_public_id là public_id trên Cloudinary — cột nullable vì
--- logic upload/xoá ảnh phòng thật hiện tại (RoomsController/RoomsService,
--- xem backend/src/rooms/) đang lưu file trên LOCAL DISK
--- (ROOM_UPLOAD_DIRECTORY), không dùng Cloudinary, nên không set cột này.
--- Cột được giữ lại (không xoá) phòng trường hợp team quyết định chuyển ảnh
--- phòng sang Cloudinary sau (đồng bộ cách avatar user đang lưu) — lúc đó
--- mới cần NOT NULL trở lại + set giá trị thật khi upload.
+-- NOTE: image_public_id là public_id trên Cloudinary. RoomsService.addImage()
+-- (xem backend/src/rooms/rooms.service.ts) giờ luôn upload ảnh phòng lên
+-- Cloudinary (đồng bộ cách avatar user đang lưu) và set cột này cho MỌI ảnh
+-- mới — không còn lưu file trên local disk nữa (đã bỏ ROOM_UPLOAD_DIRECTORY).
+-- Cột vẫn để nullable (không đổi lại NOT NULL) vì DB Neon dùng chung có thể
+-- còn sót vài dòng cũ từ giai đoạn lưu local disk (image_public_id = NULL,
+-- image_url trỏ về path cục bộ đã không còn phục vụ) — cần dọn/backfill dữ
+-- liệu cũ đó trước khi siết lại NOT NULL, chưa làm ở migration này.
 
 -- ============================================================
 -- amenities
