@@ -8,6 +8,7 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+import { i18nValidationMessage } from 'nestjs-i18n';
 
 export class CreateReviewDto {
   // roomId and userId are not accepted from the client — they're derived
@@ -16,16 +17,19 @@ export class CreateReviewDto {
     description: 'The ID of the completed booking being reviewed',
     example: '10',
   })
-  @IsNumberString()
+  @IsNumberString(
+    { no_symbols: true },
+    { message: i18nValidationMessage('messages.VALIDATION.IS_NUMBER_STRING') },
+  )
   bookingId!: string;
 
   @ApiProperty({
     description: 'Rating from 1 to 5',
     example: 5,
   })
-  @IsInt()
-  @Min(1)
-  @Max(5)
+  @IsInt({ message: i18nValidationMessage('messages.VALIDATION.IS_INT') })
+  @Min(1, { message: i18nValidationMessage('messages.VALIDATION.MIN') })
+  @Max(5, { message: i18nValidationMessage('messages.VALIDATION.MAX') })
   rating!: number;
 
   @ApiPropertyOptional({
@@ -33,7 +37,9 @@ export class CreateReviewDto {
     example: 'Great stay, very clean room.',
   })
   @IsOptional()
-  @IsString()
-  @MaxLength(2000)
+  @IsString({ message: i18nValidationMessage('messages.VALIDATION.IS_STRING') })
+  @MaxLength(2000, {
+    message: i18nValidationMessage('messages.VALIDATION.MAX_LENGTH'),
+  })
   comment?: string;
 }
