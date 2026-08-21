@@ -63,6 +63,7 @@ export class Room {
   pricePerNight!: number;
 
   @Column({
+    type: 'varchar',
     length: 20,
     default: RoomStatus.ACTIVE,
   })

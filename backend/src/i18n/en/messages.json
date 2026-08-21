@@ -38,7 +38,10 @@
     "REMOVE_SUCCESS": "Amenity removed successfully."
   },
   "MAIL": {
-    "LOG_NOT_FOUND": "Email log {id} not found."
+    "LOG_NOT_FOUND": "Email log {id} not found.",
+    "RETRY_INVALID_STATUS": "Can only retry failed emails (FAILED).",
+    "RETRY_SUCCESS": "Successfully queued email {id} for retry.",
+    "TEST_SUCCESS": "Successfully queued test email."
   },
   "BOOKING": {
     "NOT_FOUND": "Booking not found.",
@@ -101,5 +104,15 @@
     "AVATAR_UPLOAD_SUCCESS": "Avatar updated successfully.",
     "AVATAR_NOT_FOUND": "This account has no avatar to remove.",
     "AVATAR_REMOVE_SUCCESS": "Avatar removed successfully."
+  },
+  "REPORTS": {
+    "MONTHLY": {
+      "SUBJECT": "Monthly Revenue Report - {reportMonth}",
+      "TITLE": "Monthly Revenue Report {reportMonth}",
+      "DESCRIPTION": "Hello {firstName}, this is the revenue report for {reportMonth}.",
+      "TOTAL_BOOKINGS_LABEL": "Total bookings:",
+      "TOTAL_PAID_BOOKINGS_LABEL": "Paid bookings:",
+      "TOTAL_REVENUE_LABEL": "Total revenue:"
+    }
   }
 }

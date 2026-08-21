@@ -5,6 +5,6 @@ import { RedisUtil } from './redis.util';
 @Global()
 @Module({
   providers: [TokenUtil, RedisUtil],
-  exports: [TokenUtil],
+  exports: [TokenUtil, RedisUtil],
 })
 export class TokenModule {}

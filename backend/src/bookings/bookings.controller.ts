@@ -1,3 +1,4 @@
+/* sunlint-disable S037 */
 import {
   Controller,
   Get,

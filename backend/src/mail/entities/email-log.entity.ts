@@ -26,12 +26,14 @@ export type EmailType =
   | 'account-activation'
   | 'password-reset'
   | 'booking-status-changed'
-  | 'review-deleted';
+  | 'review-deleted'
+  | 'monthly-report';
 export const EmailType = {
   ACCOUNT_ACTIVATION: 'account-activation',
   PASSWORD_RESET: 'password-reset',
   BOOKING_STATUS_CHANGED: 'booking-status-changed',
   REVIEW_DELETED: 'review-deleted',
+  MONTHLY_REPORT: 'monthly-report',
 } as const satisfies Record<string, EmailType>;
 
 @Entity('email_logs')
@@ -42,20 +44,29 @@ export class EmailLog {
   id!: string;
 
   @Column({ length: EMAIL_TYPE_MAX_LENGTH })
-  type!: string;
+  type!: EmailType;
 
   @Column({ length: EMAIL_RECIPIENT_MAX_LENGTH })
   recipient!: string;
 
   @Index('idx_email_logs_status')
   @Column({ length: EMAIL_STATUS_MAX_LENGTH, default: EmailStatus.PENDING })
-  status!: string;
+  status!: EmailStatus;
 
   @Column({ name: 'retry_count', type: 'smallint', default: 0 })
   retryCount!: number;
 
   @Column({ name: 'last_error', type: 'text', nullable: true })
   lastError!: string | null;
+
+  @Column({ type: 'varchar', length: 255 })
+  subject!: string;
+
+  @Column({ type: 'text' })
+  text!: string;
+
+  @Column({ type: 'text', nullable: true })
+  html!: string | null;
 
   // Set the moment the SMTP send actually succeeds (distinct from queue time)
   @Column({ name: 'sent_at', type: 'timestamptz', nullable: true })

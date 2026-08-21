@@ -1,17 +1,19 @@
-/* sunlint-disable */
-import { InjectQueue } from '@nestjs/bullmq';
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Queue } from 'bullmq';
 import { I18nService } from 'nestjs-i18n';
-import { Repository } from 'typeorm';
+import { DataSource, FindOptionsWhere, Repository, EntityManager } from 'typeorm';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { EmailLogResponseDto } from './dto/email-log-response.dto';
 import { SendMailDto } from './dto/send-mail.dto';
+import { ListEmailLogsDto } from './dto/list-email-logs.dto';
 import { EmailLog, EmailStatus } from './entities/email-log.entity';
-import { MAIL_QUEUE, MailJob } from './mail.constants';
-
-const MAIL_JOB_ATTEMPTS = 3;
-const MAIL_JOB_BACKOFF_MS = 5000;
+import { MAIL_QUEUE } from './mail.constants';
 
 @Injectable()
 export class MailService {
@@ -23,46 +25,128 @@ export class MailService {
     @InjectQueue(MAIL_QUEUE)
     private readonly mailQueue: Queue,
     private readonly i18n: I18nService,
+    private readonly dataSource: DataSource,
   ) {}
 
-  async queueMail(dto: SendMailDto): Promise<EmailLogResponseDto> {
-    const emailLog = await this.emailLogRepository.save(
-      this.emailLogRepository.create({
-        type: dto.type,
-        recipient: dto.to,
-        status: EmailStatus.PENDING,
-      }),
-    );
+  async createEmailLog(
+    manager: EntityManager,
+    dto: SendMailDto,
+  ): Promise<EmailLog> {
+    const newEmailLog = manager.create(EmailLog, {
+      type: dto.type,
+      recipient: dto.to,
+      subject: dto.subject,
+      text: dto.text,
+      html: dto.html,
+      status: EmailStatus.PENDING,
+    });
+    const savedEmailLog = await manager.save(EmailLog, newEmailLog);
 
+    return savedEmailLog;
+  }
+
+  async enqueueEmail(emailLog: EmailLog): Promise<void> {
     await this.mailQueue.add(
-      MailJob.SEND,
+      'send-email',
       {
         emailLogId: emailLog.id,
-        to: dto.to,
-        subject: dto.subject,
-        text: dto.text,
-        html: dto.html,
+        to: emailLog.recipient,
+        subject: emailLog.subject,
+        text: emailLog.text,
+        html: emailLog.html,
       },
       {
-        attempts: MAIL_JOB_ATTEMPTS,
-        backoff: { type: 'exponential', delay: MAIL_JOB_BACKOFF_MS },
+        jobId: `email-${emailLog.id}-${emailLog.retryCount}`,
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 5000 },
       },
     );
+  }
 
-    this.logger.log(
-      `Queued email ${emailLog.id} (type: ${dto.type}) to ${dto.to}`,
-    );
+  async queueMail(dto: SendMailDto): Promise<EmailLogResponseDto> {
+    const emailLog = await this.dataSource.transaction(async (manager) => {
+      return this.createEmailLog(manager, dto);
+    });
+
+    await this.enqueueEmail(emailLog);
+
+    this.logger.log('Queued email', {
+      emailLogId: emailLog.id,
+      type: dto.type,
+    });
 
     return EmailLogResponseDto.fromEntity(emailLog);
   }
 
-  async getEmailLog(id: string): Promise<EmailLogResponseDto> {
+  async getEmailLog(id: string) {
     const emailLog = await this.emailLogRepository.findOneBy({ id });
     if (!emailLog) {
       throw new NotFoundException(
         this.i18n.t('messages.MAIL.LOG_NOT_FOUND', { args: { id } }),
       );
     }
-    return EmailLogResponseDto.fromEntity(emailLog);
+    return {
+      statusCode: 200,
+      message: this.i18n.t('messages.MAIL.GET_LOG_SUCCESS'),
+      data: EmailLogResponseDto.fromEntity(emailLog),
+    };
+  }
+
+  async getEmailLogs(query: ListEmailLogsDto) {
+    const { status, page, limit } = query;
+    const skip = (page - 1) * limit;
+
+    const where: FindOptionsWhere<EmailLog> = {};
+    if (status) {
+      where.status = status;
+    }
+
+    const [logs, total] = await this.emailLogRepository.findAndCount({
+      where,
+      order: { createdAt: 'DESC' },
+      skip,
+      take: limit,
+    });
+
+    return {
+      statusCode: 200,
+      message: this.i18n.t('messages.MAIL.GET_LOGS_SUCCESS'),
+      data: {
+        items: logs.map((log) => EmailLogResponseDto.fromEntity(log)),
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async retryEmailLog(id: string): Promise<{ message: string }> {
+    const emailLog = await this.emailLogRepository.findOneBy({ id });
+    if (!emailLog) {
+      throw new NotFoundException(
+        this.i18n.t('messages.MAIL.LOG_NOT_FOUND', { args: { id } }),
+      );
+    }
+
+    if (emailLog.status !== EmailStatus.FAILED) {
+      throw new ConflictException(
+        this.i18n.t('messages.MAIL.RETRY_INVALID_STATUS'),
+      );
+    }
+
+    await this.dataSource.transaction(async (manager) => {
+      emailLog.status = EmailStatus.PENDING;
+      emailLog.lastError = null;
+      await manager.save(EmailLog, emailLog);
+
+    });
+
+    await this.enqueueEmail(emailLog);
+
+    this.logger.log(`Retrying email log ${id}`);
+    return {
+      message: this.i18n.t('messages.MAIL.RETRY_ACCEPTED'),
+    };
   }
 }

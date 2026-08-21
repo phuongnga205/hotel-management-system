@@ -8,9 +8,13 @@ import {
   DEFAULT_SERVER_PORT,
   ENVIRONMENT_KEYS,
 } from './config/environment.constants';
-// AppDataSource is intentionally not imported here; migrations are run via scripts
+import AppDataSource from './data-source';
 
 async function bootstrap() {
+  await AppDataSource.initialize();
+  await AppDataSource.runMigrations();
+  await AppDataSource.destroy();
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const configService = app.get(ConfigService);
 
@@ -45,8 +49,6 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup(API_DOCS_PATH, app, document);
-
-  // Migrations are not run automatically on startup. Use `npm run migration:run` to apply migrations.
 
   // Ảnh phòng và avatar đều lưu Cloudinary (xem
   // cloudinary/cloudinary.service.ts) — không còn phục vụ file tĩnh cục bộ
