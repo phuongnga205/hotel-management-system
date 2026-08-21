@@ -32,6 +32,11 @@ export class BookingsService {
       createBookingDto.checkOutDate,
     );
     const room = await this.findBookableRoom(createBookingDto.roomId);
+    await this.assertNoOverlappingBooking(
+      createBookingDto.roomId,
+      createBookingDto.checkInDate,
+      createBookingDto.checkOutDate,
+    );
     const totalPrice = this.calculateTotalPrice(
       createBookingDto.checkInDate,
       createBookingDto.checkOutDate,
@@ -106,6 +111,12 @@ export class BookingsService {
     this.assertValidDateRange(checkInDate, checkOutDate);
 
     const room = await this.findBookableRoom(booking.roomId);
+    await this.assertNoOverlappingBooking(
+      booking.roomId,
+      checkInDate,
+      checkOutDate,
+      booking.id,
+    );
 
     booking.checkInDate = checkInDate;
     booking.checkOutDate = checkOutDate;
@@ -158,6 +169,33 @@ export class BookingsService {
     if (checkOutDate <= checkInDate) {
       throw new BadRequestException(
         this.i18n.t('messages.BOOKING.INVALID_DATE_RANGE'),
+      );
+    }
+  }
+
+  private async assertNoOverlappingBooking(
+    roomId: string,
+    checkInDate: string,
+    checkOutDate: string,
+    excludeBookingId?: string,
+  ): Promise<void> {
+    const query = this.bookingsRepository
+      .createQueryBuilder('booking')
+      .where('booking.room_id = :roomId', { roomId })
+      .andWhere('booking.status IN (:...statuses)', {
+        statuses: [BookingStatus.PENDING, BookingStatus.ACCEPTED],
+      })
+      .andWhere('booking.check_in_date < :checkOutDate', { checkOutDate })
+      .andWhere('booking.check_out_date > :checkInDate', { checkInDate });
+
+    if (excludeBookingId) {
+      query.andWhere('booking.id != :excludeBookingId', { excludeBookingId });
+    }
+
+    const overlapping = await query.getOne();
+    if (overlapping) {
+      throw new ConflictException(
+        this.i18n.t('messages.BOOKING.DATES_OVERLAP'),
       );
     }
   }

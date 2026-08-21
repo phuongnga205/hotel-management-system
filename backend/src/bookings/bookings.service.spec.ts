@@ -18,6 +18,9 @@ describe('BookingsService', () => {
   const findOneBooking = jest.fn();
   const saveBooking = jest.fn();
   const findOneRoom = jest.fn();
+  const getOneOverlap = jest.fn();
+  const andWhere = jest.fn();
+  const createQueryBuilder = jest.fn();
 
   const room: Room = {
     id: '5',
@@ -42,6 +45,13 @@ describe('BookingsService', () => {
     jest.clearAllMocks();
     jest.useFakeTimers();
     jest.setSystemTime(new Date('2026-08-21T00:00:00+07:00'));
+    getOneOverlap.mockResolvedValue(null);
+    andWhere.mockReturnThis();
+    createQueryBuilder.mockReturnValue({
+      where: jest.fn().mockReturnThis(),
+      andWhere,
+      getOne: getOneOverlap,
+    });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -51,6 +61,7 @@ describe('BookingsService', () => {
           useValue: {
             findOne: findOneBooking,
             save: saveBooking,
+            createQueryBuilder,
           },
         },
         {
@@ -123,6 +134,47 @@ describe('BookingsService', () => {
     await expect(service.create(createDto, '10')).rejects.toBeInstanceOf(
       NotFoundException,
     );
+  });
+
+  it('rejects create when QueryBuilder finds an overlapping booking', async () => {
+    findOneRoom.mockResolvedValue(room);
+    getOneOverlap.mockResolvedValue({ id: '99' });
+
+    await expect(service.create(createDto, '10')).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+    expect(saveBooking).not.toHaveBeenCalled();
+    expect(createQueryBuilder).toHaveBeenCalled();
+    expect(andWhere).not.toHaveBeenCalledWith(
+      'booking.id != :excludeBookingId',
+      expect.anything(),
+    );
+  });
+
+  it('rejects update when dates overlap another booking', async () => {
+    findOneBooking.mockResolvedValue({
+      id: '1',
+      userId: '10',
+      roomId: '5',
+      checkInDate: '2026-09-01',
+      checkOutDate: '2026-09-04',
+      pricePerNight: 1000000,
+      totalPrice: 3000000,
+      status: BookingStatus.PENDING,
+    });
+    findOneRoom.mockResolvedValue(room);
+    getOneOverlap.mockResolvedValue({ id: '2' });
+
+    await expect(
+      service.update('1', '10', {
+        checkInDate: '2026-09-02',
+        checkOutDate: '2026-09-05',
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(saveBooking).not.toHaveBeenCalled();
+    expect(andWhere).toHaveBeenCalledWith('booking.id != :excludeBookingId', {
+      excludeBookingId: '1',
+    });
   });
 
   it('applies note when updating a pending booking', async () => {
