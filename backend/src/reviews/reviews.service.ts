@@ -117,8 +117,6 @@ export class ReviewsService {
     const queryBuilder = this.reviewRepository
       .createQueryBuilder('review')
       .leftJoinAndSelect('review.user', 'user')
-      .leftJoinAndSelect('review.room', 'room')
-      .leftJoinAndSelect('review.booking', 'booking')
       .orderBy('review.createdAt', 'DESC')
       .skip((page - 1) * limit)
       .take(limit);

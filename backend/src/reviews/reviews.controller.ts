@@ -37,7 +37,7 @@ export class ReviewsController {
 
   @ApiBearerAuth("access-token")
   @UseGuards(JwtAuthGuard)
-  @Get('room/:roomId')
+  @Get(':roomId/room')
   async findByRoom(
     @Param('roomId') roomId: string,
     @Query() query: ReviewQueryDto,
@@ -59,11 +59,11 @@ export class ReviewsController {
   @Roles(UserRole.ADMIN)
   async remove(
     @Param('id') id: string,
-    @Body('deleteReason') deleteReason: ReviewDeleteDto,
+    @Body() deleteDto: ReviewDeleteDto,
   ) {
     return this.reviewsService.remove(
       id,
-      deleteReason,
+      deleteDto,
     );
   }
 
