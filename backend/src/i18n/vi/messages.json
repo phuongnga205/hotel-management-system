@@ -102,5 +102,13 @@
     "AVATAR_UPLOAD_SUCCESS": "Cập nhật ảnh đại diện thành công.",
     "AVATAR_NOT_FOUND": "Tài khoản chưa có ảnh đại diện để xoá.",
     "AVATAR_REMOVE_SUCCESS": "Xoá ảnh đại diện thành công."
+  },
+  "REVIEWS": {
+    "RATING_RANGE_INVALID": "Rating phải từ 1 đến 5.",
+    "RATING_INVALID": "Bạn chỉ được review khi đã ở khách sạn.",
+    "ALREADY_REVIEWED": "Ban đã review một lần rồi.",
+    "BOOKING_NOT_COMPLETED" :"Yêu cầu đặt phòng chưa hoàn thành.",
+    "DELETE_REASON_REQUIRED" : "Cần lý do xóa review.",
+    "DELETE_SUCCESS": "Review xóa thành công."
   }
 }

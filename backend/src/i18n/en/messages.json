@@ -103,5 +103,13 @@
     "AVATAR_UPLOAD_SUCCESS": "Avatar updated successfully.",
     "AVATAR_NOT_FOUND": "This account has no avatar to remove.",
     "AVATAR_REMOVE_SUCCESS": "Avatar removed successfully."
+  },
+  "REVIEWS":{
+    "RATING_RANGE_INVALID": "Rating must be between 1 and 5.",
+    "RATING_INVALID": "You can only review a booking after your stay is completed.",
+    "ALREADY_REVIEWED":"This booking has already been reviewed.",
+    "BOOKING_NOT_COMPLETED" :"Booking has not been completed.",
+    "DELETE_REASON_REQUIRED" : "Delete reason required.",
+    "DELETE_SUCCESS": "Review deleted successfully."
   }
 }
