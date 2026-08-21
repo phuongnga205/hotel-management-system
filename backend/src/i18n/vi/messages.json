@@ -34,6 +34,14 @@
     "UPDATE_SUCCESS": "Cập nhật tiện nghi thành công.",
     "REMOVE_SUCCESS": "Xóa tiện nghi thành công."
   },
+  "STATISTICS": {
+    "INVALID_PERIOD": "Chu kỳ thống kê phải là DAY, MONTH hoặc QUARTER.",
+    "INVALID_YEAR": "Năm phải là số nguyên từ 2000 đến 2100.",
+    "INVALID_MONTH": "Tháng là bắt buộc khi thống kê theo ngày và không được phép khi thống kê theo tháng hoặc quý.",
+    "CACHE_UNAVAILABLE": "Bộ nhớ đệm thống kê tạm thời không khả dụng. Vui lòng thử lại sau.",
+    "GENERATION_IN_PROGRESS": "Dữ liệu thống kê đang được xử lý. Vui lòng thử lại sau ít phút.",
+    "INVALID_REVENUE_DATA": "Dữ liệu doanh thu không hợp lệ. Vui lòng liên hệ quản trị viên hệ thống."
+  },
   "MAIL": {
     "LOG_NOT_FOUND": "Không tìm thấy nhật ký email {id}."
   },
