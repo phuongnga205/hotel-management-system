@@ -9,10 +9,12 @@ import { ENVIRONMENT_KEYS } from '../src/config/environment.constants';
 import { Payment } from '../src/payments/entities/payment.entity';
 import { PaymentMethod } from '../src/payments/enums/payment-method.enum';
 import { PaymentStatus } from '../src/payments/enums/payment-status.enum';
+import { RoomStatus } from '../src/rooms/enums/room-status.enum';
 import { StatisticsPeriod } from '../src/statistics/enums/statistics-period.enum';
 import { StatisticsLogger } from '../src/statistics/statistics.logger';
 import { StatisticsService } from '../src/statistics/statistics.service';
 import { RedisUtil } from '../src/token/redis.util';
+import { UserRole, UserStatus } from '../src/users/entities/user.entity';
 
 const BookingAggregateSchema = new EntitySchema<Booking>({
   name: 'BookingAggregate',
@@ -61,6 +63,10 @@ const hasIsolatedDatabase =
 const describeWithDatabase = hasIsolatedDatabase ? describe : describe.skip;
 const TEST_ROOM_NUMBER_PREFIX = 'STAT-';
 const TEST_ROOM_UUID_LENGTH = 12;
+const TEST_ROOM_CAPACITY = 2;
+const TEST_ROOM_PRICE = 100;
+const TEST_PAYMENT_AMOUNT = 100;
+const TEST_REFUNDED_AMOUNT = 40;
 
 describeWithDatabase('Statistics aggregate SQL (e2e)', () => {
   let dataSource: DataSource;
@@ -105,15 +111,27 @@ describeWithDatabase('Statistics aggregate SQL (e2e)', () => {
     )}`;
     const users = await dataSource.query<Array<{ id: string }>>(
       `INSERT INTO users (username, email, password_hash, status, role)
-       VALUES ($1, $2, $3, 'ACTIVE', 'USER') RETURNING id`,
-      [`statistics-${suffix}`, `statistics-${suffix}@example.com`, suffix],
+       VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+      [
+        `statistics-${suffix}`,
+        `statistics-${suffix}@example.com`,
+        suffix,
+        UserStatus.ACTIVE,
+        UserRole.USER,
+      ],
     );
     userId = users[0].id;
 
     const rooms = await dataSource.query<Array<{ id: string }>>(
       `INSERT INTO rooms (room_number, name, capacity, price_per_night, status)
-       VALUES ($1, $2, 2, 100, 'ACTIVE') RETURNING id`,
-      [roomNumber, `Statistics ${suffix}`],
+       VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+      [
+        roomNumber,
+        `Statistics ${suffix}`,
+        TEST_ROOM_CAPACITY,
+        TEST_ROOM_PRICE,
+        RoomStatus.ACTIVE,
+      ],
     );
     roomId = rooms[0].id;
 
@@ -122,12 +140,13 @@ describeWithDatabase('Statistics aggregate SQL (e2e)', () => {
         `INSERT INTO bookings
           (user_id, room_id, check_in_date, check_out_date, price_per_night,
            total_price, status, created_at)
-         VALUES ($1, $2, $3, $4, 100, 100, $5, $6) RETURNING id`,
+         VALUES ($1, $2, $3, $4, $5, $5, $6, $7) RETURNING id`,
         [
           userId,
           roomId,
           `2027-0${index + 1}-01`,
           `2027-0${index + 1}-02`,
+          TEST_ROOM_PRICE,
           status,
           `2026-08-0${index + 1}T10:00:00Z`,
         ],
@@ -137,15 +156,25 @@ describeWithDatabase('Statistics aggregate SQL (e2e)', () => {
 
     const successfulPayment = await dataSource.query<Array<{ id: string }>>(
       `INSERT INTO payments (booking_id, amount, method, status, paid_at)
-       VALUES ($1, 100, $2, $3, '2026-08-05T10:00:00Z') RETURNING id`,
-      [bookingIds[0], PaymentMethod.CASH, PaymentStatus.SUCCESS],
+       VALUES ($1, $2, $3, $4, '2026-08-05T10:00:00Z') RETURNING id`,
+      [
+        bookingIds[0],
+        TEST_PAYMENT_AMOUNT,
+        PaymentMethod.CASH,
+        PaymentStatus.SUCCESS,
+      ],
     );
     paymentIds.push(successfulPayment[0].id);
 
     const refundedPayment = await dataSource.query<Array<{ id: string }>>(
       `INSERT INTO payments (booking_id, amount, method, status, paid_at)
-       VALUES ($1, 40, $2, $3, '2026-08-06T10:00:00Z') RETURNING id`,
-      [bookingIds[1], PaymentMethod.CASH, PaymentStatus.REFUNDED],
+       VALUES ($1, $2, $3, $4, '2026-08-06T10:00:00Z') RETURNING id`,
+      [
+        bookingIds[1],
+        TEST_REFUNDED_AMOUNT,
+        PaymentMethod.CASH,
+        PaymentStatus.REFUNDED,
+      ],
     );
     paymentIds.push(refundedPayment[0].id);
   });

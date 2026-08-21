@@ -20,6 +20,7 @@ const AppDataSource = new DataSource({
   logging: false,
   entities: [__dirname + '/**/*.entity{.ts,.js}'],
   migrations: [__dirname + '/migrations/*{.ts,.js}'],
+  migrationsTransactionMode: 'each',
 });
 
 export default AppDataSource;
