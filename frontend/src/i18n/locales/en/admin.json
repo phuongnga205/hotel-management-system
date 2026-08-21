@@ -1,0 +1,315 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "rooms": "Rooms",
+    "amenities": "Amenities",
+    "bookings": "Bookings",
+    "users": "Users",
+    "reviews": "Reviews",
+    "statisticsBookings": "Booking Statistics",
+    "statisticsRevenue": "Revenue Statistics",
+    "emailLogs": "Email Logs",
+    "backToSite": "Back to site"
+  },
+  "common": {
+    "view": "View",
+    "edit": "Edit",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "save": "Save",
+    "back": "Back",
+    "actions": "Actions",
+    "status": "Status",
+    "notFoundGeneric": "Item not found.",
+    "wip": "API in progress",
+    "logout": "Log out"
+  },
+  "dashboard": {
+    "eyebrow": "Overview",
+    "title": "Dashboard",
+    "totalRevenue": "Total Revenue",
+    "newBookings": "New Bookings",
+    "pendingBookingsSub": "{{count}} pending review",
+    "activeGuests": "Active Guests",
+    "pendingReviews": "Pending Reviews",
+    "monthlyRevenue": "Monthly Revenue",
+    "bookingsByRoomType": "Bookings by Room Type",
+    "recentBookings": "Recent Bookings",
+    "viewAll": "View all →"
+  },
+  "table": {
+    "id": "ID",
+    "guest": "Guest",
+    "room": "Room",
+    "dates": "Dates",
+    "nights": "Nights",
+    "total": "Total",
+    "recipient": "Recipient",
+    "type": "Type",
+    "sentAt": "Sent At",
+    "retries": "Retries",
+    "user": "User",
+    "email": "Email",
+    "phone": "Phone",
+    "role": "Role",
+    "joined": "Joined",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out"
+  },
+  "rooms": {
+    "viewType": {
+      "CITY_VIEW": "City View",
+      "GARDEN_VIEW": "Garden View",
+      "SEA_VIEW": "Sea View"
+    },
+    "list": {
+      "eyebrow": "Inventory",
+      "title": "Rooms",
+      "subtitle": "{{count}} rooms in inventory",
+      "searchPlaceholder": "Search rooms...",
+      "exportCsv": "Export CSV",
+      "addRoom": "+ Add Room",
+      "columnRoom": "Room",
+      "columnType": "Type",
+      "columnView": "View",
+      "columnPrice": "Price",
+      "columnCapacity": "Capacity",
+      "deleteTitle": "Delete Room?",
+      "deleteDesc": "This will permanently remove the room and all associated data.",
+      "deleteConfirm": "Delete Room"
+    },
+    "detail": {
+      "notFound": "Room not found.",
+      "backToList": "← Back to Rooms",
+      "editRoom": "Edit Room",
+      "detailsTitle": "Room Details",
+      "amenitiesTitle": "Amenities",
+      "descriptionTitle": "Description",
+      "imagesTitle": "Images",
+      "fieldPrice": "Price per Night",
+      "fieldRoomNumber": "Room Number",
+      "fieldCapacity": "Max Capacity",
+      "fieldView": "View",
+      "fieldType": "Room Type",
+      "fieldStatus": "Status",
+      "noAmenities": "No amenities assigned.",
+      "noDescription": "No description provided."
+    },
+    "form": {
+      "newBreadcrumb": "New Room",
+      "editBreadcrumb": "Edit",
+      "createTitle": "Create Room",
+      "editTitle": "Edit Room",
+      "sectionInfo": "Room Information",
+      "fieldName": "Room name",
+      "fieldNamePlaceholder": "e.g. Grand Deluxe King",
+      "fieldRoomNumber": "Room number",
+      "fieldRoomNumberPlaceholder": "e.g. 101",
+      "fieldType": "Room type",
+      "fieldTypePlaceholder": "e.g. Deluxe King",
+      "fieldPrice": "Price per night ($)",
+      "fieldCapacity": "Max capacity (guests)",
+      "fieldView": "View",
+      "fieldViewNone": "No view specified",
+      "fieldDescription": "Description",
+      "fieldDescriptionPlaceholder": "Describe the room...",
+      "submitCreate": "Create Room",
+      "submitCreating": "Creating…",
+      "submitSave": "Save Changes",
+      "submitSaving": "Saving…",
+      "amenitiesSectionTitle": "Amenities",
+      "amenitiesEmpty": "No amenities defined yet.",
+      "imageSectionTitle": "Room Photos",
+      "imageRemoveButton": "Remove",
+      "imageViewAction": "View",
+      "imageSetThumbnailAction": "Set as thumbnail",
+      "insertThumbnailLabel": "Insert thumbnail image",
+      "imageUploadFailed": "Room was saved, but some photos failed to upload."
+    }
+  },
+  "amenities": {
+    "list": {
+      "eyebrow": "Catalog",
+      "title": "Amenities",
+      "subtitle": "{{count}} amenities",
+      "addAmenity": "+ Add Amenity",
+      "columnName": "Name",
+      "columnDescription": "Description",
+      "noDescription": "—",
+      "empty": "No amenities yet.",
+      "deleteTitle": "Delete Amenity?",
+      "deleteDesc": "Rooms currently using this amenity will lose the assignment. This cannot be undone.",
+      "deleteConfirm": "Delete Amenity"
+    },
+    "form": {
+      "createTitle": "Add Amenity",
+      "editTitle": "Edit Amenity",
+      "fieldName": "Name",
+      "fieldNamePlaceholder": "e.g. Free Wi-Fi",
+      "fieldDescription": "Description",
+      "fieldDescriptionPlaceholder": "Optional short description...",
+      "submitCreate": "Add Amenity",
+      "submitCreating": "Adding…",
+      "submitSave": "Save Changes",
+      "submitSaving": "Saving…"
+    }
+  },
+  "bookings": {
+    "list": {
+      "eyebrow": "Operations",
+      "title": "Bookings",
+      "subtitle": "{{count}} total bookings",
+      "searchPlaceholder": "Search guest, room...",
+      "statusAll": "All Status"
+    },
+    "detail": {
+      "notFound": "Booking not found.",
+      "backToList": "← Back to Bookings",
+      "titleWithId": "Booking #{{id}}",
+      "fieldDuration": "Duration",
+      "nightsCount": "{{count}} nights",
+      "guestInfoTitle": "Guest Information",
+      "fieldName": "Name",
+      "fieldEmail": "Email",
+      "fieldPhone": "Phone",
+      "fieldBookedAt": "Booked At",
+      "noteLabel": "Special Request",
+      "acceptAction": "✓ Accept Booking",
+      "rejectAction": "✕ Reject Booking",
+      "acceptedNotice": "Booking has been accepted.",
+      "rejectedNotice": "Booking has been rejected.",
+      "cancelledNotice": "Booking has been cancelled.",
+      "expiredNotice": "Booking has expired.",
+      "priceSummaryTitle": "Price Summary",
+      "pricePerNightLine": "${{price}} × {{nights}} nights",
+      "rejectModalTitle": "Reject Booking",
+      "rejectModalConfirm": "Reject",
+      "rejectReasonLabel": "Reason (optional)",
+      "rejectReasonPlaceholder": "Explain why the booking is being rejected...",
+      "paid": "✓ Paid",
+      "unpaid": "Unpaid"
+    }
+  },
+  "reviews": {
+    "list": {
+      "eyebrow": "Moderation",
+      "title": "Reviews",
+      "subtitle": "{{count}} reviews",
+      "empty": "No reviews to moderate.",
+      "deleteTitle": "Delete Review?",
+      "deleteDesc": "The author will be notified by email. This cannot be undone.",
+      "deleteConfirm": "Delete Review"
+    }
+  },
+  "emailLogs": {
+    "list": {
+      "eyebrow": "System",
+      "title": "Email Logs",
+      "subtitle": "{{count}} email events",
+      "statusAll": "All Status",
+      "resultsCount": "{{count}} results"
+    },
+    "detail": {
+      "notFound": "Email log not found.",
+      "backToList": "← Back to Email Logs",
+      "metadataTitle": "Metadata",
+      "fieldLogId": "Log ID",
+      "fieldType": "Type",
+      "fieldTo": "To",
+      "fieldCreatedAt": "Created At",
+      "fieldSentAt": "Sent At",
+      "fieldRetryAttempts": "Retry Attempts",
+      "failedMessage": "This email failed to deliver after {{count}} attempt(s). You can retry sending it now.",
+      "retryNow": "Retry Now",
+      "retrying": "Retrying...",
+      "retrySuccess": "Email successfully resent."
+    }
+  },
+  "users": {
+    "list": {
+      "eyebrow": "Management",
+      "title": "Users",
+      "subtitle": "{{count}} registered accounts",
+      "searchPlaceholder": "Search users...",
+      "tabAll": "All",
+      "tabActive": "Active",
+      "tabInactive": "Inactive",
+      "showingSummary": "Showing {{shown}} of {{total}} users"
+    },
+    "detail": {
+      "fieldPhone": "Phone",
+      "fieldRole": "Role",
+      "fieldJoined": "Joined",
+      "fieldTotalBookings": "Total Bookings",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "bookingHistoryTitle": "Booking History",
+      "bookingCount": "{{count}} booking(s)",
+      "noBookings": "No bookings found for this user."
+    }
+  },
+  "statistics": {
+    "bookings": {
+      "eyebrow": "Analytics",
+      "title": "Booking Statistics",
+      "goToRevenue": "Revenue Stats →",
+      "tileTotal": "Total Bookings",
+      "tileAccepted": "Accepted",
+      "tilePending": "Pending",
+      "tileAvgStay": "Avg Stay (nights)",
+      "monthlyChartTitle": "Monthly Bookings",
+      "byRoomTypeChartTitle": "Bookings by Room Type",
+      "statusBreakdownTitle": "Status Breakdown"
+    },
+    "revenue": {
+      "eyebrow": "Analytics",
+      "title": "Revenue Statistics",
+      "goToBookings": "Booking Stats →",
+      "tileTotal": "Total Revenue (YTD)",
+      "tileAvgMonthly": "Avg Monthly",
+      "tileBestMonth": "Best Month",
+      "tileTotalBookings": "Total Bookings",
+      "trendChartTitle": "Revenue Trend",
+      "byRoomTypeChartTitle": "Revenue by Room Type",
+      "monthlyBreakdownTitle": "Monthly Breakdown"
+    }
+  },
+  "status": {
+    "room": {
+      "ACTIVE": "Active",
+      "INACTIVE": "Inactive",
+      "MAINTENANCE": "Maintenance"
+    },
+    "booking": {
+      "PENDING": "Pending",
+      "ACCEPTED": "Accepted",
+      "REJECTED": "Rejected",
+      "CANCELLED": "Cancelled",
+      "EXPIRED": "Expired"
+    },
+    "payment": {
+      "NONE": "Unpaid",
+      "PENDING": "Pending",
+      "SUCCESS": "Paid",
+      "FAILED": "Failed",
+      "REFUNDED": "Refunded"
+    },
+    "email": {
+      "PENDING": "Pending",
+      "SENT": "Sent",
+      "FAILED": "Failed"
+    },
+    "user": {
+      "ACTIVE": "Active",
+      "INACTIVE": "Inactive"
+    },
+    "review": {
+      "ACTIVE": "Published",
+      "DELETED": "Removed"
+    },
+    "role": {
+      "ADMIN": "Admin",
+      "USER": "User"
+    }
+  }
+}

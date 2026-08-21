@@ -1,0 +1,41 @@
+{
+  "hero": {
+    "eyebrow": "Chào mừng đến với Grandeur",
+    "titleLine1": "Mỗi Kỳ Nghỉ",
+    "titleLine2": "Đều Là Một Kỷ Niệm",
+    "subtitle": "Sang trọng đẳng cấp giữa lòng thành phố. Đặt trực tiếp để có giá tốt nhất."
+  },
+  "stats": {
+    "rooms": "Phòng Cao Cấp",
+    "rating": "Đánh Giá Trung Bình",
+    "years": "Năm Kinh Nghiệm",
+    "guests": "Khách Hàng Hài Lòng"
+  },
+  "featuredRooms": {
+    "eyebrow": "Được Chọn Lọc Cho Bạn",
+    "title": "Phòng Nổi Bật",
+    "viewAll": "Xem Tất Cả Phòng →",
+    "empty": "Hiện chưa có phòng nào."
+  },
+  "whyUs": {
+    "eyebrow": "Cam Kết Của Chúng Tôi",
+    "title": "Sự Khác Biệt Của Grandeur",
+    "serviceTitle": "Dịch Vụ Đạt Giải Thưởng",
+    "serviceDesc": "Được công nhận toàn cầu về sự xuất sắc trong hiếu khách, luôn xếp hạng #1 về sự hài lòng của khách hàng.",
+    "rateTitle": "Cam Kết Giá Tốt Nhất",
+    "rateDesc": "Đặt trực tiếp để có giá thấp nhất. Chúng tôi đảm bảo khớp mọi mức giá tìm thấy ở nơi khác.",
+    "transferTitle": "Đưa Đón Miễn Phí",
+    "transferDesc": "Đưa đón sân bay trọn gói khi đặt bất kỳ phòng suite nào, mang lại trải nghiệm đến nơi liền mạch."
+  },
+  "reviews": {
+    "eyebrow": "Câu Chuyện Từ Khách Hàng",
+    "title": "Khách Hàng Nói Gì Về Chúng Tôi",
+    "empty": "Chưa có đánh giá nào."
+  },
+  "cta": {
+    "eyebrow": "Số Lượng Có Hạn",
+    "title": "Lên Kế Hoạch Cho Kỳ Nghỉ Hoàn Hảo",
+    "subtitle": "Đặt phòng suite của bạn ngay hôm nay. Ưu đãi thành viên độc quyền dành cho đặt phòng trực tiếp.",
+    "action": "Khám Phá Tất Cả Phòng"
+  }
+}
