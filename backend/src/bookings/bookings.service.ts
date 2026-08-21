@@ -24,7 +24,7 @@ export class BookingsService {
     private readonly bookingsRepository: Repository<Booking>,
     @InjectRepository(Room) private readonly roomsRepository: Repository<Room>,
     private readonly i18n: I18nService,
-  ) {}
+  ) { }
 
   async create(createBookingDto: CreateBookingDto, userId: string) {
     this.assertValidDateRange(
@@ -139,15 +139,35 @@ export class BookingsService {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  cancel(id: string, userId: string, reason: CancelBookingDto): never {
-    throw new NotImplementedException();
-  }
+  async cancel(
+    id: string,
+    userId: string,
+    reason: CancelBookingDto,
+  ) {
+    const booking = await this.bookingsRepository.findOne({
+      where: {
+        id,
+        userId,
+      },
+    });
 
-    if (result.affected === 0) {
+    if (!booking) {
+      throw new NotFoundException(
+        this.i18n.t('messages.BOOKING.NOT_FOUND'),
+      );
+    }
+
+    if (booking.status !== BookingStatus.PENDING) {
       throw new BadRequestException(
         this.i18n.t('messages.BOOKING.CANNOT_CANCEL'),
       );
     }
+
+    booking.status = BookingStatus.CANCELLED;
+    booking.cancelReason = reason.cancelReason;
+
+    await this.bookingsRepository.save(booking);
+
     return {
       message: this.i18n.t('messages.BOOKING.CANCEL_SUCCESS'),
     };
