@@ -6,13 +6,14 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { I18nService } from 'nestjs-i18n';
-import { DataSource, FindOptionsWhere, Repository } from 'typeorm';
+import { DataSource, FindOptionsWhere, Repository, EntityManager } from 'typeorm';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { EmailLogResponseDto } from './dto/email-log-response.dto';
 import { SendMailDto } from './dto/send-mail.dto';
 import { ListEmailLogsDto } from './dto/list-email-logs.dto';
-import { EntityManager } from 'typeorm';
 import { EmailLog, EmailStatus } from './entities/email-log.entity';
-import { MailOutbox, OutboxStatus } from './entities/mail-outbox.entity';
+import { MAIL_QUEUE } from './mail.constants';
 
 @Injectable()
 export class MailService {
@@ -21,13 +22,13 @@ export class MailService {
   constructor(
     @InjectRepository(EmailLog)
     private readonly emailLogRepository: Repository<EmailLog>,
-    @InjectRepository(MailOutbox)
-    private readonly mailOutboxRepository: Repository<MailOutbox>,
+    @InjectQueue(MAIL_QUEUE)
+    private readonly mailQueue: Queue,
     private readonly i18n: I18nService,
     private readonly dataSource: DataSource,
   ) {}
 
-  async createOutbox(
+  async createEmailLog(
     manager: EntityManager,
     dto: SendMailDto,
   ): Promise<EmailLog> {
@@ -41,27 +42,35 @@ export class MailService {
     });
     const savedEmailLog = await manager.save(EmailLog, newEmailLog);
 
-    const outbox = manager.create(MailOutbox, {
-      emailLogId: savedEmailLog.id,
-      status: OutboxStatus.PENDING,
-      payload: {
-        to: dto.to,
-        subject: dto.subject,
-        text: dto.text,
-        html: dto.html,
-      },
-    });
-    await manager.save(MailOutbox, outbox);
-
     return savedEmailLog;
+  }
+
+  async enqueueEmail(emailLog: EmailLog): Promise<void> {
+    await this.mailQueue.add(
+      'send-email',
+      {
+        emailLogId: emailLog.id,
+        to: emailLog.recipient,
+        subject: emailLog.subject,
+        text: emailLog.text,
+        html: emailLog.html,
+      },
+      {
+        jobId: `email-${emailLog.id}-${emailLog.retryCount}`,
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 5000 },
+      },
+    );
   }
 
   async queueMail(dto: SendMailDto): Promise<EmailLogResponseDto> {
     const emailLog = await this.dataSource.transaction(async (manager) => {
-      return this.createOutbox(manager, dto);
+      return this.createEmailLog(manager, dto);
     });
 
-    this.logger.log('Queued email via outbox', {
+    await this.enqueueEmail(emailLog);
+
+    this.logger.log('Queued email', {
       emailLogId: emailLog.id,
       type: dto.type,
     });
@@ -78,7 +87,7 @@ export class MailService {
     }
     return {
       statusCode: 200,
-      message: 'Lấy chi tiết email log thành công',
+      message: this.i18n.t('messages.MAIL.GET_LOG_SUCCESS'),
       data: EmailLogResponseDto.fromEntity(emailLog),
     };
   }
@@ -101,7 +110,7 @@ export class MailService {
 
     return {
       statusCode: 200,
-      message: 'Lấy danh sách email log thành công',
+      message: this.i18n.t('messages.MAIL.GET_LOGS_SUCCESS'),
       data: {
         items: logs.map((log) => EmailLogResponseDto.fromEntity(log)),
         total,
@@ -112,7 +121,7 @@ export class MailService {
     };
   }
 
-  async retryEmailLog(id: string): Promise<void> {
+  async retryEmailLog(id: string): Promise<{ message: string }> {
     const emailLog = await this.emailLogRepository.findOneBy({ id });
     if (!emailLog) {
       throw new NotFoundException(
@@ -126,25 +135,18 @@ export class MailService {
       );
     }
 
-    // Insert a new outbox record and update email log status within transaction
     await this.dataSource.transaction(async (manager) => {
       emailLog.status = EmailStatus.PENDING;
       emailLog.lastError = null;
       await manager.save(EmailLog, emailLog);
 
-      const outbox = manager.create(MailOutbox, {
-        emailLogId: emailLog.id,
-        status: OutboxStatus.PENDING,
-        payload: {
-          to: emailLog.recipient,
-          subject: emailLog.subject || '',
-          text: emailLog.text || '',
-          html: emailLog.html,
-        },
-      });
-      await manager.save(MailOutbox, outbox);
     });
 
-    this.logger.log(`Retrying email log ${id} via outbox`);
+    await this.enqueueEmail(emailLog);
+
+    this.logger.log(`Retrying email log ${id}`);
+    return {
+      message: this.i18n.t('messages.MAIL.RETRY_ACCEPTED'),
+    };
   }
 }

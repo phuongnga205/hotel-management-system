@@ -13,14 +13,12 @@ import {
   EmailStatus,
   EmailType,
 } from '../src/mail/entities/email-log.entity';
-import { MailOutbox } from '../src/mail/entities/mail-outbox.entity';
 import * as bcrypt from 'bcrypt';
 
 describe('Admin Email Logs (e2e)', () => {
   let app: INestApplication<App>;
   let userRepository: Repository<User>;
   let emailLogRepository: Repository<EmailLog>;
-  let outboxRepository: Repository<MailOutbox>;
   let jwtService: JwtService;
   let adminToken: string;
   let userToken: string;
@@ -50,9 +48,6 @@ describe('Admin Email Logs (e2e)', () => {
     );
     emailLogRepository = moduleFixture.get<Repository<EmailLog>>(
       getRepositoryToken(EmailLog),
-    );
-    outboxRepository = moduleFixture.get<Repository<MailOutbox>>(
-      getRepositoryToken(MailOutbox),
     );
     jwtService = moduleFixture.get<JwtService>(JwtService);
 
@@ -95,7 +90,6 @@ describe('Admin Email Logs (e2e)', () => {
 
   afterAll(async () => {
     if (testEmailLog) {
-      await outboxRepository?.delete({ emailLogId: testEmailLog.id });
       await emailLogRepository?.delete({ id: testEmailLog.id });
     }
     if (testAdmin) {
@@ -135,7 +129,7 @@ describe('Admin Email Logs (e2e)', () => {
   });
 
   describe('POST /admin/email-logs/:id/retry', () => {
-    it('should successfully retry a failed email via outbox', async () => {
+    it('should successfully retry a failed email', async () => {
       // Seed a failed email log
       const emailLog = emailLogRepository.create({
         type: EmailType.MONTHLY_REPORT,
@@ -160,11 +154,6 @@ describe('Admin Email Logs (e2e)', () => {
       expect(updatedLog?.status).toBe(EmailStatus.PENDING);
       expect(updatedLog?.lastError).toBeNull();
 
-      // Verify outbox entry created
-      const outbox = await outboxRepository.findOneBy({
-        emailLogId: testEmailLog.id,
-      });
-      expect(outbox).toBeDefined();
     });
 
     it('should reject retry for a non-failed email with 409 Conflict', async () => {

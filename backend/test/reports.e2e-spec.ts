@@ -4,11 +4,10 @@ import { AppModule } from '../src/app.module';
 import { ReportsService } from '../src/reports/reports.service';
 import { MailService } from '../src/mail/mail.service';
 import { User, UserRole, UserStatus } from '../src/users/entities/user.entity';
-import { MonthlyReportDispatch } from '../src/reports/entities/monthly-report-dispatch.entity';
+import { EmailLog, EmailType } from '../src/mail/entities/email-log.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
-import { EmailLogResponseDto } from '../src/mail/dto/email-log-response.dto';
 import * as bcrypt from 'bcrypt';
 
 describe('ReportsModule (e2e)', () => {
@@ -16,7 +15,7 @@ describe('ReportsModule (e2e)', () => {
   let reportsService: ReportsService;
   let mailService: MailService;
   let userRepository: Repository<User>;
-  let dispatchRepository: Repository<MonthlyReportDispatch>;
+  let emailLogRepository: Repository<EmailLog>;
   let testAdmin: User;
 
   beforeAll(async () => {
@@ -41,8 +40,8 @@ describe('ReportsModule (e2e)', () => {
     userRepository = moduleFixture.get<Repository<User>>(
       getRepositoryToken(User),
     );
-    dispatchRepository = moduleFixture.get<Repository<MonthlyReportDispatch>>(
-      getRepositoryToken(MonthlyReportDispatch),
+    emailLogRepository = moduleFixture.get<Repository<EmailLog>>(
+      getRepositoryToken(EmailLog),
     );
 
     // Create a test admin
@@ -61,7 +60,7 @@ describe('ReportsModule (e2e)', () => {
   afterAll(async () => {
     // Cleanup
     if (testAdmin) {
-      await dispatchRepository?.delete({ recipientId: testAdmin.id });
+      await emailLogRepository?.delete({ recipient: testAdmin.email });
       await userRepository?.delete({ id: testAdmin.id });
     }
     await app?.close();
@@ -90,9 +89,8 @@ describe('ReportsModule (e2e)', () => {
       .setSystemTime(mockDate);
 
     // Mock MailService so NO real emails are queued
-    const createOutboxSpy = jest
-      .spyOn(mailService, 'createOutbox')
-      .mockResolvedValue({} as any);
+    const createEmailLogSpy = jest.spyOn(mailService, 'createEmailLog');
+    jest.spyOn(mailService, 'enqueueEmail').mockResolvedValue();
 
     // Run concurrently 3 times
     await Promise.all([
@@ -107,12 +105,14 @@ describe('ReportsModule (e2e)', () => {
     });
 
     // Each admin should be queued exactly once
-    expect(createOutboxSpy).toHaveBeenCalledTimes(activeAdminsCount);
+    expect(createEmailLogSpy).toHaveBeenCalledTimes(activeAdminsCount);
 
-    const dispatches = await dispatchRepository.find({
-      where: { reportMonth: '2026-08' },
+    const reportLogs = await emailLogRepository.find({
+      where: { type: EmailType.MONTHLY_REPORT },
     });
-    expect(dispatches.length).toBe(activeAdminsCount);
+    expect(
+      reportLogs.filter((log) => log.subject?.includes('2026-08')).length,
+    ).toBe(activeAdminsCount);
   });
 
   it('allows retry when queue dispatch fails but continues to next admin', async () => {
@@ -133,17 +133,17 @@ describe('ReportsModule (e2e)', () => {
 
     // Fail first attempt, succeed next
     let calls = 0;
-    jest
-      .spyOn(mailService, 'createOutbox')
-      // eslint-disable-next-line @typescript-eslint/require-await
-      .mockImplementation(async () => {
-        calls++;
-        if (calls === 1) throw new Error('Queue failed');
-        return {} as any;
-      });
+    jest.spyOn(mailService, 'createEmailLog');
+    jest.spyOn(mailService, 'enqueueEmail').mockImplementation(async () => {
+      calls++;
+      if (calls === 1) throw new Error('Queue failed');
+    });
 
     // Ensure clean state
-    await dispatchRepository.delete({ reportMonth: '2026-09' });
+    await emailLogRepository.delete({
+      type: EmailType.MONTHLY_REPORT,
+      subject: 'Monthly report - 2026-09',
+    });
 
     // 1st run: fails on 1st admin, succeeds on rest
     await reportsService.generateMonthlyReport();
@@ -155,6 +155,9 @@ describe('ReportsModule (e2e)', () => {
     expect(calls - callsBefore).toBe(1);
 
     // Cleanup
-    await dispatchRepository.delete({ reportMonth: '2026-09' });
+    await emailLogRepository.delete({
+      type: EmailType.MONTHLY_REPORT,
+      subject: 'Monthly report - 2026-09',
+    });
   });
 });

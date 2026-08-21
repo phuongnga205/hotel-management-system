@@ -45,6 +45,7 @@
     "cloudinary": "^2.10.1",
     "exceljs": "^4.4.0",
     "ioredis": "^5.11.1",
+    "joi": "^18.2.5",
     "luxon": "^3.7.2",
     "nestjs-i18n": "^10.8.5",
     "nestjs-seeder": "^0.3.2",

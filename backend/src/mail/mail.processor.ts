@@ -9,6 +9,7 @@ import type SMTPTransport from 'nodemailer/lib/smtp-transport';
 import { Repository } from 'typeorm';
 import { EmailLog, EmailStatus } from './entities/email-log.entity';
 import { DEFAULT_MAIL_PORT, MAIL_QUEUE } from './mail.constants';
+import { ENVIRONMENT_KEYS } from '../config/environment.constants';
 
 interface SendMailJobData {
   emailLogId: string;
@@ -31,21 +32,26 @@ export class MailProcessor extends WorkerHost {
   ) {
     super();
 
-    const host = this.configService.get<string>('MAIL_HOST');
-    const user = this.configService.get<string>('MAIL_USER');
-    const pass = this.configService.get<string>('MAIL_PASS');
-    const from = this.configService.get<string>('MAIL_FROM');
-
-    if (!host || !user || !pass || !from) {
-      throw new Error(
-        'Missing SMTP config: MAIL_HOST, MAIL_USER, MAIL_PASS and MAIL_FROM must all be set',
-      );
-    }
+    const host = this.configService.getOrThrow<string>(
+      ENVIRONMENT_KEYS.MAIL_HOST,
+    );
+    const user = this.configService.getOrThrow<string>(
+      ENVIRONMENT_KEYS.MAIL_USER,
+    );
+    const pass = this.configService.getOrThrow<string>(
+      ENVIRONMENT_KEYS.MAIL_PASS,
+    );
+    const from = this.configService.getOrThrow<string>(
+      ENVIRONMENT_KEYS.MAIL_FROM,
+    );
 
     this.mailFrom = from;
     this.transporter = nodemailer.createTransport({
       host,
-      port: this.configService.get<number>('MAIL_PORT', DEFAULT_MAIL_PORT),
+      port: this.configService.get<number>(
+        ENVIRONMENT_KEYS.MAIL_PORT,
+        DEFAULT_MAIL_PORT,
+      ),
       secure: false,
       auth: { user, pass },
     });

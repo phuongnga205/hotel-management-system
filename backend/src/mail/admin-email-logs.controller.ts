@@ -13,6 +13,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiTags,
+  ApiConflictResponse,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -58,12 +59,10 @@ export class AdminEmailLogsController {
     description: 'Đã đẩy lại job vào queue thành công',
   })
   @ApiResponse({ status: 404, description: 'Không tìm thấy email log' })
-  @ApiResponse({
-    status: 400,
-    description: 'Chỉ có thể retry email FAILED hoặc Không tìm thấy Job',
+  @ApiConflictResponse({
+    description: 'Email log is not in FAILED status',
   })
   async retryEmailLog(@Param() params: EmailLogIdParamDto) {
-    await this.mailService.retryEmailLog(params.id);
-    return { message: 'Đã đẩy yêu cầu gửi lại email vào hàng đợi.' };
+    return this.mailService.retryEmailLog(params.id);
   }
 }

@@ -26,6 +26,7 @@ import * as path from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ENVIRONMENT_KEYS } from './config/environment.constants';
+import * as Joi from 'joi';
 
 const DEFAULT_REDIS_PORT = 6379;
 
@@ -37,6 +38,15 @@ const DEFAULT_THROTTLE_LIMIT = 10;
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+
+      validationSchema: Joi.object({
+        MAIL_HOST: Joi.string().required(),
+        MAIL_PORT: Joi.number().port().default(587),
+        MAIL_USER: Joi.string().required(),
+        MAIL_PASS: Joi.string().required(),
+        MAIL_FROM: Joi.string().email().required(),
+        REPORT_TIME_ZONE: Joi.string().required(),
+      }).unknown(true),
     }),
 
     ThrottlerModule.forRoot([

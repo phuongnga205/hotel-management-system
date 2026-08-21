@@ -59,11 +59,11 @@ export class EmailLog {
   @Column({ name: 'last_error', type: 'text', nullable: true })
   lastError!: string | null;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  subject!: string | null;
+  @Column({ type: 'varchar', length: 255 })
+  subject!: string;
 
-  @Column({ type: 'text', nullable: true })
-  text!: string | null;
+  @Column({ type: 'text' })
+  text!: string;
 
   @Column({ type: 'text', nullable: true })
   html!: string | null;
