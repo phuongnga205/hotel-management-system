@@ -12,7 +12,6 @@ import { I18nService } from 'nestjs-i18n';
 import { Booking } from '../bookings/entities/booking.entity';
 import { ENVIRONMENT_KEYS } from '../config/environment.constants';
 import { Payment } from '../payments/entities/payment.entity';
-import { PaymentStatus } from '../payments/enums/payment-status.enum';
 import { RedisUtil } from '../token/redis.util';
 import { StatisticsQueryDto } from './dto/statistics-query.dto';
 import { StatisticsResponseDto } from './dto/statistics-response.dto';
@@ -20,10 +19,12 @@ import { StatisticsPeriod } from './enums/statistics-period.enum';
 import {
   STATISTICS,
   STATISTICS_BUCKET_FORMAT,
+  STATISTICS_BOOKING_STATUSES,
   STATISTICS_CACHE_ALL_PERIODS,
   STATISTICS_DATE_TRUNC_UNIT,
   STATISTICS_FORMATTED_MONEY_PATTERN,
   STATISTICS_MONEY_PATTERN,
+  STATISTICS_REVENUE_PAYMENT_STATUSES,
 } from './statistics.constants';
 import { StatisticsLogger } from './statistics.logger';
 
@@ -70,6 +71,8 @@ export class StatisticsService {
     const isLockOwner = await this.acquireLock(lockKey, lockToken);
     if (!isLockOwner) return this.waitForCachedResponse(cacheKey, query);
 
+    const stopLockHeartbeat = this.startLockHeartbeat(lockKey, lockToken);
+
     try {
       const cachedAfterLock = await this.readCache(cacheKey, query);
       if (cachedAfterLock) {
@@ -86,6 +89,7 @@ export class StatisticsService {
       await this.writeCache(cacheKey, response);
       return this.toResponse(response);
     } finally {
+      stopLockHeartbeat();
       await this.releaseLock(lockKey, lockToken);
     }
   }
@@ -99,7 +103,9 @@ export class StatisticsService {
       .createQueryBuilder('payment')
       .select(bucket, 'label')
       .addSelect('COALESCE(SUM(payment.amount), 0)', 'value')
-      .where('payment.status = :status', { status: PaymentStatus.SUCCESS })
+      .where('payment.status IN (:...revenueStatuses)', {
+        revenueStatuses: STATISTICS_REVENUE_PAYMENT_STATUSES,
+      })
       .andWhere('payment.paidAt IS NOT NULL')
       .andWhere(
         'payment.paidAt >= (:startDate::timestamp AT TIME ZONE :timeZone)',
@@ -123,7 +129,10 @@ export class StatisticsService {
       .createQueryBuilder('booking')
       .select(bucket, 'label')
       .addSelect('COUNT(booking.id)', 'value')
-      .where(
+      .where('booking.status IN (:...bookingStatuses)', {
+        bookingStatuses: STATISTICS_BOOKING_STATUSES,
+      })
+      .andWhere(
         'booking.createdAt >= (:startDate::timestamp AT TIME ZONE :timeZone)',
       )
       .andWhere(
@@ -323,11 +332,10 @@ export class StatisticsService {
     } catch (error: unknown) {
       this.logger.error({
         message:
-          'Statistics cache write failed; restore Redis before retrying this request',
+          'Statistics cache write failed; returning the generated database result without caching it',
         cacheKey: key,
         error,
       });
-      throw this.cacheUnavailableException();
     }
   }
 
@@ -375,15 +383,47 @@ export class StatisticsService {
     }
   }
 
+  private startLockHeartbeat(key: string, token: string): () => void {
+    const heartbeat = setInterval(() => {
+      void this.extendLock(key, token);
+    }, STATISTICS.LOCK_RENEW_INTERVAL_MILLISECONDS);
+    heartbeat.unref();
+    return () => clearInterval(heartbeat);
+  }
+
+  private async extendLock(key: string, token: string): Promise<void> {
+    try {
+      const isExtended = await this.redis.extendLock(
+        key,
+        token,
+        STATISTICS.LOCK_TTL_SECONDS,
+      );
+      if (!isExtended) {
+        this.logger.warn({
+          message:
+            'Statistics lock ownership was lost before generation completed; another request may regenerate this cache key',
+          cacheKey: key,
+        });
+      }
+    } catch (error: unknown) {
+      this.logger.error({
+        message:
+          'Statistics lock renewal failed; verify Redis health before the lock TTL expires',
+        cacheKey: key,
+        error,
+      });
+    }
+  }
+
   private async waitForCachedResponse(
     cacheKey: string,
     query: StatisticsQueryDto,
   ): Promise<StatisticsResponseDto> {
-    for (
-      let attempt = 0;
-      attempt < STATISTICS.CACHE_WAIT_ATTEMPTS;
-      attempt += 1
-    ) {
+    const attempts = Math.ceil(
+      (STATISTICS.LOCK_TTL_SECONDS * STATISTICS.MILLISECONDS_PER_SECOND) /
+        STATISTICS.CACHE_WAIT_INTERVAL_MILLISECONDS,
+    );
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
       await this.delay(STATISTICS.CACHE_WAIT_INTERVAL_MILLISECONDS);
       const cached = await this.readCache(cacheKey, query);
       if (cached) return this.toResponse({ ...cached, isCached: true });

@@ -33,6 +33,7 @@ describe('StatisticsService', () => {
     save: jest.fn(),
     delete: jest.fn(),
     acquireLock: jest.fn(),
+    extendLock: jest.fn(),
     releaseLock: jest.fn(),
   };
 
@@ -43,6 +44,7 @@ describe('StatisticsService', () => {
     redis.save.mockReset();
     redis.delete.mockReset();
     redis.acquireLock.mockReset().mockResolvedValue(true);
+    redis.extendLock.mockReset().mockResolvedValue(true);
     redis.releaseLock.mockReset().mockResolvedValue(undefined);
     redis.save.mockResolvedValue(undefined);
     redis.delete.mockResolvedValue(undefined);
@@ -136,6 +138,27 @@ describe('StatisticsService', () => {
       expect.any(String),
       300,
     );
+  });
+
+  it('returns the database result when writing Redis cache fails', async () => {
+    redis.findOne.mockResolvedValue(null);
+    redis.save.mockRejectedValue(new Error('Redis write unavailable'));
+    paymentRepository.createQueryBuilder = jest
+      .fn()
+      .mockReturnValue(
+        createQueryBuilder([{ label: '2026-08', value: '250' }]),
+      );
+    bookingRepository.createQueryBuilder = jest
+      .fn()
+      .mockReturnValue(createQueryBuilder([{ label: '2026-08', value: '3' }]));
+
+    const result = await service.getRevenueAndBookings({
+      period: StatisticsPeriod.MONTH,
+      year: 2026,
+    });
+
+    expect(result.totalRevenue).toBe('250.00');
+    expect(result.totalBookings).toBe(3);
   });
 
   it('rejects the request when mandatory Redis cache is unavailable', async () => {

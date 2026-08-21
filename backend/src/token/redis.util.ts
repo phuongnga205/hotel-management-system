@@ -5,6 +5,8 @@ import { ENVIRONMENT_KEYS } from '../config/environment.constants';
 
 const RELEASE_LOCK_SCRIPT =
   'if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("del", KEYS[1]) else return 0 end';
+const EXTEND_LOCK_SCRIPT =
+  'if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("expire", KEYS[1], ARGV[2]) else return 0 end';
 const REDIS_EVAL_COMMAND = 'EVAL';
 
 @Injectable()
@@ -55,5 +57,21 @@ export class RedisUtil implements OnModuleInit, OnModuleDestroy {
       key,
       token,
     );
+  }
+
+  async extendLock(
+    key: string,
+    token: string,
+    ttlSeconds: number,
+  ): Promise<boolean> {
+    const result = await this.client.call(
+      REDIS_EVAL_COMMAND,
+      EXTEND_LOCK_SCRIPT,
+      1,
+      key,
+      token,
+      ttlSeconds,
+    );
+    return result === 1;
   }
 }
