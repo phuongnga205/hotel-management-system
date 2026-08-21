@@ -59,8 +59,17 @@
 
 **DTO đăng ký/tạo user** (`RegisterDto` / `CreateUserDto`): `email` (email
 hợp lệ), `password` (string, **tối thiểu 6 ký tự**), `username` (string,
-required), `phone` (optional, string). `UpdateUserDto` = tất cả field trên
-nhưng optional (partial).
+required), `phone` (optional, string). `UpdateUserDto` (`PATCH /users/me`) =
+`email`/`username`/`fullName`/`phone`, tất cả optional (partial) — **không**
+có `role`/`status`, self-service không tự đổi được 2 field này.
+
+> 🆕 **Admin — `AdminUpdateUserDto`** (`PATCH /admin/users/:id`, optional,
+> chưa có UI FE — xem `backend/docs/DANH_SACH_API.md` mục 8): giống
+> `UpdateUserDto` nhưng có thêm `role` (`'USER' | 'ADMIN'`) và `status`
+> (`'ACTIVE' | 'INACTIVE'`), tất cả field optional. Admin cũng có
+> `POST /admin/users` (dùng `CreateUserDto`, tài khoản tạo ra kích hoạt
+> ngay — `status='ACTIVE'`, không qua OTP) và `DELETE /admin/users/:id`
+> (xoá mềm).
 
 **Đổi mật khẩu** (`ChangePasswordDto`): `currentPassword` (string,
 required), `newPassword` (string, tối thiểu 6 ký tự).
