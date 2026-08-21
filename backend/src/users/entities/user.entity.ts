@@ -72,6 +72,7 @@ export class User {
   fullName?: string | null;
 
   @Column({
+    type: 'varchar',
     length: 20,
     default: UserStatus.INACTIVE,
   })
@@ -95,6 +96,7 @@ export class User {
   avatarUrl?: string | null;
 
   @Column({
+    type: 'varchar',
     length: 20,
     default: UserRole.USER,
   })
