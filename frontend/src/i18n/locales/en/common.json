@@ -1,11 +1,11 @@
 {
   "app": {
-    "name": "Grandeur",
-    "setupDescription": "Sample setup: Vite + React + Tailwind CSS + Ant Design + i18n (vi/en). Official routes and style guide will be added later."
+    "name": "Grandeur"
   },
   "common": {
     "save": "Save",
     "cancel": "Cancel",
+    "close": "Close",
     "confirm": "Confirm",
     "loading": "Loading...",
     "search": "Search",
@@ -28,5 +28,57 @@
     "admin": "Admin",
     "profile": "Profile",
     "logout": "Log out"
+  },
+  "pagination": {
+    "showing": "Showing {{from}}–{{to}} of {{total}}",
+    "prev": "← Prev",
+    "next": "Next →"
+  },
+  "roomCard": {
+    "perNight": "/ night",
+    "bookNow": "Book Now",
+    "upToGuests": "up to {{count}} guests"
+  },
+  "bookingCard": {
+    "idLabel": "Booking #{{id}}",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "duration": "Duration",
+    "nights": "{{count}} night(s)",
+    "total": "Total",
+    "viewDetails": "View Details",
+    "payNow": "Pay Now",
+    "cancel": "Cancel"
+  },
+  "priceSummary": {
+    "perNight": "per night · taxes not included",
+    "taxesFees": "Taxes & fees",
+    "total": "Total",
+    "currencyNote": "USD · includes all taxes",
+    "bookThisRoom": "Book This Room",
+    "processing": "Processing…"
+  },
+  "dateRangeBar": {
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "checkInPlaceholder": "Check-in date",
+    "checkOutPlaceholder": "Check-out date",
+    "guests": "Guests",
+    "guestCount": "{{count}} Guest(s)",
+    "search": "Search Rooms"
+  },
+  "footer": {
+    "tagline": "Award-winning luxury hotel in the heart of the city. Crafting unforgettable experiences since 2010.",
+    "quickLinks": "Quick Links",
+    "rooms": "Rooms & Suites",
+    "dining": "Dining",
+    "spa": "Spa & Wellness",
+    "events": "Events",
+    "contact": "Contact",
+    "contactTitle": "Contact",
+    "address": "1 Grandeur Boulevard, City Center",
+    "phone": "+1 (800) GRANDEUR",
+    "email": "reservations@grandeur.com",
+    "copyright": "© {{year}} Grandeur Hotel. All rights reserved."
   }
 }

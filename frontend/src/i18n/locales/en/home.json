@@ -1,0 +1,41 @@
+{
+  "hero": {
+    "eyebrow": "Welcome to Grandeur",
+    "titleLine1": "Where Every Stay",
+    "titleLine2": "Becomes a Memory",
+    "subtitle": "Award-winning luxury in the heart of the city. Book directly for the best rates."
+  },
+  "stats": {
+    "rooms": "Luxury Rooms",
+    "rating": "Average Rating",
+    "years": "Years of Excellence",
+    "guests": "Happy Guests"
+  },
+  "featuredRooms": {
+    "eyebrow": "Handpicked for You",
+    "title": "Featured Rooms",
+    "viewAll": "View All Rooms →",
+    "empty": "No rooms available right now."
+  },
+  "whyUs": {
+    "eyebrow": "Our Promise",
+    "title": "The Grandeur Difference",
+    "serviceTitle": "Award-Winning Service",
+    "serviceDesc": "Recognized globally for hospitality excellence, consistently rated #1 in guest satisfaction.",
+    "rateTitle": "Best Rate Guarantee",
+    "rateDesc": "Book directly for the lowest price. We match any rate found elsewhere, guaranteed.",
+    "transferTitle": "Complimentary Transfers",
+    "transferDesc": "Seamless airport transfers included with every suite booking for a truly frictionless arrival."
+  },
+  "reviews": {
+    "eyebrow": "Guest Stories",
+    "title": "What Our Guests Say",
+    "empty": "No reviews yet."
+  },
+  "cta": {
+    "eyebrow": "Limited Availability",
+    "title": "Plan Your Perfect Escape",
+    "subtitle": "Reserve your suite today. Exclusive member rates available for direct bookings.",
+    "action": "Explore All Rooms"
+  }
+}
