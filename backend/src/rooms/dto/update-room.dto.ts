@@ -1,4 +1,6 @@
-import { PartialType } from '@nestjs/swagger';
+import { OmitType, PartialType } from '@nestjs/swagger';
 import { CreateRoomDto } from './create-room.dto';
 
-export class UpdateRoomDto extends PartialType(CreateRoomDto) {}
+export class UpdateRoomDto extends PartialType(
+  OmitType(CreateRoomDto, ['amenityIds'] as const),
+) {}

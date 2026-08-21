@@ -1,5 +1,7 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  ArrayUnique,
+  IsArray,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -9,7 +11,9 @@ import {
   IsString,
   MaxLength,
   Min,
+  IsNumberString,
 } from 'class-validator';
+import { i18nValidationMessage } from 'nestjs-i18n';
 import { RoomStatus } from '../enums/room-status.enum';
 import { Type } from 'class-transformer';
 import { RoomViewType } from '../enums/room-view-type.enum';
@@ -19,34 +23,58 @@ export class CreateRoomDto {
     description: 'The room number',
     example: '101',
   })
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(20)
+  @IsString({ message: i18nValidationMessage('messages.VALIDATION.IS_STRING') })
+  @IsNotEmpty({
+    message: i18nValidationMessage('messages.VALIDATION.NOT_EMPTY'),
+  })
+  @MaxLength(20, {
+    message: i18nValidationMessage('messages.VALIDATION.MAX_LENGTH'),
+  })
   roomNumber!: string;
 
   @ApiProperty({
     description: 'The name of the room',
     example: 'Deluxe Suite',
   })
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(150)
+  @IsString({ message: i18nValidationMessage('messages.VALIDATION.IS_STRING') })
+  @IsNotEmpty({
+    message: i18nValidationMessage('messages.VALIDATION.NOT_EMPTY'),
+  })
+  @MaxLength(150, {
+    message: i18nValidationMessage('messages.VALIDATION.MAX_LENGTH'),
+  })
   name!: string;
 
   @ApiProperty({
+    description: 'Loại phòng (nhãn tự do, vd "Deluxe", "Suite")',
+    example: 'Deluxe',
+  })
+  @IsString({ message: i18nValidationMessage('messages.VALIDATION.IS_STRING') })
+  @IsNotEmpty({
+    message: i18nValidationMessage('messages.VALIDATION.NOT_EMPTY'),
+  })
+  @MaxLength(50, {
+    message: i18nValidationMessage('messages.VALIDATION.MAX_LENGTH'),
+  })
+  roomType!: string;
+
+  @ApiPropertyOptional({
     description: 'The description of the room',
     example: 'A luxurious suite with a king-size bed and ocean view',
   })
   @IsOptional()
-  @IsString()
+  @IsString({ message: i18nValidationMessage('messages.VALIDATION.IS_STRING') })
   description?: string;
 
-  @ApiProperty({
-    description: 'The type of the room',
-    example: 'SEA_VIEW',
+  @ApiPropertyOptional({
+    description: 'The view type of the room',
+    enum: RoomViewType,
+    example: RoomViewType.SEA_VIEW,
   })
   @IsOptional()
-  @IsEnum(RoomViewType)
+  @IsEnum(RoomViewType, {
+    message: i18nValidationMessage('messages.VALIDATION.IS_ENUM'),
+  })
   viewType?: RoomViewType;
 
   @ApiProperty({
@@ -54,9 +82,11 @@ export class CreateRoomDto {
     example: 2,
   })
   @Type(() => Number)
-  @IsInt()
-  @IsNotEmpty()
-  @IsPositive()
+  @IsInt({ message: i18nValidationMessage('messages.VALIDATION.IS_INT') })
+  @IsNotEmpty({
+    message: i18nValidationMessage('messages.VALIDATION.NOT_EMPTY'),
+  })
+  @IsPositive({ message: i18nValidationMessage('messages.VALIDATION.MIN') })
   capacity!: number;
 
   @ApiProperty({
@@ -64,16 +94,36 @@ export class CreateRoomDto {
     example: 150.0,
   })
   @Type(() => Number)
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @IsNotEmpty()
-  @Min(0)
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: i18nValidationMessage('messages.VALIDATION.IS_NUMBER') },
+  )
+  @IsNotEmpty({
+    message: i18nValidationMessage('messages.VALIDATION.NOT_EMPTY'),
+  })
+  @Min(0, { message: i18nValidationMessage('messages.VALIDATION.MIN') })
   pricePerNight!: number;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'The status of the room',
-    example: 'ACTIVE',
+    enum: RoomStatus,
+    example: RoomStatus.ACTIVE,
   })
   @IsOptional()
-  @IsEnum(RoomStatus)
+  @IsEnum(RoomStatus, {
+    message: i18nValidationMessage('messages.VALIDATION.IS_ENUM'),
+  })
   status?: RoomStatus;
+
+  @ApiProperty({
+    description: 'Amenity IDs assigned when the room is created',
+    example: ['1', '2'],
+    required: false,
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsNumberString({}, { each: true })
+  amenityIds?: string[];
 }

@@ -127,18 +127,10 @@ export class BookingsService {
     };
   }
 
-  async cancel(id: string, userId: string, reason: CancelBookingDto) {
-    const result = await this.bookingsRepository.update(
-      {
-        id,
-        userId,
-        status: BookingStatus.PENDING,
-      },
-      {
-        status: BookingStatus.CANCELLED,
-        cancelReason: reason.cancelReason,
-      },
-    );
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  cancel(id: string, userId: string, reason: CancelBookingDto): never {
+    throw new NotImplementedException();
+  }
 
     if (result.affected === 0) {
       throw new BadRequestException(

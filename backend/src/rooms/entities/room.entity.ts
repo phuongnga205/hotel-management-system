@@ -14,9 +14,13 @@ import { Image } from '../../images/entities/image.entity';
 import { Review } from '../../reviews/entities/review.entity';
 import { RoomViewType } from '../enums/room-view-type.enum';
 import { RoomStatus } from '../enums/room-status.enum';
+import {
+  ROOM_STATUS_CHECK_CONSTRAINT,
+  ROOM_STATUS_CHECK_EXPRESSION,
+} from '../constants/room-status.constants';
 
 @Entity('rooms')
-@Check('chk_rooms_status', `"status" IN ('ACTIVE','INACTIVE','MAINTENANCE')`)
+@Check(ROOM_STATUS_CHECK_CONSTRAINT, ROOM_STATUS_CHECK_EXPRESSION)
 export class Room {
   @PrimaryGeneratedColumn('increment', { type: 'bigint' })
   id!: string;
@@ -27,7 +31,12 @@ export class Room {
   @Column({ length: 150 })
   name!: string;
 
-  @Column({ name: 'room_type', type: 'varchar', length: 50, nullable: true })
+  @Column({
+    name: 'room_type',
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
   roomType?: string | null;
 
   @Column({ type: 'text', nullable: true })

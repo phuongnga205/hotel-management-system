@@ -57,7 +57,13 @@
 | Page component | Route | API sử dụng | Ghi chú |
 |---|---|---|---|
 | `pages/admin/users/AdminUserListPage.tsx` | `/admin/users` | `GET /admin/users` | |
-| `pages/admin/users/AdminUserDetailPage.tsx` | `/admin/users/:userId` | `GET /admin/users/:id`, `PATCH /admin/users/:id/status` | Nút active/inactive gọi ngay tại trang chi tiết. |
+| `pages/admin/users/AdminUserDetailPage.tsx` | `/admin/users/:userId` | `GET /admin/users/:id`, `PATCH /admin/users/:id` | Nút active/inactive gọi ngay tại trang chi tiết, gửi `PATCH /admin/users/:id` với body `{ "status": "..." }` — **không phải** route con `.../status` (route đó không tồn tại, BE dùng chung 1 endpoint PATCH cho mọi field). |
+
+> 🆕 **Optional, chưa có UI** — BE đã implement sẵn `POST /admin/users`
+> (tạo user, kích hoạt ngay) và `DELETE /admin/users/:id` (xoá mềm), xem
+> `backend/docs/DANH_SACH_API.md` mục 8. Chưa có trang/route FE nào gọi 2 API
+> này; làm khi cần, ví dụ nút "Tạo người dùng" trên `AdminUserListPage` và
+> nút "Xoá" trên `AdminUserDetailPage`.
 
 ## G. Admin — Rooms
 
