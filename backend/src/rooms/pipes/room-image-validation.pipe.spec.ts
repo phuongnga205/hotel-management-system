@@ -1,54 +1,56 @@
-import { UnsupportedMediaTypeException } from '@nestjs/common';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import {
+  BadRequestException,
+  PayloadTooLargeException,
+  UnsupportedMediaTypeException,
+} from '@nestjs/common';
 import { I18nService } from 'nestjs-i18n';
-import { RoomsLogger } from '../rooms.logger';
 import { RoomImageValidationPipe } from './room-image-validation.pipe';
 
 describe('RoomImageValidationPipe', () => {
-  let directory: string;
   let pipe: RoomImageValidationPipe;
 
-  beforeEach(async () => {
-    directory = await mkdtemp(join(tmpdir(), 'room-image-test-'));
-    pipe = new RoomImageValidationPipe(
-      { t: jest.fn((key: string) => key) } as unknown as I18nService,
-      { error: jest.fn() } as unknown as RoomsLogger,
-    );
+  beforeEach(() => {
+    pipe = new RoomImageValidationPipe({
+      t: jest.fn((key: string) => key),
+    } as unknown as I18nService);
   });
 
-  afterEach(async () => {
-    await rm(directory, { recursive: true, force: true });
+  function buildFile(buffer: Buffer, mimetype: string): Express.Multer.File {
+    return { buffer, size: buffer.length, mimetype } as Express.Multer.File;
+  }
+
+  it('rejects a missing file', () => {
+    expect(() => pipe.transform(undefined)).toThrow(BadRequestException);
   });
 
-  it('accepts a file whose content matches its MIME type', async () => {
-    const path = join(directory, 'room.png');
-    await writeFile(
-      path,
+  it('rejects a file over the size limit', () => {
+    const file = buildFile(
       Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+      'image/png',
     );
-    const file = {
-      path,
-      size: (await readFile(path)).length,
-      mimetype: 'image/png',
-    } as Express.Multer.File;
+    file.size = 6 * 1024 * 1024;
 
-    await expect(pipe.transform(file)).resolves.toBe(file);
+    expect(() => pipe.transform(file)).toThrow(PayloadTooLargeException);
   });
 
-  it('deletes a spoofed image file and rejects it', async () => {
-    const path = join(directory, 'spoofed.png');
-    await writeFile(path, 'not an image');
-    const file = {
-      path,
-      size: (await readFile(path)).length,
-      mimetype: 'image/png',
-    } as Express.Multer.File;
+  it('rejects an unsupported mime type', () => {
+    const file = buildFile(Buffer.from('gif89a'), 'image/gif');
 
-    await expect(pipe.transform(file)).rejects.toBeInstanceOf(
-      UnsupportedMediaTypeException,
+    expect(() => pipe.transform(file)).toThrow(UnsupportedMediaTypeException);
+  });
+
+  it('accepts a file whose content matches its MIME type', () => {
+    const file = buildFile(
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+      'image/png',
     );
-    await expect(readFile(path)).rejects.toMatchObject({ code: 'ENOENT' });
+
+    expect(pipe.transform(file)).toBe(file);
+  });
+
+  it('rejects a spoofed file (extension/mimetype says image, content does not)', () => {
+    const file = buildFile(Buffer.from('not an image'), 'image/png');
+
+    expect(() => pipe.transform(file)).toThrow(UnsupportedMediaTypeException);
   });
 });

@@ -5,7 +5,6 @@ import {
   PayloadTooLargeException,
   UnsupportedMediaTypeException,
 } from '@nestjs/common';
-import { open, unlink } from 'node:fs/promises';
 import { I18nService } from 'nestjs-i18n';
 import {
   ROOM_IMAGE,
@@ -13,21 +12,18 @@ import {
   ROOM_IMAGE_SIGNATURE,
   RoomImageMimeType,
 } from '../constants/room-image.constants';
-import { RoomsLogger } from '../rooms.logger';
 
+// Multer dùng memoryStorage (ảnh phòng lưu Cloudinary, không ghi đĩa cục bộ
+// nữa) nên file luôn có sẵn `buffer` trong RAM — validate trực tiếp trên
+// buffer, không cần đọc/xoá file trên đĩa như trước (đơn giản hơn hẳn, và
+// không còn lỗi filesystem nào có thể xảy ra ở bước này).
 @Injectable()
-export class RoomImageValidationPipe implements PipeTransform<
-  Express.Multer.File | undefined,
-  Promise<Express.Multer.File>
-> {
-  constructor(
-    private readonly i18n: I18nService,
-    private readonly logger: RoomsLogger,
-  ) {}
+export class RoomImageValidationPipe
+  implements PipeTransform<Express.Multer.File | undefined, Express.Multer.File>
+{
+  constructor(private readonly i18n: I18nService) {}
 
-  async transform(
-    file: Express.Multer.File | undefined,
-  ): Promise<Express.Multer.File> {
+  transform(file: Express.Multer.File | undefined): Express.Multer.File {
     if (!file) {
       throw new BadRequestException(
         this.i18n.t('messages.ROOM.IMAGE_FILE_REQUIRED'),
@@ -35,32 +31,18 @@ export class RoomImageValidationPipe implements PipeTransform<
     }
 
     if (file.size > ROOM_IMAGE.MAX_FILE_SIZE_BYTES) {
-      await this.removeFile(file.path);
       throw new PayloadTooLargeException(
         this.i18n.t('messages.ROOM.IMAGE_TOO_LARGE'),
       );
     }
 
     if (!this.isSupportedMimeType(file.mimetype)) {
-      await this.removeFile(file.path);
       throw new UnsupportedMediaTypeException(
         this.i18n.t('messages.ROOM.IMAGE_TYPE_UNSUPPORTED'),
       );
     }
 
-    const hasValidSignature = await this.inspectSignature(
-      file.path,
-      file.mimetype,
-    );
-    if (hasValidSignature === null) {
-      await this.removeFile(file.path);
-      throw new BadRequestException(
-        this.i18n.t('messages.ROOM.IMAGE_UPLOAD_FAILED'),
-      );
-    }
-
-    if (!hasValidSignature) {
-      await this.removeFile(file.path);
+    if (!this.hasValidSignature(file.buffer, file.mimetype)) {
       throw new UnsupportedMediaTypeException(
         this.i18n.t('messages.ROOM.IMAGE_CONTENT_INVALID'),
       );
@@ -73,58 +55,30 @@ export class RoomImageValidationPipe implements PipeTransform<
     return ROOM_IMAGE.SUPPORTED_MIME_TYPES.some((type) => type === mimeType);
   }
 
-  private async hasValidSignature(
-    path: string,
+  private hasValidSignature(
+    buffer: Buffer,
     mimeType: RoomImageMimeType,
-  ): Promise<boolean> {
-    const fileHandle = await open(path, 'r');
-    try {
-      const header = Buffer.alloc(ROOM_IMAGE_SIGNATURE.INSPECTION_BYTES);
-      const { bytesRead } = await fileHandle.read(header, 0, header.length, 0);
-      const content = header.subarray(0, bytesRead);
+  ): boolean {
+    const header = buffer.subarray(0, ROOM_IMAGE_SIGNATURE.INSPECTION_BYTES);
 
-      switch (mimeType) {
-        case ROOM_IMAGE_MIME_TYPE.JPEG:
-          return content
-            .subarray(0, ROOM_IMAGE_SIGNATURE.JPEG.length)
-            .equals(ROOM_IMAGE_SIGNATURE.JPEG);
-        case ROOM_IMAGE_MIME_TYPE.PNG:
-          return content
-            .subarray(0, ROOM_IMAGE_SIGNATURE.PNG.length)
-            .equals(ROOM_IMAGE_SIGNATURE.PNG);
-        case ROOM_IMAGE_MIME_TYPE.WEBP:
-          return (
-            content
-              .subarray(0, ROOM_IMAGE_SIGNATURE.RIFF.length)
-              .equals(ROOM_IMAGE_SIGNATURE.RIFF) &&
-            content
-              .subarray(ROOM_IMAGE_SIGNATURE.WEBP_FORMAT_OFFSET)
-              .equals(ROOM_IMAGE_SIGNATURE.WEBP)
-          );
-      }
-    } finally {
-      await fileHandle.close();
+    switch (mimeType) {
+      case ROOM_IMAGE_MIME_TYPE.JPEG:
+        return header
+          .subarray(0, ROOM_IMAGE_SIGNATURE.JPEG.length)
+          .equals(ROOM_IMAGE_SIGNATURE.JPEG);
+      case ROOM_IMAGE_MIME_TYPE.PNG:
+        return header
+          .subarray(0, ROOM_IMAGE_SIGNATURE.PNG.length)
+          .equals(ROOM_IMAGE_SIGNATURE.PNG);
+      case ROOM_IMAGE_MIME_TYPE.WEBP:
+        return (
+          header
+            .subarray(0, ROOM_IMAGE_SIGNATURE.RIFF.length)
+            .equals(ROOM_IMAGE_SIGNATURE.RIFF) &&
+          header
+            .subarray(ROOM_IMAGE_SIGNATURE.WEBP_FORMAT_OFFSET)
+            .equals(ROOM_IMAGE_SIGNATURE.WEBP)
+        );
     }
-  }
-
-  private async inspectSignature(
-    path: string,
-    mimeType: RoomImageMimeType,
-  ): Promise<boolean | null> {
-    try {
-      return await this.hasValidSignature(path, mimeType);
-    } catch (error: unknown) {
-      this.logger.error({
-        message:
-          'Room image inspection failed; verify upload storage permissions and availability',
-        filePath: path,
-        error,
-      });
-      return null;
-    }
-  }
-
-  private async removeFile(path: string): Promise<void> {
-    await unlink(path).catch(() => undefined);
   }
 }

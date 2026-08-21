@@ -1,12 +1,11 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsInt, IsOptional, Max, Min } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
-import { RoomStatus } from '../enums/room-status.enum';
 import { ROOM_PAGINATION } from '../constants/room-pagination.constants';
 
-// Dùng cho GET /admin/rooms
-export class ListRoomsDto {
+// Dùng cho GET /rooms (public) — chỉ xem được phòng ACTIVE, không có filter status, không có quyền filter theo status khác.
+export class ListPublicRoomsDto {
   @ApiPropertyOptional({
     example: 1,
     default: ROOM_PAGINATION.DEFAULT_PAGE,
@@ -31,14 +30,4 @@ export class ListRoomsDto {
     message: i18nValidationMessage('messages.VALIDATION.MAX'),
   })
   limit: number = ROOM_PAGINATION.DEFAULT_LIMIT;
-
-  @ApiPropertyOptional({
-    enum: RoomStatus,
-    description: 'Lọc theo trạng thái phòng (chỉ Admin mới xem được)',
-  })
-  @IsOptional()
-  @IsEnum(RoomStatus, {
-    message: i18nValidationMessage('messages.VALIDATION.IS_ENUM'),
-  })
-  status?: RoomStatus;
 }
