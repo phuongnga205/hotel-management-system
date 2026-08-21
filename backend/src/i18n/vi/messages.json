@@ -49,7 +49,9 @@
     "CANNOT_CANCEL": "Yêu cầu đặt phòng không thể hủy.",
     "CANNOT_UPDATE": "Yêu cầu không thể cập nhật.",
     "CHECK_IN_DATE_IN_PAST": "Ngày checkin ở quá khứ.",
-    "INVALID_DATE_RANGE": "Thời gian không phù hợp."
+    "INVALID_DATE_RANGE": "Thời gian không phù hợp.",
+    "DATES_OVERLAP": "Phòng đã được đặt trong khoảng thời gian này.",
+    "ROOM_UNAVAILABLE": "Phòng hiện không khả dụng để đặt."
   },
   "AUTH": {
     "EMAIL_EXISTED": "Email này đã được đăng ký trong hệ thống.",
@@ -100,5 +102,13 @@
     "AVATAR_UPLOAD_SUCCESS": "Cập nhật ảnh đại diện thành công.",
     "AVATAR_NOT_FOUND": "Tài khoản chưa có ảnh đại diện để xoá.",
     "AVATAR_REMOVE_SUCCESS": "Xoá ảnh đại diện thành công."
+  },
+  "REVIEWS": {
+    "RATING_RANGE_INVALID": "Rating phải từ 1 đến 5.",
+    "RATING_INVALID": "Bạn chỉ được review khi đã ở khách sạn.",
+    "ALREADY_REVIEWED": "Ban đã review một lần rồi.",
+    "BOOKING_NOT_COMPLETED" :"Yêu cầu đặt phòng chưa hoàn thành.",
+    "DELETE_REASON_REQUIRED" : "Cần lý do xóa review.",
+    "DELETE_SUCCESS": "Review xóa thành công."
   }
 }
