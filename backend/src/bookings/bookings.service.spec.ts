@@ -62,6 +62,7 @@ describe('BookingsService', () => {
     save: jest.fn((payload: Partial<Payment>) =>
       Promise.resolve({ id: 'p1', ...payload }),
     ),
+    exists: jest.fn(),
   };
   const roomManagerRepo = {
     findOne: jest.fn(),
@@ -123,6 +124,7 @@ describe('BookingsService', () => {
     );
     managerCreateQueryBuilder.mockImplementation(() => createQueryBuilder());
     roomManagerRepo.findOne.mockResolvedValue(room);
+    paymentManagerRepo.exists.mockResolvedValue(false);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -381,13 +383,59 @@ describe('BookingsService', () => {
       );
     });
 
-    it('rejects paying a booking that is not PENDING', async () => {
+    it('rejects paying a booking that is REJECTED/CANCELLED/EXPIRED', async () => {
+      bookingManagerRepo.findOne.mockResolvedValue({
+        id: '1',
+        userId: '10',
+        totalPrice: new Decimal(3000000),
+        status: BookingStatus.CANCELLED,
+      });
+
+      await expect(
+        service.pay('1', '10', { method: PaymentMethod.CASH }),
+      ).rejects.toBeInstanceOf(ConflictException);
+      expect(paymentManagerRepo.save).not.toHaveBeenCalled();
+    });
+
+    // "Trả bù" — Admin đã accept() thẳng (không qua thanh toán), khách vẫn
+    // trả được sau đó, không giới hạn thời gian (ACCEPTED không có hold).
+    it('allows a "catch-up" payment for an ACCEPTED booking with no SUCCESS payment yet', async () => {
       bookingManagerRepo.findOne.mockResolvedValue({
         id: '1',
         userId: '10',
         totalPrice: new Decimal(3000000),
         status: BookingStatus.ACCEPTED,
+        holdExpiresAt: null,
       });
+      paymentManagerRepo.exists.mockResolvedValue(false);
+
+      const result = await service.pay('1', '10', {
+        method: PaymentMethod.CASH,
+      });
+
+      expect(result).toEqual({
+        statusCode: 201,
+        message: 'messages.BOOKING.PAY_SUCCESS',
+      });
+      expect(paymentManagerRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          bookingId: '1',
+          status: PaymentStatus.SUCCESS,
+        }),
+      );
+      // Đã ACCEPTED sẵn, không cần ghi lại booking (status/hold không đổi).
+      expect(bookingManagerRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('rejects a duplicate payment for an ACCEPTED booking that already has a SUCCESS payment', async () => {
+      bookingManagerRepo.findOne.mockResolvedValue({
+        id: '1',
+        userId: '10',
+        totalPrice: new Decimal(3000000),
+        status: BookingStatus.ACCEPTED,
+        holdExpiresAt: null,
+      });
+      paymentManagerRepo.exists.mockResolvedValue(true);
 
       await expect(
         service.pay('1', '10', { method: PaymentMethod.CASH }),

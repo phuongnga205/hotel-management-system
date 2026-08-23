@@ -44,6 +44,9 @@
   "MAIL": {
     "LOG_NOT_FOUND": "Email log {id} not found."
   },
+  "PAYMENT": {
+    "FIND_ALL_SUCCESS": "Payment list retrieved successfully."
+  },
   "BOOKING": {
     "NOT_FOUND": "Booking not found.",
     "CREATE_SUCCESS": "Booking request created successfully.",
@@ -64,6 +67,7 @@
     "CANNOT_REJECT": "Booking request cannot be rejected.",
     "REJECT_SUCCESS": "Booking request rejected successfully.",
     "CANNOT_PAY": "Booking request cannot be paid.",
+    "ALREADY_PAID": "This booking request has already been paid.",
     "PAY_SUCCESS": "Payment completed successfully.",
     "HOLD_EXPIRED": "This booking's hold has expired and can no longer be updated, paid, or approved.",
     "NO_FIELDS_TO_UPDATE": "At least one field (checkInDate, checkOutDate, or note) must be provided."

@@ -92,7 +92,7 @@ export default function AdminRoomDetailPage() {
             <h3 className="font-semibold text-navy text-sm uppercase tracking-wide mb-4">{t('rooms.detail.detailsTitle')}</h3>
             <div className="space-y-3 text-sm">
               {[
-                { label: t('rooms.detail.fieldPrice'), val: `$${room.pricePerNight}` },
+                { label: t('rooms.detail.fieldPrice'), val: `$${Number(room.pricePerNight).toLocaleString()}` },
                 { label: t('rooms.detail.fieldRoomNumber'), val: room.roomNumber },
                 { label: t('rooms.detail.fieldCapacity'), val: String(room.capacity) },
                 { label: t('rooms.detail.fieldView'), val: room.viewType ? t(`rooms.viewType.${room.viewType}`) : '—' },

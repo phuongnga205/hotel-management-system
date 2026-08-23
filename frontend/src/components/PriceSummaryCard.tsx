@@ -2,7 +2,9 @@ import { useTranslation } from 'react-i18next'
 import { colors } from '../tokens/colors'
 
 interface PriceSummaryCardProps {
-  pricePerNight: number
+  // String, khop dung shape API that (Room.pricePerNight/Booking.pricePerNight
+  // - xem frontend/docs/bridge.md) - khong phai number.
+  pricePerNight: string
   nights: number
   taxRate?: number
   onBook?: () => void
@@ -25,14 +27,15 @@ export default function PriceSummaryCard({
   footer,
 }: PriceSummaryCardProps) {
   const { t } = useTranslation('common')
-  const subtotal = nights * pricePerNight
+  const pricePerNightNumber = Number(pricePerNight)
+  const subtotal = nights * pricePerNightNumber
   const taxes = Math.round(subtotal * taxRate)
   const total = subtotal + taxes
 
   return (
     <div className={`bg-white rounded-2xl border border-slate-100 shadow-sm p-6 ${sticky ? 'sticky top-24' : ''}`}>
       <div className="mb-4">
-        <div className="text-2xl font-bold text-navy">${pricePerNight}</div>
+        <div className="text-2xl font-bold text-navy">${pricePerNightNumber.toLocaleString()}</div>
         <div className="text-xs text-slate-400">{t('priceSummary.perNight')}</div>
       </div>
 
@@ -50,7 +53,7 @@ export default function PriceSummaryCard({
       {nights > 0 && (
         <div className="space-y-2 text-sm mb-5">
           <div className="flex justify-between">
-            <span className="text-slate-500">${pricePerNight} × {nights} night{nights !== 1 ? 's' : ''}</span>
+            <span className="text-slate-500">${pricePerNightNumber.toLocaleString()} × {nights} night{nights !== 1 ? 's' : ''}</span>
             <span className="font-semibold text-navy">${subtotal.toLocaleString()}</span>
           </div>
           <div className="flex justify-between">

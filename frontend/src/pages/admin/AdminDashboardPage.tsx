@@ -104,7 +104,7 @@ export default function AdminDashboardPage() {
               render: (b) =>
                 `${new Date(b.checkInDate).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' })} → ${new Date(b.checkOutDate).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' })}`,
             },
-            { key: 'total', header: t('table.total'), render: (b) => `$${b.totalPrice.toLocaleString()}` },
+            { key: 'total', header: t('table.total'), render: (b) => `$${Number(b.totalPrice).toLocaleString()}` },
             { key: 'status', header: t('common.status'), render: (b) => <StatusBadge status={b.status} config={BOOKING_STATUS_CONFIG} /> },
           ]}
         />

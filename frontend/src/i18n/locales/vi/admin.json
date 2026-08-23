@@ -55,7 +55,12 @@
     "joined": "Ngày tham gia",
     "checkIn": "Nhận phòng",
     "checkOut": "Trả phòng",
-    "payment": "Thanh toán"
+    "payment": "Thanh toán",
+    "amount": "Số tiền",
+    "method": "Phương thức",
+    "transactionId": "Mã giao dịch",
+    "paidAt": "Thời gian thanh toán",
+    "createdAt": "Ngày tạo"
   },
   "rooms": {
     "viewType": {
@@ -272,7 +277,11 @@
       "tileTotalBookings": "Tổng đặt phòng",
       "trendChartTitle": "Xu hướng doanh thu",
       "byRoomTypeChartTitle": "Doanh thu theo loại phòng",
-      "monthlyBreakdownTitle": "Chi tiết theo tháng"
+      "monthlyBreakdownTitle": "Chi tiết theo tháng",
+      "transactionsTitle": "Giao dịch thanh toán",
+      "statusAll": "Tất cả trạng thái",
+      "methodAll": "Tất cả phương thức",
+      "noTransactions": "Không tìm thấy giao dịch nào."
     }
   },
   "status": {
@@ -311,6 +320,12 @@
     "role": {
       "ADMIN": "Quản trị viên",
       "USER": "Người dùng"
+    },
+    "paymentMethod": {
+      "CASH": "Tiền mặt",
+      "BANK_TRANSFER": "Chuyển khoản",
+      "CREDIT_CARD": "Thẻ tín dụng",
+      "VNPAY": "VNPay"
     }
   }
 }
