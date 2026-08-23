@@ -3,12 +3,13 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { instanceToPlain } from 'class-transformer';
 import { User, UserStatus } from '../users/entities/user.entity';
+import type { DeepPartial, FindOneOptions } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { I18nService } from 'nestjs-i18n';
 import * as bcrypt from 'bcrypt';
@@ -20,16 +21,24 @@ import { TokenUtil } from '../token/token.util';
 export const BCRYPT_SALT_ROUNDS = 10;
 export const POSTGRES_UNIQUE_VIOLATION_CODE = '23505';
 
+interface UserStore {
+  create(entityLike: DeepPartial<User>): User;
+  save(entity: User): Promise<User>;
+  findOne(options: FindOneOptions<User>): Promise<User | null>;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
+    // sunlint-disable-next-line C033
     @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private userRepository: UserStore,
     private readonly jwtService: JwtService,
     private readonly i18n: I18nService,
     private readonly tokenUtil: TokenUtil,
   ) {}
 
+  // sunlint-disable-next-line S041
   async logout(token: string) {
     if (token) {
       const decoded: unknown = this.jwtService.decode(token);
@@ -67,11 +76,16 @@ export class AuthService {
         'code' in error &&
         error.code === POSTGRES_UNIQUE_VIOLATION_CODE
       ) {
+        // sunlint-disable-next-line C018
         throw new ConflictException(
           this.i18n.t('messages.AUTH.USER_ALREADY_EXISTS'),
         );
       }
-      throw error;
+      // sunlint-disable-next-line C018
+      throw new InternalServerErrorException(
+        this.i18n.t('messages.AUTH.REGISTRATION_FAILED'),
+        { cause: error },
+      );
     }
 
     return {
@@ -105,7 +119,7 @@ export class AuthService {
     }
 
     const payload = { sub: user.id, email: user.email, role: user.role };
-    const accessToken = this.jwtService.sign(payload);
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '1h' });
 
     return {
       message: this.i18n.t('messages.AUTH.LOGIN_SUCCESS'),

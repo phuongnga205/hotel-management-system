@@ -29,6 +29,18 @@ export class RedisUtil implements OnModuleInit, OnModuleDestroy {
     return this.client.get(key);
   }
 
+  async setnx(
+    key: string,
+    value: string,
+    ttlSeconds: number,
+  ): Promise<boolean> {
+    if (ttlSeconds > 0) {
+      const result = await this.client.set(key, value, 'EX', ttlSeconds, 'NX');
+      return result === 'OK';
+    }
+    return false;
+  }
+
   async delete(key: string): Promise<void> {
     await this.client.del(key);
   }

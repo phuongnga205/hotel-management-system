@@ -18,9 +18,10 @@ import {
 // buffer, không cần đọc/xoá file trên đĩa như trước (đơn giản hơn hẳn, và
 // không còn lỗi filesystem nào có thể xảy ra ở bước này).
 @Injectable()
-export class RoomImageValidationPipe
-  implements PipeTransform<Express.Multer.File | undefined, Express.Multer.File>
-{
+export class RoomImageValidationPipe implements PipeTransform<
+  Express.Multer.File | undefined,
+  Express.Multer.File
+> {
   constructor(private readonly i18n: I18nService) {}
 
   transform(file: Express.Multer.File | undefined): Express.Multer.File {

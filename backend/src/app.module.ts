@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bullmq';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { TokenModule } from './token/token.module';
@@ -14,6 +15,7 @@ import { AmenitiesModule } from './amenities/amenities.module';
 import { ImagesModule } from './images/images.module';
 import { PaymentsModule } from './payments/payments.module';
 import { MailModule } from './mail/mail.module';
+import { ReportsModule } from './reports/reports.module';
 import {
   I18nModule,
   AcceptLanguageResolver,
@@ -23,9 +25,14 @@ import {
 import * as path from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ENVIRONMENT_KEYS } from './config/environment.constants';
-
-const DEFAULT_REDIS_PORT = 6379;
+import {
+  DEFAULT_REDIS_HOST,
+  DEFAULT_REDIS_PORT,
+  DEFAULT_REPORT_CRON,
+  DEFAULT_REPORT_TIME_ZONE,
+  ENVIRONMENT_KEYS,
+} from './config/environment.constants';
+import * as Joi from 'joi';
 
 const DEFAULT_THROTTLE_TTL = 60000;
 const DEFAULT_THROTTLE_LIMIT = 10;
@@ -35,6 +42,16 @@ const DEFAULT_THROTTLE_LIMIT = 10;
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+
+      validationSchema: Joi.object({
+        MAIL_HOST: Joi.string().required(),
+        MAIL_PORT: Joi.number().port().default(587),
+        MAIL_USER: Joi.string().required(),
+        MAIL_PASS: Joi.string().required(),
+        MAIL_FROM: Joi.string().email().required(),
+        REPORT_CRON: Joi.string().default(DEFAULT_REPORT_CRON),
+        REPORT_TIME_ZONE: Joi.string().default(DEFAULT_REPORT_TIME_ZONE),
+      }).unknown(true),
     }),
 
     ThrottlerModule.forRoot([
@@ -75,8 +92,14 @@ const DEFAULT_THROTTLE_LIMIT = 10;
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         connection: {
-          host: configService.get<string>('REDIS_HOST', 'localhost'),
-          port: configService.get<number>('REDIS_PORT', DEFAULT_REDIS_PORT),
+          host: configService.get<string>(
+            ENVIRONMENT_KEYS.REDIS_HOST,
+            DEFAULT_REDIS_HOST,
+          ),
+          port: configService.get<number>(
+            ENVIRONMENT_KEYS.REDIS_PORT,
+            DEFAULT_REDIS_PORT,
+          ),
         },
       }),
     }),
@@ -108,6 +131,8 @@ const DEFAULT_THROTTLE_LIMIT = 10;
     CloudinaryModule,
 
     MailModule,
+    ReportsModule,
+    ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
   providers: [AppService],
