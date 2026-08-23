@@ -3,6 +3,7 @@ import {
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
+import { Decimal } from 'decimal.js';
 import { I18nService } from 'nestjs-i18n';
 import { DataSource } from 'typeorm';
 import { Amenity } from '../amenities/entities/amenity.entity';
@@ -23,7 +24,7 @@ describe('RoomsService', () => {
     roomType: 'Deluxe',
     description: null,
     viewType: RoomViewType.SEA_VIEW,
-    pricePerNight: 1500000,
+    pricePerNight: new Decimal(1500000),
     capacity: 2,
     status: RoomStatus.ACTIVE,
     createdAt: new Date('2026-01-01T00:00:00Z'),
@@ -36,7 +37,7 @@ describe('RoomsService', () => {
     roomType: room.roomType as string,
     description: room.description ?? undefined,
     viewType: room.viewType ?? undefined,
-    pricePerNight: room.pricePerNight,
+    pricePerNight: room.pricePerNight.toNumber(),
     capacity: room.capacity,
     status: room.status,
     amenityIds: ['10', '11'],
@@ -137,11 +138,17 @@ describe('RoomsService', () => {
   });
 
   it('updates only the room price', async () => {
-    roomRepository.preload.mockResolvedValue({ ...room, pricePerNight: 200 });
-    roomRepository.save.mockResolvedValue({ ...room, pricePerNight: 200 });
+    roomRepository.preload.mockResolvedValue({
+      ...room,
+      pricePerNight: new Decimal(200),
+    });
+    roomRepository.save.mockResolvedValue({
+      ...room,
+      pricePerNight: new Decimal(200),
+    });
     await expect(
       service.updatePrice(room.id, { pricePerNight: 200 }),
-    ).resolves.toMatchObject({ data: { pricePerNight: 200 } });
+    ).resolves.toMatchObject({ data: { pricePerNight: '200' } });
     expect(roomRepository.preload).toHaveBeenCalledWith({
       id: room.id,
       pricePerNight: 200,

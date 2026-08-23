@@ -174,27 +174,43 @@ riêng.
 
 ## 6. `bookings`
 
-| Field | Kiểu FE | Bắt buộc (tạo) | Ghi chú / giá trị hợp lệ |
-|---|---|---|---|
-| `id` | `string` | — | |
-| `userId` | `string` | — | lấy từ JWT, FE không tự gửi |
-| `roomId` | `string` | ✔ | numeric string |
-| `checkInDate` | `string` (`YYYY-MM-DD`) | ✔ | `IsDateString` |
-| `checkOutDate` | `string` (`YYYY-MM-DD`) | ✔ | phải **sau** `checkInDate` (`chk_bookings_dates`) |
-| `pricePerNight` | `number` | — | snapshot giá phòng tại thời điểm đặt, BE tự set, FE không gửi |
-| `totalPrice` | `number` | — | BE tự tính, FE không gửi |
-| `status` | `'PENDING' \| 'ACCEPTED' \| 'REJECTED' \| 'CANCELLED' \| 'EXPIRED'` | — | mặc định `PENDING`; BE quản lý transition, FE chỉ hiển thị + gọi action tương ứng (`/cancel`, admin `/accept`, `/reject`) |
-| `holdExpiresAt` | `string \| null` (ISO datetime) | — | hạn giữ chỗ cho booking `PENDING` chưa thanh toán; `null` khi đã thanh toán/xử lý xong |
-| `note` | `string \| null` | optional | tối đa 1000 ký tự |
-| `cancelReason` | `string \| null` | — | do user điền khi huỷ (`CancelBookingDto.reason`, tối đa 500 ký tự) hoặc admin điền khi từ chối |
-| `createdAt` / `updatedAt` | `string` | — | |
-| `deletedAt` | `string \| null` | — | |
+> **Response thật (`data`/`data.items[]`) KHÔNG có field phẳng `userId`/
+> `roomId`/`holdExpiresAt`/`updatedAt`/`deletedAt`** — đây là field của
+> entity/DB, khác với shape trả về qua API. Bảng dưới đây mô tả đúng
+> `Booking` type ở `frontend/src/api/types.ts` (khớp `BookingResponseDto`
+> phía BE) — trộn field request (tạo/sửa) và field response cho gọn nhưng
+> ghi rõ field nào chỉ ở request.
 
-**Quan trọng — race condition khi đặt/sửa phòng**: `POST /bookings` và
-`PATCH /bookings/:id` có thể trả **`409 Conflict`** nếu phòng đã bị đặt
-trùng ngày (constraint `excl_bookings_no_overlap`, chỉ tính booking đang
-`PENDING`/`ACCEPTED`). FE phải bắt riêng `statusCode === 409` ở 2 endpoint
-này để hiển thị UI "chọn phòng/ngày khác" (không phải toast lỗi chung).
+| Field | Kiểu FE | Ghi chú / giá trị hợp lệ |
+|---|---|---|
+| `id` | `string` | |
+| `roomId` (chỉ **request** tạo) | `string` | numeric string, `CreateBookingDto.roomId` |
+| `checkInDate` | `string` (`YYYY-MM-DD`) | `IsDateString`, bắt buộc khi tạo |
+| `checkOutDate` | `string` (`YYYY-MM-DD`) | phải **sau** `checkInDate` (`chk_bookings_dates`), bắt buộc khi tạo |
+| `pricePerNight` | `number` | snapshot giá phòng tại thời điểm đặt, BE tự set, FE không gửi |
+| `totalPrice` | `number` | BE tự tính, FE không gửi — cũng là `amount` mà `POST .../pay` sẽ tự lấy, FE không gửi `amount` |
+| `status` | `'PENDING' \| 'ACCEPTED' \| 'REJECTED' \| 'CANCELLED' \| 'EXPIRED'` | mặc định `PENDING`; BE quản lý transition, FE chỉ hiển thị + gọi action tương ứng (`/cancel`, `/pay`, admin `/accept`, `/reject`) |
+| `note` | `string \| null` | optional khi tạo/sửa, tối đa 1000 ký tự |
+| `cancelReason` | `string \| null` | do user điền khi huỷ (`CancelBookingDto.cancelReason`, tối đa 500 ký tự, optional) hoặc admin điền khi từ chối (`RejectBookingDto.cancelReason`, **cùng tên field**, cùng cột DB `bookings.cancel_reason`) |
+| `createdAt` | `string` | |
+| `room` | `BookingRoomSummary \| undefined` | `{id, name, roomNumber, thumbnailUrl?}` — chỉ có khi BE load kèm relation (luôn có ở mọi response hiện tại); `thumbnailUrl` lấy từ ảnh `isThumbnail=true` của phòng, `null` nếu phòng chưa có ảnh đại diện |
+| `user` | `BookingUserSummary \| undefined` | `{id, fullName, email, phone}` — **chỉ có ở response Admin** (`GET /admin/bookings*`), không có ở response self-service của khách (khách tự biết mình là ai) |
+| `payment` | `Payment \| undefined` | payment **mới nhất** của booking (1 booking có thể có nhiều lần thử thanh toán qua vòng đời, BE tự lấy bản mới nhất theo `createdAt`) — `undefined` nghĩa là chưa từng thanh toán lần nào, xem mục `payments` bên dưới và component `PaymentBadge` |
+
+**Hold 10 phút + race condition khi đặt/sửa phòng**: `POST /bookings` set
+hạn giữ chỗ 10 phút (không có field FE nào tương ứng để đọc/ghi — hoàn
+toàn nội bộ BE). `POST /bookings` và `PATCH /bookings/:id` có thể trả
+**`409 Conflict`** nếu phòng đã bị đặt trùng ngày (còn `PENDING` trong hạn
+giữ chỗ, hoặc đã `ACCEPTED`). FE phải bắt riêng `statusCode === 409` ở 2
+endpoint này để hiển thị UI "chọn phòng/ngày khác" (không phải toast lỗi
+chung). `POST /bookings/:id/pay` trả **`409`** tương tự nếu booking không
+còn `PENDING` (đã bị accept/reject/cancel/expire trước khi kịp thanh
+toán) — nên hiển thị thông báo khác, không gộp chung với lỗi trùng lịch.
+
+**Ownership**: booking không phải của user hiện tại → **`404`**, không
+phải `403`, ở mọi route self-service (`GET/PATCH /bookings/:id`,
+`.../cancel`, `.../pay`) — quyết định có chủ đích để tránh lộ thông tin
+"booking này tồn tại".
 
 ## 7. `payments`
 
@@ -202,17 +218,26 @@ này để hiển thị UI "chọn phòng/ngày khác" (không phải toast lỗ
 |---|---|---|
 | `id` | `string` | |
 | `bookingId` | `string` | |
-| `amount` | **`string`** (không phải `number`!) | `DECIMAL(10,2)`, entity **không có transformer** nên trả nguyên chuỗi kiểu `"150.00"` — FE tự `Number(amount)` khi cần tính toán/hiển thị, ≥ 0 |
-| `method` | `'CASH' \| 'BANK_TRANSFER' \| 'CREDIT_CARD' \| 'VNPAY'` | enum cố định |
-| `status` | `'PENDING' \| 'SUCCESS' \| 'FAILED' \| 'REFUNDED'` | mặc định `PENDING` |
-| `transactionId` | `string \| null` | tối đa 100 ký tự, unique khi không null |
+| `amount` | **`string`** (không phải `number`!) | `DECIMAL(10,2)`, entity **không có transformer** nên trả nguyên chuỗi kiểu `"150.00"` — FE tự `Number(amount)` khi cần tính toán/hiển thị, ≥ 0. **Luôn khớp `booking.totalPrice`** — BE tự tính, `POST .../pay` không nhận `amount` từ FE. |
+| `method` | `'CASH' \| 'BANK_TRANSFER' \| 'CREDIT_CARD' \| 'VNPAY'` | enum cố định — request body `POST /bookings/:id/pay` chỉ gồm `{ method }`, đây là field duy nhất FE gửi |
+| `status` | `'PENDING' \| 'SUCCESS' \| 'FAILED' \| 'REFUNDED'` | mặc định `PENDING` — nhưng với luồng mock hiện tại, `pay()` luôn trả `SUCCESS` ngay lập tức, **không bao giờ** dừng ở `PENDING`/`FAILED` (2 giá trị này chỉ có ý nghĩa khi nối cổng thanh toán thật sau này, ví dụ chờ webhook). `REFUNDED` chưa có luồng nào tạo ra được (chưa có API hoàn tiền). |
+| `transactionId` | `string \| null` | tối đa 100 ký tự, unique khi không null — mock sinh bằng `randomUUID()` |
 | `paidAt` | `string \| null` (ISO datetime) | |
-| `createdAt` / `updatedAt` | `string` | |
-| `deletedAt` | `string \| null` | |
+| `createdAt` | `string` | |
 
-> Endpoint `POST /bookings/:id/pay` hiện là **stub** (chưa implement thật),
-> theo `DANH_SACH_API.md` — FE không nên hard-code luồng thanh toán chi
-> tiết cho tới khi BE chốt.
+> **`POST /bookings/:id/pay` đã implement (mock, không phải stub nữa).**
+> Thanh toán mock luôn thành công ngay lập tức: tạo `Payment` (`status:
+> SUCCESS`) + tự động chuyển `booking.status → ACCEPTED` trong cùng 1
+> transaction — FE gọi xong 1 lần là coi như hoàn tất, không cần polling
+> hay chờ callback nào. `bookingApi.pay(id, { method })` đã có sẵn ở
+> `frontend/src/api/booking.api.ts` (và mock tương ứng ở
+> `frontend/src/api/mocks/booking.mock.ts`), nhưng **chưa có trang UI nào
+> gọi hàm này** — FE hiện chưa có trang booking nào cho customer (list/
+> detail/create/pay), chỉ mới có phần admin
+> (`pages/admin/bookings/AdminBooking{List,Detail}Page.tsx`). Xem
+> `component/BookingCard.tsx` — đã dựng sẵn nút "Pay" (`onPay` prop,
+> `canPay = status === 'ACCEPTED' && payment?.status !== 'SUCCESS'`) nhưng
+> **chưa được import/dùng ở đâu cả**, chỉ là khung chờ nối vào trang thật.
 
 ## 8. `reviews`
 

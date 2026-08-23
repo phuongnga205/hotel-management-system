@@ -32,6 +32,7 @@ export const API_ENDPOINTS = {
   BOOKINGS_ME: '/bookings/me',
   BOOKING_DETAIL: (id: string) => `/bookings/${id}`,
   BOOKING_CANCEL: (id: string) => `/bookings/${id}/cancel`,
+  BOOKING_PAY: (id: string) => `/bookings/${id}/pay`,
 
   ADMIN_BOOKINGS: '/admin/bookings',
   ADMIN_BOOKING_DETAIL: (id: string) => `/admin/bookings/${id}`,
