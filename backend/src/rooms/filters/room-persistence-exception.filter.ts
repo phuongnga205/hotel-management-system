@@ -9,6 +9,7 @@ import { I18nService } from 'nestjs-i18n';
 import { QueryFailedError } from 'typeorm';
 import { PostgresErrorCode } from '../../common/enums/postgres-error-code.enum';
 import { RoomsLogger } from '../rooms.logger';
+import { ROOM_DATABASE_CONSTRAINT } from '../constants/room-database.constants';
 
 @Catch(QueryFailedError)
 export class RoomPersistenceExceptionFilter implements ExceptionFilter<QueryFailedError> {
@@ -19,12 +20,29 @@ export class RoomPersistenceExceptionFilter implements ExceptionFilter<QueryFail
 
   catch(exception: QueryFailedError, host: ArgumentsHost): void {
     const response = host.switchToHttp().getResponse<Response>();
-    const driverError = exception.driverError as { code?: string };
+    const driverError = exception.driverError as {
+      code?: string;
+      constraint?: string;
+    };
 
-    if (driverError.code === PostgresErrorCode.UNIQUE_VIOLATION) {
+    if (
+      driverError.code === PostgresErrorCode.UNIQUE_VIOLATION &&
+      driverError.constraint === ROOM_DATABASE_CONSTRAINT.NUMBER_UNIQUE
+    ) {
       response.status(HttpStatus.CONFLICT).json({
         statusCode: HttpStatus.CONFLICT,
-        message: this.i18n.t('messages.ROOM_NUMBER_EXISTS'),
+        message: this.i18n.t('messages.ROOM.NUMBER_EXISTS'),
+      });
+      return;
+    }
+
+    if (
+      driverError.code === PostgresErrorCode.UNIQUE_VIOLATION &&
+      driverError.constraint === ROOM_DATABASE_CONSTRAINT.ONE_THUMBNAIL_PER_ROOM
+    ) {
+      response.status(HttpStatus.CONFLICT).json({
+        statusCode: HttpStatus.CONFLICT,
+        message: this.i18n.t('messages.ROOM.THUMBNAIL_EXISTS'),
       });
       return;
     }
@@ -36,7 +54,7 @@ export class RoomPersistenceExceptionFilter implements ExceptionFilter<QueryFail
     });
     response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-      message: this.i18n.t('messages.ROOM_SAVE_FAILED'),
+      message: this.i18n.t('messages.ROOM.SAVE_FAILED'),
     });
   }
 }

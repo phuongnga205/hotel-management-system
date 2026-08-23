@@ -6,6 +6,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { TokenModule } from './token/token.module';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { RoomsModule } from './rooms/rooms.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { ReviewsModule } from './reviews/reviews.module';
@@ -104,6 +105,7 @@ const DEFAULT_THROTTLE_LIMIT = 10;
     AmenitiesModule,
     ImagesModule,
     TokenModule,
+    CloudinaryModule,
 
     MailModule,
   ],

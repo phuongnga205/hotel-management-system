@@ -1,0 +1,53 @@
+{
+  "title": "Booking History",
+  "subtitle": "Manage and track all your reservations in one place.",
+  "myAccount": "MY ACCOUNT",
+  "tabs": {
+    "all": "All Bookings",
+    "pending": "Pending",
+    "accepted": "Accepted",
+    "cancelled": "Cancelled"
+  },
+  "status": {
+    "PENDING": "Pending",
+    "ACCEPTED": "Accepted",
+    "REJECTED": "Rejected",
+    "CANCELLED": "Cancelled",
+    "EXPIRED": "Expired",
+    "UNPAID": "UNPAID",
+    "PAID": "Payment Complete"
+  },
+  "labels": {
+    "bookingId": "Booking #",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "duration": "Duration",
+    "nights": "nights",
+    "night": "night",
+    "total": "Total",
+    "pastStay": "Past Stay"
+  },
+  "buttons": {
+    "payNow": "Pay Now",
+    "editDates": "Edit Dates",
+    "cancelBooking": "Cancel Booking",
+    "keepBooking": "Keep Booking"
+  },
+  "modal": {
+    "editDatesTitle": "Edit Stay Dates",
+    "newCheckIn": "NEW CHECK-IN",
+    "newCheckOut": "NEW CHECK-OUT",
+    "updateDates": "Update Dates",
+    "cancelTitle": "Cancel Booking?",
+    "cancelWarning": "This action cannot be undone. You may be subject to cancellation fees.",
+    "yesCancel": "Yes, Cancel",
+    "reasonPlaceholder": "Reason for cancellation (optional)"
+  },
+  "messages": {
+    "noBookings": "No bookings found.",
+    "cancelSuccess": "Booking cancelled successfully",
+    "updateSuccess": "Booking dates updated successfully",
+    "updateError": "Failed to update dates",
+    "cancelError": "Failed to cancel booking"
+  }
+}

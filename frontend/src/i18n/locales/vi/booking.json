@@ -1,0 +1,53 @@
+{
+  "title": "Lịch sử Đặt phòng",
+  "subtitle": "Quản lý và theo dõi tất cả các đặt phòng của bạn tại một nơi.",
+  "myAccount": "TÀI KHOẢN CỦA TÔI",
+  "tabs": {
+    "all": "Tất cả",
+    "pending": "Chờ xác nhận",
+    "accepted": "Đã xác nhận",
+    "cancelled": "Đã huỷ"
+  },
+  "status": {
+    "PENDING": "Chờ xác nhận",
+    "ACCEPTED": "Đã xác nhận",
+    "REJECTED": "Đã từ chối",
+    "CANCELLED": "Đã huỷ",
+    "EXPIRED": "Hết hạn",
+    "UNPAID": "CHƯA THANH TOÁN",
+    "PAID": "Đã thanh toán"
+  },
+  "labels": {
+    "bookingId": "Mã đơn #",
+    "checkIn": "Nhận phòng",
+    "checkOut": "Trả phòng",
+    "duration": "Thời gian",
+    "nights": "đêm",
+    "night": "đêm",
+    "total": "Tổng cộng",
+    "pastStay": "Đã qua"
+  },
+  "buttons": {
+    "payNow": "Thanh toán ngay",
+    "editDates": "Đổi ngày",
+    "cancelBooking": "Huỷ phòng",
+    "keepBooking": "Giữ đặt phòng"
+  },
+  "modal": {
+    "editDatesTitle": "Đổi Ngày Nhận/Trả Phòng",
+    "newCheckIn": "NGÀY NHẬN PHÒNG MỚI",
+    "newCheckOut": "NGÀY TRẢ PHÒNG MỚI",
+    "updateDates": "Cập nhật",
+    "cancelTitle": "Huỷ Đặt Phòng?",
+    "cancelWarning": "Hành động này không thể hoàn tác. Bạn có thể phải chịu phí huỷ theo quy định.",
+    "yesCancel": "Vâng, Huỷ",
+    "reasonPlaceholder": "Lý do huỷ (tuỳ chọn)"
+  },
+  "messages": {
+    "noBookings": "Không tìm thấy đặt phòng nào.",
+    "cancelSuccess": "Đã huỷ đặt phòng thành công",
+    "updateSuccess": "Đã cập nhật ngày thành công",
+    "updateError": "Không thể cập nhật ngày",
+    "cancelError": "Không thể huỷ đặt phòng"
+  }
+}

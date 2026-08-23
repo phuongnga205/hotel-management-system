@@ -33,6 +33,19 @@ export class Image {
   })
   imageUrl!: string;
 
+  // public_id trên Cloudinary — dùng để xoá đúng asset khi remove() ảnh
+  // này. Nullable vì hiện RoomsService.addImage() đang lưu local disk
+  // (không có public_id) — cột này chỉ được set khi/nếu chuyển sang
+  // Cloudinary (xem migration MakeImagePublicIdNullable).
+  @Column({
+    name: 'image_public_id',
+    type: 'varchar',
+    length: 255,
+    unique: true,
+    nullable: true,
+  })
+  imagePublicId?: string | null;
+
   @Column({
     name: 'is_thumbnail',
     default: false,

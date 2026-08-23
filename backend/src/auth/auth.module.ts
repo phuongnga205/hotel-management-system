@@ -37,6 +37,13 @@ import { StringValue } from 'ms';
 
   providers: [AuthService, JwtStrategy, JwtAuthGuard, RolesGuard],
 
-  exports: [AuthService, JwtStrategy, JwtAuthGuard, RolesGuard, PassportModule],
+  exports: [
+    AuthService,
+    JwtStrategy,
+    JwtAuthGuard,
+    RolesGuard,
+    PassportModule,
+    JwtModule,
+  ],
 })
 export class AuthModule {}

@@ -7,7 +7,7 @@ CREATE TABLE users (
   email          VARCHAR(255) NOT NULL UNIQUE,
   password_hash  VARCHAR(255) NOT NULL,
   full_name      VARCHAR(150),
-  phone          VARCHAR(20),
+  phone          VARCHAR(20) UNIQUE,
   avatar_url     VARCHAR(500),
   role           VARCHAR(20)  NOT NULL DEFAULT 'USER',    -- USER, ADMIN
   status         VARCHAR(20)  NOT NULL DEFAULT 'INACTIVE', -- ACTIVE, INACTIVE
@@ -53,17 +53,27 @@ CREATE TABLE rooms (
 -- images (room photos)
 -- ============================================================
 CREATE TABLE images (
-  image_id      BIGSERIAL PRIMARY KEY,
-  room_id       BIGINT NOT NULL REFERENCES rooms(room_id),
-  image_url     VARCHAR(500) NOT NULL,
-  is_thumbnail  BOOLEAN NOT NULL DEFAULT false,
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-  deleted_at    TIMESTAMPTZ
+  image_id         BIGSERIAL PRIMARY KEY,
+  room_id          BIGINT NOT NULL REFERENCES rooms(room_id),
+  image_url        VARCHAR(500) NOT NULL,
+  image_public_id  VARCHAR(255) UNIQUE, -- Cloudinary public_id (nullable), xem migration MakeImagePublicIdNullable
+  is_thumbnail     BOOLEAN NOT NULL DEFAULT false,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  deleted_at       TIMESTAMPTZ
 );
 -- enforce max one active thumbnail per room:
 CREATE UNIQUE INDEX uq_images_one_thumbnail_per_room
   ON images(room_id) WHERE is_thumbnail = true AND deleted_at IS NULL;
+
+-- NOTE: image_public_id là public_id trên Cloudinary. RoomsService.addImage()
+-- (xem backend/src/rooms/rooms.service.ts) giờ luôn upload ảnh phòng lên
+-- Cloudinary (đồng bộ cách avatar user đang lưu) và set cột này cho MỌI ảnh
+-- mới — không còn lưu file trên local disk nữa (đã bỏ ROOM_UPLOAD_DIRECTORY).
+-- Cột vẫn để nullable (không đổi lại NOT NULL) vì DB Neon dùng chung có thể
+-- còn sót vài dòng cũ từ giai đoạn lưu local disk (image_public_id = NULL,
+-- image_url trỏ về path cục bộ đã không còn phục vụ) — cần dọn/backfill dữ
+-- liệu cũ đó trước khi siết lại NOT NULL, chưa làm ở migration này.
 
 -- ============================================================
 -- amenities

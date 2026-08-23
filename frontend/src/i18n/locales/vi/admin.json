@@ -1,0 +1,315 @@
+{
+  "nav": {
+    "dashboard": "Tổng quan",
+    "rooms": "Phòng",
+    "amenities": "Tiện nghi",
+    "bookings": "Đặt phòng",
+    "users": "Người dùng",
+    "reviews": "Đánh giá",
+    "statisticsBookings": "Thống kê đặt phòng",
+    "statisticsRevenue": "Thống kê doanh thu",
+    "emailLogs": "Nhật ký email",
+    "backToSite": "Về trang chính"
+  },
+  "common": {
+    "view": "Xem",
+    "edit": "Sửa",
+    "delete": "Xoá",
+    "cancel": "Huỷ",
+    "save": "Lưu",
+    "back": "Quay lại",
+    "actions": "Thao tác",
+    "status": "Trạng thái",
+    "notFoundGeneric": "Không tìm thấy dữ liệu.",
+    "wip": "API đang được xây dựng",
+    "logout": "Đăng xuất"
+  },
+  "dashboard": {
+    "eyebrow": "Tổng quan",
+    "title": "Bảng điều khiển",
+    "totalRevenue": "Tổng doanh thu",
+    "newBookings": "Đặt phòng mới",
+    "pendingBookingsSub": "{{count}} chờ duyệt",
+    "activeGuests": "Khách đang lưu trú",
+    "pendingReviews": "Đánh giá chờ duyệt",
+    "monthlyRevenue": "Doanh thu theo tháng",
+    "bookingsByRoomType": "Đặt phòng theo loại phòng",
+    "recentBookings": "Đặt phòng gần đây",
+    "viewAll": "Xem tất cả →"
+  },
+  "table": {
+    "id": "Mã",
+    "guest": "Khách hàng",
+    "room": "Phòng",
+    "dates": "Ngày",
+    "nights": "Số đêm",
+    "total": "Tổng tiền",
+    "recipient": "Người nhận",
+    "type": "Loại",
+    "sentAt": "Thời gian gửi",
+    "retries": "Số lần thử lại",
+    "user": "Người dùng",
+    "email": "Email",
+    "phone": "Điện thoại",
+    "role": "Vai trò",
+    "joined": "Ngày tham gia",
+    "checkIn": "Nhận phòng",
+    "checkOut": "Trả phòng"
+  },
+  "rooms": {
+    "viewType": {
+      "CITY_VIEW": "Hướng thành phố",
+      "GARDEN_VIEW": "Hướng vườn",
+      "SEA_VIEW": "Hướng biển"
+    },
+    "list": {
+      "eyebrow": "Kho phòng",
+      "title": "Phòng",
+      "subtitle": "{{count}} phòng trong hệ thống",
+      "searchPlaceholder": "Tìm kiếm phòng...",
+      "exportCsv": "Xuất CSV",
+      "addRoom": "+ Thêm phòng",
+      "columnRoom": "Phòng",
+      "columnType": "Loại",
+      "columnView": "Hướng nhìn",
+      "columnPrice": "Giá",
+      "columnCapacity": "Sức chứa",
+      "deleteTitle": "Xoá phòng?",
+      "deleteDesc": "Hành động này sẽ xoá vĩnh viễn phòng và toàn bộ dữ liệu liên quan.",
+      "deleteConfirm": "Xoá phòng"
+    },
+    "detail": {
+      "notFound": "Không tìm thấy phòng.",
+      "backToList": "← Về danh sách phòng",
+      "editRoom": "Sửa phòng",
+      "detailsTitle": "Thông tin phòng",
+      "amenitiesTitle": "Tiện nghi",
+      "descriptionTitle": "Mô tả",
+      "imagesTitle": "Hình ảnh",
+      "fieldPrice": "Giá mỗi đêm",
+      "fieldRoomNumber": "Số phòng",
+      "fieldCapacity": "Sức chứa tối đa",
+      "fieldView": "Hướng nhìn",
+      "fieldType": "Loại phòng",
+      "fieldStatus": "Trạng thái",
+      "noAmenities": "Chưa gán tiện nghi nào.",
+      "noDescription": "Chưa có mô tả."
+    },
+    "form": {
+      "newBreadcrumb": "Thêm phòng",
+      "editBreadcrumb": "Sửa",
+      "createTitle": "Thêm phòng",
+      "editTitle": "Sửa phòng",
+      "sectionInfo": "Thông tin phòng",
+      "fieldName": "Tên phòng",
+      "fieldNamePlaceholder": "VD: Grand Deluxe King",
+      "fieldRoomNumber": "Số phòng",
+      "fieldRoomNumberPlaceholder": "VD: 101",
+      "fieldType": "Loại phòng",
+      "fieldTypePlaceholder": "VD: Deluxe King",
+      "fieldPrice": "Giá mỗi đêm ($)",
+      "fieldCapacity": "Sức chứa tối đa (khách)",
+      "fieldView": "Hướng nhìn",
+      "fieldViewNone": "Không chọn hướng nhìn",
+      "fieldDescription": "Mô tả",
+      "fieldDescriptionPlaceholder": "Mô tả về phòng...",
+      "submitCreate": "Thêm phòng",
+      "submitCreating": "Đang thêm…",
+      "submitSave": "Lưu thay đổi",
+      "submitSaving": "Đang lưu…",
+      "amenitiesSectionTitle": "Tiện nghi",
+      "amenitiesEmpty": "Chưa có tiện nghi nào được định nghĩa.",
+      "imageSectionTitle": "Ảnh phòng",
+      "imageRemoveButton": "Xoá",
+      "imageViewAction": "Xem",
+      "imageSetThumbnailAction": "Đặt làm ảnh đại diện",
+      "insertThumbnailLabel": "Thêm ảnh đại diện",
+      "imageUploadFailed": "Đã lưu phòng, nhưng một số ảnh tải lên thất bại."
+    }
+  },
+  "amenities": {
+    "list": {
+      "eyebrow": "Danh mục",
+      "title": "Tiện nghi",
+      "subtitle": "{{count}} tiện nghi",
+      "addAmenity": "+ Thêm tiện nghi",
+      "columnName": "Tên",
+      "columnDescription": "Mô tả",
+      "noDescription": "—",
+      "empty": "Chưa có tiện nghi nào.",
+      "deleteTitle": "Xoá tiện nghi?",
+      "deleteDesc": "Các phòng đang dùng tiện nghi này sẽ mất liên kết. Hành động này không thể hoàn tác.",
+      "deleteConfirm": "Xoá tiện nghi"
+    },
+    "form": {
+      "createTitle": "Thêm tiện nghi",
+      "editTitle": "Sửa tiện nghi",
+      "fieldName": "Tên",
+      "fieldNamePlaceholder": "VD: Wi-Fi miễn phí",
+      "fieldDescription": "Mô tả",
+      "fieldDescriptionPlaceholder": "Mô tả ngắn (không bắt buộc)...",
+      "submitCreate": "Thêm tiện nghi",
+      "submitCreating": "Đang thêm…",
+      "submitSave": "Lưu thay đổi",
+      "submitSaving": "Đang lưu…"
+    }
+  },
+  "bookings": {
+    "list": {
+      "eyebrow": "Vận hành",
+      "title": "Đặt phòng",
+      "subtitle": "{{count}} đặt phòng",
+      "searchPlaceholder": "Tìm khách, phòng...",
+      "statusAll": "Tất cả trạng thái"
+    },
+    "detail": {
+      "notFound": "Không tìm thấy đặt phòng.",
+      "backToList": "← Về danh sách đặt phòng",
+      "titleWithId": "Đặt phòng #{{id}}",
+      "fieldDuration": "Thời lượng",
+      "nightsCount": "{{count}} đêm",
+      "guestInfoTitle": "Thông tin khách hàng",
+      "fieldName": "Họ tên",
+      "fieldEmail": "Email",
+      "fieldPhone": "Điện thoại",
+      "fieldBookedAt": "Ngày đặt",
+      "noteLabel": "Yêu cầu đặc biệt",
+      "acceptAction": "✓ Chấp nhận",
+      "rejectAction": "✕ Từ chối",
+      "acceptedNotice": "Đặt phòng đã được chấp nhận.",
+      "rejectedNotice": "Đặt phòng đã bị từ chối.",
+      "cancelledNotice": "Đặt phòng đã bị huỷ.",
+      "expiredNotice": "Đặt phòng đã hết hạn.",
+      "priceSummaryTitle": "Tổng kết giá",
+      "pricePerNightLine": "${{price}} × {{nights}} đêm",
+      "rejectModalTitle": "Từ chối đặt phòng",
+      "rejectModalConfirm": "Từ chối",
+      "rejectReasonLabel": "Lý do (không bắt buộc)",
+      "rejectReasonPlaceholder": "Giải thích lý do từ chối đặt phòng...",
+      "paid": "✓ Đã thanh toán",
+      "unpaid": "Chưa thanh toán"
+    }
+  },
+  "reviews": {
+    "list": {
+      "eyebrow": "Kiểm duyệt",
+      "title": "Đánh giá",
+      "subtitle": "{{count}} đánh giá",
+      "empty": "Không có đánh giá nào cần kiểm duyệt.",
+      "deleteTitle": "Xoá đánh giá?",
+      "deleteDesc": "Người viết sẽ được thông báo qua email. Hành động này không thể hoàn tác.",
+      "deleteConfirm": "Xoá đánh giá"
+    }
+  },
+  "emailLogs": {
+    "list": {
+      "eyebrow": "Hệ thống",
+      "title": "Nhật ký email",
+      "subtitle": "{{count}} email",
+      "statusAll": "Tất cả trạng thái",
+      "resultsCount": "{{count}} kết quả"
+    },
+    "detail": {
+      "notFound": "Không tìm thấy nhật ký email.",
+      "backToList": "← Về danh sách nhật ký email",
+      "metadataTitle": "Thông tin chung",
+      "fieldLogId": "Mã nhật ký",
+      "fieldType": "Loại",
+      "fieldTo": "Người nhận",
+      "fieldCreatedAt": "Ngày tạo",
+      "fieldSentAt": "Ngày gửi",
+      "fieldRetryAttempts": "Số lần thử lại",
+      "failedMessage": "Email này gửi thất bại sau {{count}} lần thử. Bạn có thể thử gửi lại ngay.",
+      "retryNow": "Thử lại ngay",
+      "retrying": "Đang thử lại...",
+      "retrySuccess": "Đã gửi lại email thành công."
+    }
+  },
+  "users": {
+    "list": {
+      "eyebrow": "Quản lý",
+      "title": "Người dùng",
+      "subtitle": "{{count}} tài khoản đã đăng ký",
+      "searchPlaceholder": "Tìm người dùng...",
+      "tabAll": "Tất cả",
+      "tabActive": "Đang hoạt động",
+      "tabInactive": "Ngừng hoạt động",
+      "showingSummary": "Hiển thị {{shown}} / {{total}} người dùng"
+    },
+    "detail": {
+      "fieldPhone": "Điện thoại",
+      "fieldRole": "Vai trò",
+      "fieldJoined": "Ngày tham gia",
+      "fieldTotalBookings": "Tổng số đặt phòng",
+      "activate": "Kích hoạt",
+      "deactivate": "Vô hiệu hoá",
+      "bookingHistoryTitle": "Lịch sử đặt phòng",
+      "bookingCount": "{{count}} lượt đặt",
+      "noBookings": "Người dùng này chưa có lượt đặt phòng nào."
+    }
+  },
+  "statistics": {
+    "bookings": {
+      "eyebrow": "Phân tích",
+      "title": "Thống kê đặt phòng",
+      "goToRevenue": "Thống kê doanh thu →",
+      "tileTotal": "Tổng đặt phòng",
+      "tileAccepted": "Đã chấp nhận",
+      "tilePending": "Chờ duyệt",
+      "tileAvgStay": "Số đêm lưu trú TB",
+      "monthlyChartTitle": "Đặt phòng theo tháng",
+      "byRoomTypeChartTitle": "Đặt phòng theo loại phòng",
+      "statusBreakdownTitle": "Phân bổ trạng thái"
+    },
+    "revenue": {
+      "eyebrow": "Phân tích",
+      "title": "Thống kê doanh thu",
+      "goToBookings": "Thống kê đặt phòng →",
+      "tileTotal": "Tổng doanh thu (năm nay)",
+      "tileAvgMonthly": "Trung bình/tháng",
+      "tileBestMonth": "Tháng cao nhất",
+      "tileTotalBookings": "Tổng đặt phòng",
+      "trendChartTitle": "Xu hướng doanh thu",
+      "byRoomTypeChartTitle": "Doanh thu theo loại phòng",
+      "monthlyBreakdownTitle": "Chi tiết theo tháng"
+    }
+  },
+  "status": {
+    "room": {
+      "ACTIVE": "Đang hoạt động",
+      "INACTIVE": "Ngừng hoạt động",
+      "MAINTENANCE": "Đang bảo trì"
+    },
+    "booking": {
+      "PENDING": "Chờ duyệt",
+      "ACCEPTED": "Đã chấp nhận",
+      "REJECTED": "Đã từ chối",
+      "CANCELLED": "Đã huỷ",
+      "EXPIRED": "Đã hết hạn"
+    },
+    "payment": {
+      "NONE": "Chưa thanh toán",
+      "PENDING": "Chờ thanh toán",
+      "SUCCESS": "Đã thanh toán",
+      "FAILED": "Thất bại",
+      "REFUNDED": "Đã hoàn tiền"
+    },
+    "email": {
+      "PENDING": "Đang chờ",
+      "SENT": "Đã gửi",
+      "FAILED": "Thất bại"
+    },
+    "user": {
+      "ACTIVE": "Đang hoạt động",
+      "INACTIVE": "Ngừng hoạt động"
+    },
+    "review": {
+      "ACTIVE": "Đã đăng",
+      "DELETED": "Đã gỡ"
+    },
+    "role": {
+      "ADMIN": "Quản trị viên",
+      "USER": "Người dùng"
+    }
+  }
+}
