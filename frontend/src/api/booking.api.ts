@@ -2,7 +2,7 @@ import { axiosClient } from './axiosClient'
 import { API_ENDPOINTS } from './endpoints'
 import { env } from '../config/env'
 import { bookingMockApi } from './mocks/booking.mock'
-import type { Booking, CreateBookingPayload, ListBookingsQuery, MessageResponse, PagedResult, RejectBookingPayload } from './types'
+import type { Booking, CreateBookingPayload, ListBookingsQuery, MessageResponse, PagedResult, PayBookingPayload, RejectBookingPayload } from './types'
 
 const bookingRealApi = {
   create: async (data: CreateBookingPayload): Promise<Booking> => {
@@ -19,6 +19,10 @@ const bookingRealApi = {
   },
   cancel: async (id: string): Promise<MessageResponse> => {
     const res = await axiosClient.patch(API_ENDPOINTS.BOOKING_CANCEL(id))
+    return res.data
+  },
+  pay: async (id: string, data: PayBookingPayload): Promise<MessageResponse> => {
+    const res = await axiosClient.post(API_ENDPOINTS.BOOKING_PAY(id), data)
     return res.data
   },
 

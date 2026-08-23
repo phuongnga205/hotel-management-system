@@ -54,7 +54,8 @@
     "role": "Vai trò",
     "joined": "Ngày tham gia",
     "checkIn": "Nhận phòng",
-    "checkOut": "Trả phòng"
+    "checkOut": "Trả phòng",
+    "payment": "Thanh toán"
   },
   "rooms": {
     "viewType": {

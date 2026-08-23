@@ -54,7 +54,8 @@
     "role": "Role",
     "joined": "Joined",
     "checkIn": "Check-in",
-    "checkOut": "Check-out"
+    "checkOut": "Check-out",
+    "payment": "Payment"
   },
   "rooms": {
     "viewType": {

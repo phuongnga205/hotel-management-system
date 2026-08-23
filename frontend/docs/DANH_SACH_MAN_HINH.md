@@ -49,7 +49,7 @@
 |---|---|---|---|
 | `pages/bookings/BookingHistoryPage.tsx` | `/bookings` | `GET /bookings/me` | |
 | `pages/bookings/BookingDetailPage.tsx` | `/bookings/:bookingId` | `GET /bookings/:id`, `PATCH /bookings/:id` (sửa), `PATCH /bookings/:id/cancel` (huỷ, qua modal) | Nút "Viết đánh giá" điều hướng sang `BookingReviewPage`, nút "Thanh toán" điều hướng sang `BookingPaymentPage`. |
-| `pages/bookings/BookingPaymentPage.tsx` | `/bookings/:bookingId/payment` | `POST /bookings/:id/pay` *(stub — BE chưa làm thật)* | Để UI placeholder/disabled, chưa cần xử lý response thật. |
+| `pages/bookings/BookingPaymentPage.tsx` | `/bookings/:bookingId/payment` | `POST /bookings/:id/pay` | BE đã implement (mock — luôn thành công ngay, không phải cổng thanh toán thật): màn hình chỉ cần cho chọn `method` rồi gọi API 1 lần, không cần polling/callback. `bookingApi.pay()` + mock đã có sẵn ở `frontend/src/api/booking.api.ts`, trang này vẫn **chưa được dựng**. |
 | `pages/bookings/BookingReviewPage.tsx` | `/bookings/:bookingId/review` | `POST /reviews` | Chỉ hiện nút dẫn tới trang này khi booking đã/đang ở (check ở `BookingDetailPage`). |
 
 ## F. Admin — Users
@@ -84,8 +84,8 @@
 
 | Page component | Route | API sử dụng | Ghi chú |
 |---|---|---|---|
-| `pages/admin/bookings/AdminBookingListPage.tsx` | `/admin/bookings` | `GET /admin/bookings` 🚧 | |
-| `pages/admin/bookings/AdminBookingDetailPage.tsx` | `/admin/bookings/:bookingId` | `GET /admin/bookings/:id` 🚧, `PATCH /admin/bookings/:id/accept` 🚧, `PATCH /admin/bookings/:id/reject` 🚧 | 2 nút Chấp nhận/Từ chối cùng nằm trang này, không route riêng. |
+| `pages/admin/bookings/AdminBookingListPage.tsx` | `/admin/bookings` | `GET /admin/bookings` | Đã có cột "Payment" (dùng lại `PaymentBadge`) bên cạnh cột "Status" — hiện cả booking status lẫn payment status. |
+| `pages/admin/bookings/AdminBookingDetailPage.tsx` | `/admin/bookings/:bookingId` | `GET /admin/bookings/:id`, `PATCH /admin/bookings/:id/accept`, `PATCH /admin/bookings/:id/reject` | 2 nút Chấp nhận/Từ chối cùng nằm trang này, không route riêng. Đã hiện cả `StatusBadge` (booking) lẫn `PaymentBadge` (payment). |
 
 ## I. Admin — Reviews
 

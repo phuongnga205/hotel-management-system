@@ -223,6 +223,12 @@ export interface RejectBookingPayload {
   cancelReason?: string
 }
 
+// amount KHONG co o day - server luon tu tinh tu booking.totalPrice, khong
+// nhan so tien tu FE (xem backend/src/bookings/dto/pay-booking.dto.ts).
+export interface PayBookingPayload {
+  method: PaymentMethod
+}
+
 // --- payments ---
 export type PaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'CREDIT_CARD' | 'VNPAY'
 export type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED'

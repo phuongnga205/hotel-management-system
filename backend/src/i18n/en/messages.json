@@ -42,6 +42,9 @@
   },
   "BOOKING": {
     "NOT_FOUND": "Booking not found.",
+    "CREATE_SUCCESS": "Booking request created successfully.",
+    "FIND_ONE_SUCCESS": "Booking retrieved successfully.",
+    "FIND_ALL_SUCCESS": "Bookings retrieved successfully.",
     "UPDATED_SUCCESS": "Booking request updated successfully.",
     "DELETED_SUCCESS": "Booking request deleted successfully.",
     "CANCEL_SUCCESS": "Booking request cancelled successfully.",
@@ -51,8 +54,13 @@
     "CHECK_IN_DATE_IN_PAST": "Checkin date in the past.",
     "INVALID_DATE_RANGE": "Date range invalid.",
     "DATES_OVERLAP": "This room is already booked for the selected dates.",
-    "ROOM_UNAVAILABLE": "This room is not available for booking."
-
+    "ROOM_UNAVAILABLE": "This room is not available for booking.",
+    "CANNOT_ACCEPT": "Booking request cannot be accepted.",
+    "ACCEPT_SUCCESS": "Booking request accepted successfully.",
+    "CANNOT_REJECT": "Booking request cannot be rejected.",
+    "REJECT_SUCCESS": "Booking request rejected successfully.",
+    "CANNOT_PAY": "Booking request cannot be paid.",
+    "PAY_SUCCESS": "Payment completed successfully."
   },
   "AUTH": {
     "EMAIL_EXISTED": "This email is already registered.",

@@ -208,11 +208,54 @@ chung toàn app), không thêm field tuỳ biến:
 | Chức năng | Method | URL | Quyền | Auth |
 |---|---|---|---|---|
 | Tạo request đặt phòng | POST | `/api/v1/bookings` | User | JWT |
-| Xem chi tiết request đặt phòng của chính mình | GET | `/api/v1/bookings/:id` | User (chỉ chủ booking — service tự check `booking.userId === req.user.id`, không phải của mình → 403) | JWT |
+| Xem chi tiết request đặt phòng của chính mình | GET | `/api/v1/bookings/:id` | User (chỉ chủ booking) | JWT |
 | Xem lịch sử các request của tôi | GET | `/api/v1/bookings/me` | User | JWT |
-| Chỉnh sửa request đặt phòng | PATCH | `/api/v1/bookings/:id` | User (chủ booking) | JWT |
-| Huỷ request đặt phòng (kèm lý do) | PATCH | `/api/v1/bookings/:id/cancel` | User (chủ booking) | JWT |
-| Thanh toán request đặt phòng | POST | `/api/v1/bookings/:id/pay` | User (chủ booking) | JWT — *stub, làm sau* |
+| Chỉnh sửa request đặt phòng (chỉ khi đang `PENDING`) | PATCH | `/api/v1/bookings/:id` | User (chủ booking) | JWT |
+| Huỷ request đặt phòng (kèm lý do, chỉ khi đang `PENDING`) | PATCH | `/api/v1/bookings/:id/cancel` | User (chủ booking) | JWT |
+| Thanh toán request đặt phòng (chỉ khi đang `PENDING`) | POST | `/api/v1/bookings/:id/pay` | User (chủ booking) | JWT |
+
+> **Booking không thuộc về user hiện tại → `404 Not Found`, không phải
+> `403`.** Đây là lựa chọn có chủ đích (tránh lộ thông tin "booking này tồn
+> tại nhưng không phải của bạn" cho kẻ dò id) — `GET /bookings/:id`,
+> `PATCH /bookings/:id`, `.../cancel`, `.../pay` đều scope theo
+> `WHERE id = :id AND user_id = :userId` (`userId` lấy từ JWT qua
+> `@GetUser('id')`, không nhận từ body/param) rồi trả `404` nếu không khớp,
+> chứ không tách riêng bước check quyền sở hữu để trả `403`. Khác hẳn
+> `GET /admin/bookings/:id` (mục 8) — không giới hạn theo chủ sở hữu.
+
+> **Đã implement đầy đủ — kể cả `POST /bookings/:id/pay`** (không còn là
+> stub). Body chỉ nhận `{ method }` (`PaymentMethod`), **không có field
+> `amount`** — số tiền luôn lấy từ `booking.totalPrice` ở server, không tin
+> dữ liệu tiền từ FE. Thanh toán hiện là **mock**: luôn trả `SUCCESS` ngay
+> lập tức (không gọi cổng thanh toán thật), nhưng tạo `Payment` thật trong
+> DB và tự động chuyển `booking.status` sang `ACCEPTED` — luồng dữ liệu
+> (entity, transaction) đã sẵn sàng để nối cổng thanh toán thật sau này chỉ
+> bằng cách thay phần "luôn SUCCESS" bằng gọi API cổng thanh toán thực tế.
+>
+> **Cơ chế giữ chỗ (hold) 10 phút, chống race condition đặt trùng phòng**
+> (xem thêm `frontend/docs/bridge.md` mục `bookings`):
+> - `POST /bookings` set `holdExpiresAt = now + 10 phút` (hằng số
+>   `BOOKING_HOLD_MINUTES`, `backend/src/bookings/constants/booking.constants.ts`).
+>   Trong 10 phút đó, booking được giải quyết bằng 1 trong 3 cách — thanh
+>   toán thành công (`.../pay` → tự `ACCEPTED`), admin accept, hoặc admin
+>   reject (mục 8) — ai xong trước thì thắng.
+> - Hết 10 phút mà vẫn `PENDING` → 1 cron job (`@Cron(EVERY_MINUTE)` trong
+>   `BookingsService.expireStaleHolds()`) tự bulk-update sang `EXPIRED`,
+>   nhả chỗ cho người khác — dùng `QueryBuilder.update()` trực tiếp, không
+>   load rồi save từng dòng.
+> - Overlap-check khi tạo/sửa booking chỉ coi 1 booking là "đang giữ chỗ"
+>   khi `ACCEPTED`, hoặc `PENDING` **và** `hold_expires_at` còn hiệu lực —
+>   1 hold đã hết hạn (dù cron chưa kịp quét) sẽ không chặn người khác đặt
+>   cùng phòng/ngày nữa. Ràng buộc `EXCLUDE` cấp DB (đã có từ migration ban
+>   đầu, xem `backend/db.md`) là lưới an toàn cuối cùng cho race condition
+>   thật giữa 2 request đồng thời (Postgres tự chặn 1 trong 2 `INSERT`
+>   trùng nhau) — vẫn giữ nguyên `409 Conflict` như mục "Response envelope"
+>   đã mô tả.
+> - `update()`/`cancel()`/`accept()`/`reject()`/`pay()` đều bọc trong
+>   `dataSource.transaction()` + khoá `pessimistic_write`
+>   (`SELECT ... FOR UPDATE`) khi đọc booking — chống trường hợp 2 request
+>   cùng sửa 1 booking (VD user `pay()` và admin `reject()` cùng lúc) đọc
+>   cùng lúc thấy `PENDING` rồi ghi đè nhau mà không ai báo lỗi.
 
 ## 5. Reviews (user)
 
@@ -292,10 +335,29 @@ chung toàn app), không thêm field tuỳ biến:
 
 | Chức năng | Method | URL | Quyền | Auth |
 |---|---|---|---|---|
-| 🚧 Xem danh sách toàn bộ booking (mọi user, đủ filter/sort) | GET | `/api/v1/admin/bookings` | Admin | JWT + RolesGuard(ADMIN) |
-| 🚧 Xem chi tiết booking (view quản trị, gồm thông tin user đặt) | GET | `/api/v1/admin/bookings/:id` | Admin | JWT + RolesGuard(ADMIN) |
-| 🚧 Chấp nhận request đặt phòng | PATCH | `/api/v1/admin/bookings/:id/accept` | Admin | JWT + RolesGuard(ADMIN) |
-| 🚧 Từ chối request đặt phòng (kèm lý do) | PATCH | `/api/v1/admin/bookings/:id/reject` | Admin | JWT + RolesGuard(ADMIN) |
+| Xem danh sách toàn bộ booking (mọi user, filter `status`/`search`, phân trang) | GET | `/api/v1/admin/bookings` | Admin | JWT + RolesGuard(ADMIN) |
+| Xem chi tiết booking (view quản trị, gồm thông tin user đặt, không giới hạn chủ sở hữu) | GET | `/api/v1/admin/bookings/:id` | Admin | JWT + RolesGuard(ADMIN) |
+| Chấp nhận request đặt phòng (chỉ khi đang `PENDING`) | PATCH | `/api/v1/admin/bookings/:id/accept` | Admin | JWT + RolesGuard(ADMIN) |
+| Từ chối request đặt phòng (kèm lý do, chỉ khi đang `PENDING`) | PATCH | `/api/v1/admin/bookings/:id/reject` | Admin | JWT + RolesGuard(ADMIN) |
+
+> **Đã implement — `AdminBookingsController`** (`backend/src/bookings/admin-bookings.controller.ts`),
+> tách controller riêng khỏi `BookingsController` (self-service của khách)
+> nhưng dùng chung 1 `BookingsService`, đúng pattern `RoomsController`/
+> `AdminRoomsController` ở mục 6.
+> - `GET /admin/bookings` dùng `QueryBuilder` + `.offset()/.limit()` (không
+>   dùng `.skip()/.take()` — né đúng vấn đề TypeORM tính sai số dòng khi kết
+>   hợp `skip/take` với `leftJoinAndSelect` một quan hệ 1-nhiều), trả kèm
+>   `data.items[].payment` (trạng thái thanh toán mới nhất của mỗi booking,
+>   lấy bằng 1 query gộp riêng theo `bookingId IN (...)` thay vì join trực
+>   tiếp `booking.payments` — tránh N+1 lẫn tránh lỗi nhân dòng do join
+>   1-nhiều kết hợp phân trang).
+> - `PATCH .../accept` và `.../reject` chỉ áp dụng được khi booking đang
+>   `PENDING` (400 nếu không), không kiểm tra `payment.status` — theo thiết
+>   kế, 1 booking `PENDING` không thể có `Payment SUCCESS` đi kèm (thanh
+>   toán thành công qua `.../pay` luôn atomically chuyển sang `ACCEPTED`
+>   trong cùng transaction).
+> - Trùng lý do reject và cancel: cả 2 dùng chung cột `bookings.cancel_reason`
+>   (xem `backend/db.md` và `bridge.md` mục `bookings`).
 
 ## 9. Admin — Users
 
@@ -420,8 +482,9 @@ chung toàn app), không thêm field tuỳ biến:
       `AdminStatisticsController`, `AdminEmailLogsController`), tách khỏi
       controller public (`RoomsController`, `BookingsController`,
       `ReviewsController`).
-- [ ] Bổ sung các endpoint còn 🚧: danh sách booking Admin, accept/reject
-      booking, danh sách review Admin.
+- [x] Bổ sung các endpoint booking Admin còn 🚧: danh sách, chi tiết,
+      accept/reject — đã implement, xem mục 8.
+- [ ] Bổ sung endpoint còn 🚧: danh sách review Admin (`GET /admin/reviews`).
 - [x] `GET /rooms`, `GET /rooms/available`, `GET /rooms/:id`, toàn bộ
       `/admin/rooms/**` (kể cả export Excel) đã implement — xem mục 3 và 6.
 - [x] Room images (upload/xoá/đặt thumbnail) đã implement, lưu Cloudinary —
@@ -434,9 +497,11 @@ chung toàn app), không thêm field tuỳ biến:
 - [ ] Soạn sẵn nội dung template email `ReviewDeleted` (tiêu đề + nội dung
       cố định, không có phần lý do tuỳ chỉnh) — xem mục 14 và mục Admin
       Reviews.
-- [ ] Đảm bảo `GET /bookings/:id` chặn user xem booking không phải của mình
-      (403), khác với `GET /admin/bookings/:id` không bị chặn theo chủ sở
-      hữu.
+- [x] Đảm bảo `GET /bookings/:id` chặn user xem booking không phải của
+      mình, khác với `GET /admin/bookings/:id` không bị chặn theo chủ sở
+      hữu — đã implement, **nhưng trả `404` chứ không phải `403`** như dự
+      kiến ban đầu ở mục này (quyết định có chủ đích để tránh lộ thông tin
+      "booking tồn tại nhưng không phải của bạn", xem ghi chú ở mục 4).
 - [ ] Cân nhắc endpoint public `GET /rooms/:id/reviews` để trang chi tiết
       phòng hiển thị đánh giá (hiện chưa có trong yêu cầu gốc).
 - [ ] Đối chiếu lại với `frontend/docs/CAU_TRUC_ROUTE.md` sau khi đổi
@@ -444,9 +509,14 @@ chung toàn app), không thêm field tuỳ biến:
 - [ ] Viết chung 1 `ResponseInterceptor` (bọc `{statusCode, message, data}`
       cho response thành công) + `HttpExceptionFilter` toàn app theo đúng
       format đã chốt ở mục "Response envelope", áp dụng cho mọi controller
-      ngay từ đầu để tránh phải sửa lại từng endpoint sau này.
-- [ ] Đảm bảo `POST /bookings` và `PATCH /bookings/:id` trả `409 Conflict`
-      đúng chuẩn khi phát hiện trùng lịch (race condition).
+      ngay từ đầu để tránh phải sửa lại từng endpoint sau này. Chưa có
+      interceptor chung — `bookings` (giống `rooms`/`users`/`amenities`) tự
+      build đúng shape này thủ công ở từng method service, không phải qua
+      interceptor.
+- [x] Đảm bảo `POST /bookings` và `PATCH /bookings/:id` trả `409 Conflict`
+      đúng chuẩn khi phát hiện trùng lịch (race condition) — đã implement,
+      kèm cơ chế giữ chỗ (hold) 10 phút + cron tự expire + khoá pessimistic
+      chống race giữa các thao tác đổi trạng thái, xem ghi chú ở mục 4.
 - [ ] Rà toàn bộ message trong `ResponseInterceptor`/`HttpExceptionFilter`
       và mọi service dùng `I18nService` để lấy `message` qua key, không
       hardcode chuỗi — bổ sung đủ key cho `vi`/`en` trong
