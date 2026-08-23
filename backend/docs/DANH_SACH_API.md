@@ -262,7 +262,26 @@ chung toàn app), không thêm field tuỳ biến:
 | Chức năng | Method | URL | Quyền | Auth |
 |---|---|---|---|---|
 | Tạo đánh giá cho phòng đã đặt | POST | `/api/v1/reviews` | User | JWT |
-| 🚧 (Tuỳ chọn) Xem đánh giá công khai theo phòng | GET | `/api/v1/rooms/:id/reviews` | Guest / User | Không cần — *chưa có trong yêu cầu ban đầu, đề xuất thêm vì trang chi tiết phòng thường cần hiển thị review* |
+| Xem đánh giá công khai theo phòng | GET | `/api/v1/rooms/:roomId/reviews` | Guest / User | Không cần |
+
+> **Đã implement**, tách controller trong `ReviewsModule`:
+> `ReviewsController` (`POST /reviews`, cần JWT),
+> `RoomReviewsController` (`GET /rooms/:roomId/reviews`, public — **không**
+> gắn `JwtAuthGuard`, kể cả khách chưa đăng nhập cũng gọi được),
+> `AdminReviewsController` (mục 10). Dùng chung envelope
+> `{statusCode, message, data}`, pagination `page`/`limit`, list trả
+> `data.items` + `total`/`page`/`limit`/`totalPages` — giống mọi list
+> endpoint khác. URL `GET /rooms/:roomId/reviews` khớp đúng
+> `frontend/src/api/endpoints.ts` (`ROOM_REVIEWS`) — **route nested dưới
+> `/rooms` nhưng sở hữu bởi `ReviewsModule`** (đọc thẳng `Review`
+> repository), không phải `RoomsModule`.
+>
+> **🆕 TODO FE**: endpoint đã sẵn sàng, nhưng chưa có trang nào gọi —
+> `RoomDetailPage` (`/rooms/:roomId`) cần thêm phần hiển thị danh sách đánh
+> giá của phòng (phân trang), gọi `reviewApi.listByRoom(roomId, query)` (đã
+> có sẵn ở `frontend/src/api/review.api.ts`, chỉ chưa được dùng ở page
+> nào). Xem `frontend/docs/DANH_SACH_MAN_HINH.md` mục C và
+> `frontend/docs/CAU_TRUC_ROUTE.md` mục A.
 
 ---
 
@@ -395,12 +414,16 @@ chung toàn app), không thêm field tuỳ biến:
 
 | Chức năng | Method | URL | Quyền | Auth |
 |---|---|---|---|---|
-| 🚧 Xem danh sách đánh giá (toàn hệ thống, hỗ trợ sort) | GET | `/api/v1/admin/reviews` | Admin | JWT + RolesGuard(ADMIN) |
+| Xem danh sách đánh giá (toàn hệ thống) | GET | `/api/v1/admin/reviews` | Admin | JWT + RolesGuard(ADMIN) |
 | Xoá đánh giá | DELETE | `/api/v1/admin/reviews/:id` | Admin | JWT + RolesGuard(ADMIN) |
 
 > **Chốt**: `DELETE /admin/reviews/:id` không nhận body, chỉ cần `id` trên
 > path. Email thông báo cho User (event `ReviewDeleted`, xem mục 14) dùng
 > **1 mẫu (template) cố định**, không có phần lý do tuỳ chỉnh từ Admin.
+>
+> **Đã implement** (`AdminReviewsController`, `/admin/reviews`), chỉ
+> `page`/`limit` — 🚧 **chưa hỗ trợ `sort`** (chưa module admin-list nào
+> trong repo hỗ trợ `sort` thật, không riêng reviews).
 
 ## 11. Admin — Statistics
 
@@ -484,7 +507,11 @@ chung toàn app), không thêm field tuỳ biến:
       `ReviewsController`).
 - [x] Bổ sung các endpoint booking Admin còn 🚧: danh sách, chi tiết,
       accept/reject — đã implement, xem mục 8.
-- [ ] Bổ sung endpoint còn 🚧: danh sách review Admin (`GET /admin/reviews`).
+- [x] Bổ sung endpoint còn 🚧: danh sách review Admin (`GET /admin/reviews`)
+      — đã implement, tách `AdminReviewsController` khỏi `ReviewsController`
+      đúng namespace `/admin/reviews`, xem mục 10. Sort vẫn để 🚧 (chưa
+      module admin list nào trong repo hỗ trợ `sort` thật, không riêng
+      reviews).
 - [x] `GET /rooms`, `GET /rooms/available`, `GET /rooms/:id`, toàn bộ
       `/admin/rooms/**` (kể cả export Excel) đã implement — xem mục 3 và 6.
 - [x] Room images (upload/xoá/đặt thumbnail) đã implement, lưu Cloudinary —
@@ -502,8 +529,10 @@ chung toàn app), không thêm field tuỳ biến:
       hữu — đã implement, **nhưng trả `404` chứ không phải `403`** như dự
       kiến ban đầu ở mục này (quyết định có chủ đích để tránh lộ thông tin
       "booking tồn tại nhưng không phải của bạn", xem ghi chú ở mục 4).
-- [ ] Cân nhắc endpoint public `GET /rooms/:id/reviews` để trang chi tiết
-      phòng hiển thị đánh giá (hiện chưa có trong yêu cầu gốc).
+- [x] Endpoint public `GET /rooms/:roomId/reviews` để trang chi tiết phòng
+      hiển thị đánh giá — đã implement (`RoomReviewsController`, xem mục 5).
+      **FE chưa gọi** — xem TODO ở mục 5 và
+      `frontend/docs/DANH_SACH_MAN_HINH.md` mục C.
 - [ ] Đối chiếu lại với `frontend/docs/CAU_TRUC_ROUTE.md` sau khi đổi
       namespace admin — đã rà, xem mục "Đối chiếu với FE" bên dưới.
 - [ ] Viết chung 1 `ResponseInterceptor` (bọc `{statusCode, message, data}`
@@ -537,6 +566,7 @@ tài liệu route FE (không đổi cấu trúc route):
 - `/admin/email-logs/:logId` → có thêm nút **"Gửi lại"** khi log ở trạng thái
   `FAILED`, gọi `POST /admin/email-logs/:id/retry` (route FE không đổi, chỉ
   thêm 1 action trong trang chi tiết).
-- Trang chi tiết phòng `/rooms/:roomId` (public) — nếu chốt dùng thêm
-  `GET /rooms/:id/reviews`, không cần thêm route FE mới, chỉ là 1 API được
-  gọi thêm trong cùng trang.
+- Trang chi tiết phòng `/rooms/:roomId` (public) — `GET /rooms/:roomId/reviews`
+  đã implement (mục 5), không cần thêm route FE mới, chỉ là 1 API được gọi
+  thêm trong cùng trang (**TODO**, page chưa gọi — xem
+  `frontend/docs/DANH_SACH_MAN_HINH.md` mục C).

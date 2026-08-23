@@ -4,7 +4,6 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
-  Index,
   JoinColumn,
   ManyToOne,
   OneToOne,
@@ -13,13 +12,9 @@ import {
 import { Booking } from '../../bookings/entities/booking.entity';
 import { Room } from '../../rooms/entities/room.entity';
 import { User } from '../../users/entities/user.entity';
-import { ReviewStatus } from '../enums/review-status.enum';
 
 @Entity('reviews')
 @Check('chk_reviews_rating', '"rating" BETWEEN 1 AND 5')
-@Check('chk_reviews_status', `"status" IN ('PUBLISHED')`)
-@Index('idx_reviews_room_id', ['roomId'])
-@Index('idx_reviews_user_id', ['userId'])
 export class Review {
   @PrimaryGeneratedColumn('increment', { type: 'bigint' })
   id!: string;
@@ -57,14 +52,6 @@ export class Review {
 
   @Column({ type: 'text', nullable: true })
   comment?: string | null;
-
-  // Hậu kiểm: tạo xong lưu PUBLISHED và hiển thị ngay, admin gỡ bằng xoá mềm.
-  @Column({
-    type: 'varchar',
-    length: 20,
-    default: ReviewStatus.PUBLISHED,
-  })
-  status!: ReviewStatus;
 
   // Reason recorded when an admin deletes an inappropriate review.
   @Column({ name: 'delete_reason', type: 'text', nullable: true })

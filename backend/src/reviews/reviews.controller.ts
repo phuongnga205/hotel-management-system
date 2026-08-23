@@ -1,70 +1,44 @@
+import { Controller, Post, Body, UseGuards } from '@nestjs/common';
 import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  UseGuards,
-  Query,
-} from '@nestjs/common';
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto } from './dto/create-review.dto';
-import { UpdateReviewDto } from './dto/update-review.dto';
 import { GetUser } from '../auth/decorators/get-user.decorator';
-import { ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { ReviewQueryDto } from './dto/review-query.dto';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { UserRole } from '../users/entities/user.entity';
-import { ReviewDeleteDto } from './dto/review-delete.dto';
 
+@ApiTags('Reviews')
 @Controller('reviews')
 export class ReviewsController {
-  constructor(private readonly reviewsService: ReviewsService) { }
+  constructor(private readonly reviewsService: ReviewsService) {}
 
-  @ApiBearerAuth("access-token")
+  @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard)
   @Post()
+  @ApiOperation({
+    summary: 'Tạo đánh giá cho phòng đã đặt',
+    description:
+      'Chỉ tạo được khi booking thuộc về chính user, đã ACCEPTED, đã thanh toán thành công và đã qua checkOutDate. Mỗi booking chỉ review được 1 lần.',
+  })
+  @ApiResponse({ status: 201, description: 'Tạo đánh giá thành công' })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Booking chưa hoàn thành (chưa ACCEPTED/chưa thanh toán/chưa checkout)',
+  })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực' })
+  @ApiResponse({
+    status: 404,
+    description: 'Không tìm thấy booking của user này',
+  })
+  @ApiResponse({ status: 409, description: 'Booking đã được review trước đó' })
   create(
-    @GetUser("id") userId: string,
-    @Body() createReviewDto: CreateReviewDto) {
+    @GetUser('id') userId: string,
+    @Body() createReviewDto: CreateReviewDto,
+  ) {
     return this.reviewsService.create(userId, createReviewDto);
   }
-
-
-  @ApiBearerAuth("access-token")
-  @UseGuards(JwtAuthGuard)
-  @Get(':roomId/room')
-  async findByRoom(
-    @Param('roomId') roomId: string,
-    @Query() query: ReviewQueryDto,
-  ) {
-    return this.reviewsService.findByRoom(roomId, query);
-  }
-
-  @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  async findAll(
-    @Query() query: ReviewQueryDto,
-  ) {
-    return this.reviewsService.findAll(query);
-  }
-
-  @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  async remove(
-    @Param('id') id: string,
-    @Body() deleteDto: ReviewDeleteDto,
-  ) {
-    return this.reviewsService.remove(
-      id,
-      deleteDto,
-    );
-  }
-
 }

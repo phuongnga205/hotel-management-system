@@ -119,11 +119,12 @@
     "AVATAR_REMOVE_SUCCESS": "Xoá ảnh đại diện thành công."
   },
   "REVIEWS": {
-    "RATING_RANGE_INVALID": "Rating phải từ 1 đến 5.",
-    "RATING_INVALID": "Bạn chỉ được review khi đã ở khách sạn.",
     "ALREADY_REVIEWED": "Ban đã review một lần rồi.",
     "BOOKING_NOT_COMPLETED" :"Yêu cầu đặt phòng chưa hoàn thành.",
-    "DELETE_REASON_REQUIRED" : "Cần lý do xóa review.",
+    "NOT_FOUND": "Không tìm thấy đánh giá.",
+    "CREATE_SUCCESS": "Tạo đánh giá thành công.",
+    "FIND_ALL_SUCCESS": "Lấy danh sách đánh giá thành công.",
+    "FIND_BY_ROOM_SUCCESS": "Lấy danh sách đánh giá của phòng thành công.",
     "DELETE_SUCCESS": "Review xóa thành công."
   }
 }

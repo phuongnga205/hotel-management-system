@@ -249,9 +249,20 @@ phải `403`, ở mọi route self-service (`GET/PATCH /bookings/:id`,
 | `userId` | `string` | — | BE tự lấy từ JWT, FE không gửi |
 | `rating` | `number` (int) | ✔ | `1`–`5` (`Min(1)`, `Max(5)`) |
 | `comment` | `string \| null` | optional | tối đa 2000 ký tự |
-| `deleteReason` | `string \| null` | — | chỉ có giá trị khi admin xoá review (`DELETE /admin/reviews/:id`), lý do **cố định theo template email**, không phải do admin nhập tuỳ ý |
+| `deleteReason` | `string \| null` | — | chỉ có giá trị khi admin xoá review (`DELETE /admin/reviews/:id`), lý do **cố định theo template email** (`ADMIN_REMOVED`), server tự gán — **BE không nhận `deleteReason` từ body**, dù FE có gửi cũng bị bỏ qua |
 | `createdAt` | `string` | — | |
 | `deletedAt` | `string \| null` | — | review **không được sửa**, chỉ tạo hoặc xoá (không có field `updatedAt`) |
+| `user` | `{ id, fullName, avatarUrl } \| undefined` | — | chỉ có khi API load kèm relation — `GET /rooms/:roomId/reviews` và `GET /admin/reviews` đều trả kèm, `POST /reviews` (response tạo mới) thì không |
+
+> 🆕 **`GET /rooms/:roomId/reviews` đã implement** — public, **không cần
+> JWT** (kể cả khách chưa đăng nhập). Trả `data.items[]` (mỗi item có kèm
+> `user`) + `total`/`page`/`limit`/`totalPages` như mọi list khác, đã lọc
+> theo đúng `roomId`. **FE chưa có trang nào gọi** — `RoomDetailPage`
+> (`/rooms/:roomId`) cần bổ sung phần hiển thị danh sách đánh giá, gọi
+> `reviewApi.listByRoom(roomId, query)` (đã có sẵn ở
+> `frontend/src/api/review.api.ts`). Xem
+> `frontend/docs/DANH_SACH_MAN_HINH.md` mục C và
+> `frontend/docs/CAU_TRUC_ROUTE.md` mục A.
 
 ## 9. `email_logs` (chỉ Admin xem, qua `GET /admin/email-logs*`)
 

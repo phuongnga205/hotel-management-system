@@ -1,5 +1,4 @@
 import { Review } from '../entities/review.entity';
-import { ReviewStatus } from '../enums/review-status.enum';
 
 export class ReviewAuthorDto {
   id!: string;
@@ -14,7 +13,6 @@ export class ReviewResponseDto {
   userId!: string;
   rating!: number;
   comment!: string | null;
-  status!: ReviewStatus;
   createdAt?: Date;
   user?: ReviewAuthorDto;
 
@@ -25,7 +23,6 @@ export class ReviewResponseDto {
     this.userId = review.userId;
     this.rating = review.rating;
     this.comment = review.comment ?? null;
-    this.status = review.status;
     this.createdAt = review.createdAt;
     if (review.user) {
       this.user = {
