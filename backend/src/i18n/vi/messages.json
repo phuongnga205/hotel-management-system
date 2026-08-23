@@ -1,5 +1,9 @@
 {
   "HELLO": "Xin chào",
+  "SEEDER": {
+    "DISABLED": "Chức năng tạo dữ liệu mẫu đang bị tắt. Chỉ bật chức năng này cho cơ sở dữ liệu local hoặc test.",
+    "PRODUCTION": "Không được phép tạo dữ liệu mẫu trên môi trường production."
+  },
   "USER_NOT_FOUND": "Không tìm thấy người dùng trong hệ thống.",
   "ROOM": {
     "NOT_FOUND": "Không tìm thấy phòng.",
