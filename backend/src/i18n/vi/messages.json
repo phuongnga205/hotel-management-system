@@ -64,7 +64,9 @@
     "CANNOT_REJECT": "Yêu cầu đặt phòng không thể từ chối.",
     "REJECT_SUCCESS": "Đã từ chối yêu cầu đặt phòng thành công.",
     "CANNOT_PAY": "Yêu cầu đặt phòng không thể thanh toán.",
-    "PAY_SUCCESS": "Thanh toán thành công."
+    "PAY_SUCCESS": "Thanh toán thành công.",
+    "HOLD_EXPIRED": "Thời gian giữ chỗ của booking này đã hết hạn nên không thể cập nhật, thanh toán hoặc duyệt.",
+    "NO_FIELDS_TO_UPDATE": "Phải cung cấp ít nhất 1 trường (checkInDate, checkOutDate hoặc note) để cập nhật."
   },
   "AUTH": {
     "EMAIL_EXISTED": "Email này đã được đăng ký trong hệ thống.",

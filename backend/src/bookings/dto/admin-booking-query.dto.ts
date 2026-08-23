@@ -1,9 +1,20 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
 import { BookingStatus } from '../enums/booking-status.enum';
-import { BOOKING_PAGINATION } from '../constants/booking.constants';
+import {
+  BOOKING_PAGINATION,
+  BOOKING_SEARCH_MAX_LENGTH,
+} from '../constants/booking.constants';
 
 // Dùng cho GET /admin/bookings
 export class AdminBookingQueryDto {
@@ -47,5 +58,8 @@ export class AdminBookingQueryDto {
   })
   @IsOptional()
   @IsString({ message: i18nValidationMessage('messages.VALIDATION.IS_STRING') })
+  @MaxLength(BOOKING_SEARCH_MAX_LENGTH, {
+    message: i18nValidationMessage('messages.VALIDATION.MAX_LENGTH'),
+  })
   search?: string;
 }

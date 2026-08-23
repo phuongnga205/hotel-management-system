@@ -11,6 +11,7 @@ export const ENVIRONMENT_KEYS = {
   CLOUDINARY_CLOUD_NAME: 'CLOUDINARY_CLOUD_NAME',
   CLOUDINARY_API_KEY: 'CLOUDINARY_API_KEY',
   CLOUDINARY_API_SECRET: 'CLOUDINARY_API_SECRET',
+  HOTEL_TIMEZONE: 'HOTEL_TIMEZONE',
 } as const;
 
 export enum NodeEnvironment {
@@ -22,6 +23,10 @@ export enum NodeEnvironment {
 export const DEFAULT_SERVER_PORT = 3000;
 
 export const DEFAULT_AVATAR_MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+
+// Múi giờ dùng để tính "hôm nay" khi validate ngày check-in booking (VD:
+// chặn đặt phòng cho ngày quá khứ)
+export const DEFAULT_HOTEL_TIMEZONE = 'Asia/Ho_Chi_Minh';
 
 // public_id cố định theo userId (thư mục "avatars" trên Cloudinary) — cho
 // phép upload sau ghi đè (overwrite:true) và xoá mà không cần lưu riêng

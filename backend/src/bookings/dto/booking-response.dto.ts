@@ -44,8 +44,8 @@ export class BookingResponseDto {
   status!: BookingStatus;
   checkInDate!: string;
   checkOutDate!: string;
-  pricePerNight!: number;
-  totalPrice!: number;
+  pricePerNight!: string;
+  totalPrice!: string;
   note!: string | null;
   cancelReason!: string | null;
   createdAt?: Date;
@@ -61,8 +61,8 @@ export class BookingResponseDto {
     this.status = booking.status;
     this.checkInDate = booking.checkInDate;
     this.checkOutDate = booking.checkOutDate;
-    this.pricePerNight = booking.pricePerNight;
-    this.totalPrice = booking.totalPrice;
+    this.pricePerNight = booking.pricePerNight.toString();
+    this.totalPrice = booking.totalPrice.toString();
     this.note = booking.note ?? null;
     this.cancelReason = booking.cancelReason ?? null;
     this.createdAt = booking.createdAt;

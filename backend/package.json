@@ -25,6 +25,7 @@
     "migration:run": "ts-node -r tsconfig-paths/register src/migration-runner.ts",
     "migration:revert": "ts-node -r tsconfig-paths/register -e \"(async()=>{const ds=(await import('./src/data-source')).default;await ds.initialize();await ds.undoLastMigration();await ds.destroy();})()\"",
     "db:check": "ts-node -r tsconfig-paths/register -r dotenv/config src/db-check.ts",
+    "db:schema-check": "ts-node -r tsconfig-paths/register -r dotenv/config src/db-schema-check.ts",
     "seed:rooms": "ts-node -r tsconfig-paths/register src/seeder.ts",
     "seed:rooms:refresh": "ts-node -r tsconfig-paths/register src/seeder.ts --refresh"
   },
@@ -45,6 +46,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "cloudinary": "^2.10.1",
+    "decimal.js": "^10.6.0",
     "exceljs": "^4.4.0",
     "ioredis": "^5.11.1",
     "nestjs-i18n": "^10.8.5",

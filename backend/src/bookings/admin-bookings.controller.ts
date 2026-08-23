@@ -104,13 +104,14 @@ export class AdminBookingsController {
     example: '1',
   })
   @ApiResponse({ status: 200, description: 'Chấp nhận thành công' })
-  @ApiResponse({
-    status: 400,
-    description: 'Booking không ở trạng thái PENDING',
-  })
   @ApiResponse({ status: 401, description: 'Chưa xác thực' })
   @ApiResponse({ status: 403, description: 'Không có quyền' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy booking' })
+  @ApiResponse({
+    status: 409,
+    description:
+      'Booking không ở trạng thái PENDING, hoặc hold giữ chỗ đã hết hạn',
+  })
   accept(@Param() params: EntityIdParamDto) {
     return this.bookingsService.accept(params.id);
   }
@@ -124,13 +125,14 @@ export class AdminBookingsController {
     example: '1',
   })
   @ApiResponse({ status: 200, description: 'Từ chối thành công' })
-  @ApiResponse({
-    status: 400,
-    description: 'Booking không ở trạng thái PENDING',
-  })
   @ApiResponse({ status: 401, description: 'Chưa xác thực' })
   @ApiResponse({ status: 403, description: 'Không có quyền' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy booking' })
+  @ApiResponse({
+    status: 409,
+    description:
+      'Booking không ở trạng thái PENDING, hoặc hold giữ chỗ đã hết hạn',
+  })
   reject(@Param() params: EntityIdParamDto, @Body() dto: RejectBookingDto) {
     return this.bookingsService.reject(params.id, dto);
   }

@@ -124,12 +124,12 @@ export class BookingsController {
     example: '1',
   })
   @ApiResponse({ status: 200, description: 'Huỷ thành công' })
-  @ApiResponse({
-    status: 400,
-    description: 'Booking không ở trạng thái PENDING nên không thể huỷ',
-  })
   @ApiResponse({ status: 401, description: 'Chưa xác thực' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy booking' })
+  @ApiResponse({
+    status: 409,
+    description: 'Booking không ở trạng thái PENDING nên không thể huỷ',
+  })
   cancelBooking(
     @GetUser('id') userId: string,
     @Param() params: EntityIdParamDto,
@@ -154,13 +154,14 @@ export class BookingsController {
   @ApiResponse({
     status: 400,
     description:
-      'Booking không ở trạng thái PENDING, hoặc ngày không hợp lệ, hoặc phòng không còn ACTIVE',
+      'Payload rỗng (không có field nào để cập nhật), ngày không hợp lệ (sai định dạng YYYY-MM-DD, checkIn ở quá khứ, checkOut <= checkIn), hoặc phòng không còn ACTIVE',
   })
   @ApiResponse({ status: 401, description: 'Chưa xác thực' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy booking' })
   @ApiResponse({
     status: 409,
-    description: 'Ngày mới trùng với 1 booking khác còn hiệu lực',
+    description:
+      'Booking không ở trạng thái PENDING, hold giữ chỗ đã hết hạn, hoặc ngày mới trùng với 1 booking khác còn hiệu lực',
   })
   update(
     @GetUser('id') userId: string,
@@ -190,7 +191,7 @@ export class BookingsController {
   @ApiResponse({
     status: 409,
     description:
-      'Booking không ở trạng thái PENDING (đã accepted/rejected/cancelled/expired) nên không thể thanh toán',
+      'Booking không ở trạng thái PENDING (đã accepted/rejected/cancelled/expired), hoặc hold giữ chỗ đã hết hạn, nên không thể thanh toán',
   })
   pay(
     @GetUser('id') userId: string,

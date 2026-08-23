@@ -64,7 +64,9 @@
     "CANNOT_REJECT": "Booking request cannot be rejected.",
     "REJECT_SUCCESS": "Booking request rejected successfully.",
     "CANNOT_PAY": "Booking request cannot be paid.",
-    "PAY_SUCCESS": "Payment completed successfully."
+    "PAY_SUCCESS": "Payment completed successfully.",
+    "HOLD_EXPIRED": "This booking's hold has expired and can no longer be updated, paid, or approved.",
+    "NO_FIELDS_TO_UPDATE": "At least one field (checkInDate, checkOutDate, or note) must be provided."
   },
   "AUTH": {
     "EMAIL_EXISTED": "This email is already registered.",

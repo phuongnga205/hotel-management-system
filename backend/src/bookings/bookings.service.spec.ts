@@ -5,6 +5,8 @@ import {
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { ConfigService } from '@nestjs/config';
+import { Decimal } from 'decimal.js';
 import { I18nService } from 'nestjs-i18n';
 import { DataSource, QueryFailedError } from 'typeorm';
 import { Room } from '../rooms/entities/room.entity';
@@ -22,6 +24,8 @@ function chainableQueryBuilder(overrides: Record<string, unknown> = {}) {
     where: jest.fn().mockReturnThis(),
     andWhere: jest.fn().mockReturnThis(),
     orderBy: jest.fn().mockReturnThis(),
+    addOrderBy: jest.fn().mockReturnThis(),
+    distinctOn: jest.fn().mockReturnThis(),
     leftJoinAndSelect: jest.fn().mockReturnThis(),
     offset: jest.fn().mockReturnThis(),
     limit: jest.fn().mockReturnThis(),
@@ -40,10 +44,18 @@ function chainableQueryBuilder(overrides: Record<string, unknown> = {}) {
 
 describe('BookingsService', () => {
   let service: BookingsService;
+  // Repository "top-level" (@InjectRepository) — chỉ còn dùng cho các
+  // đường đọc-only (findHistory/findAllForAdmin/cron), vì create/update/
+  // cancel/pay/accept/reject giờ luôn thao tác qua `manager` của transaction.
   const findOneBooking = jest.fn();
-  const saveBooking = jest.fn();
-  const findOneRoom = jest.fn();
-  const createQueryBuilder = jest.fn();
+  const createQueryBuilder = jest.fn<
+    ReturnType<typeof chainableQueryBuilder>,
+    []
+  >();
+  const paymentQueryBuilder = jest.fn<
+    ReturnType<typeof chainableQueryBuilder>,
+    []
+  >();
 
   const paymentManagerRepo = {
     create: jest.fn((payload: Partial<Payment>) => payload),
@@ -51,20 +63,33 @@ describe('BookingsService', () => {
       Promise.resolve({ id: 'p1', ...payload }),
     ),
   };
+  const roomManagerRepo = {
+    findOne: jest.fn(),
+  };
   const bookingManagerRepo = {
     findOne: jest.fn(),
     save: jest.fn((payload: Partial<Booking>) => Promise.resolve(payload)),
+    update: jest.fn().mockResolvedValue({ affected: 1 }),
+    createQueryBuilder: jest.fn<ReturnType<typeof chainableQueryBuilder>, []>(),
   };
+  const managerCreateQueryBuilder = jest.fn<
+    ReturnType<typeof chainableQueryBuilder>,
+    []
+  >();
+
+  const manager = {
+    getRepository: (entity: unknown) => {
+      if (entity === Payment) return paymentManagerRepo;
+      if (entity === Room) return roomManagerRepo;
+      return bookingManagerRepo;
+    },
+    createQueryBuilder: managerCreateQueryBuilder,
+  };
+
   const dataSource = {
-    transaction: jest.fn((cb: (manager: unknown) => unknown) =>
-      cb({
-        getRepository: (entity: unknown) =>
-          entity === Payment ? paymentManagerRepo : bookingManagerRepo,
-      }),
-    ),
+    transaction: jest.fn((cb: (manager: unknown) => unknown) => cb(manager)),
     getRepository: jest.fn(() => ({
-      createQueryBuilder: () =>
-        chainableQueryBuilder({ getMany: jest.fn().mockResolvedValue([]) }),
+      createQueryBuilder: paymentQueryBuilder,
     })),
   };
 
@@ -76,7 +101,7 @@ describe('BookingsService', () => {
     description: null,
     viewType: null,
     capacity: 2,
-    pricePerNight: 1000000,
+    pricePerNight: new Decimal(1000000),
     status: RoomStatus.ACTIVE,
   };
 
@@ -92,6 +117,12 @@ describe('BookingsService', () => {
     jest.useFakeTimers();
     jest.setSystemTime(new Date('2026-08-21T00:00:00+07:00'));
     createQueryBuilder.mockReturnValue(chainableQueryBuilder());
+    paymentQueryBuilder.mockReturnValue(chainableQueryBuilder());
+    bookingManagerRepo.createQueryBuilder.mockImplementation(() =>
+      createQueryBuilder(),
+    );
+    managerCreateQueryBuilder.mockImplementation(() => createQueryBuilder());
+    roomManagerRepo.findOne.mockResolvedValue(room);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -100,20 +131,21 @@ describe('BookingsService', () => {
           provide: getRepositoryToken(Booking),
           useValue: {
             findOne: findOneBooking,
-            save: saveBooking,
             createQueryBuilder,
           },
         },
         {
           provide: getRepositoryToken(Room),
-          useValue: {
-            findOne: findOneRoom,
-          },
+          useValue: roomManagerRepo,
         },
         { provide: DataSource, useValue: dataSource },
         {
           provide: I18nService,
           useValue: { t: (key: string) => key },
+        },
+        {
+          provide: ConfigService,
+          useValue: { get: () => undefined },
         },
       ],
     }).compile();
@@ -129,10 +161,9 @@ describe('BookingsService', () => {
     expect(service).toBeDefined();
   });
 
-  it('creates a booking, calculates total price and sets a 10-minute hold', async () => {
-    findOneRoom.mockResolvedValue(room);
-    let savedPayload: Booking | undefined;
-    saveBooking.mockImplementation((payload: Booking) => {
+  it('creates a booking, calculates total price (Decimal) and sets a 10-minute hold', async () => {
+    let savedPayload: Partial<Booking> | undefined;
+    bookingManagerRepo.save.mockImplementation((payload: Partial<Booking>) => {
       savedPayload = payload;
       return Promise.resolve({
         ...payload,
@@ -147,19 +178,19 @@ describe('BookingsService', () => {
       statusCode: 201,
       data: {
         id: '1',
-        totalPrice: 3000000,
-        pricePerNight: 1000000,
+        totalPrice: '3000000',
+        pricePerNight: '1000000',
         room: { id: '5', name: 'Deluxe Room', roomNumber: '101' },
       },
     });
+    expect(savedPayload?.totalPrice).toBeInstanceOf(Decimal);
     expect(savedPayload?.holdExpiresAt).toEqual(
       new Date(Date.now() + BOOKING_HOLD_MINUTES * 60 * 1000),
     );
   });
 
   it('maps an exclusion constraint to ConflictException', async () => {
-    findOneRoom.mockResolvedValue(room);
-    saveBooking.mockRejectedValue(
+    bookingManagerRepo.save.mockRejectedValue(
       new QueryFailedError('INSERT', [], { code: '23P01' } as unknown as Error),
     );
 
@@ -169,7 +200,7 @@ describe('BookingsService', () => {
   });
 
   it('rejects booking a room that is not ACTIVE', async () => {
-    findOneRoom.mockResolvedValue({
+    roomManagerRepo.findOne.mockResolvedValue({
       ...room,
       status: RoomStatus.MAINTENANCE,
     });
@@ -177,11 +208,11 @@ describe('BookingsService', () => {
     await expect(service.create(createDto, '10')).rejects.toBeInstanceOf(
       BadRequestException,
     );
-    expect(saveBooking).not.toHaveBeenCalled();
+    expect(bookingManagerRepo.save).not.toHaveBeenCalled();
   });
 
   it('throws when the room does not exist', async () => {
-    findOneRoom.mockResolvedValue(null);
+    roomManagerRepo.findOne.mockResolvedValue(null);
 
     await expect(service.create(createDto, '10')).rejects.toBeInstanceOf(
       NotFoundException,
@@ -189,7 +220,6 @@ describe('BookingsService', () => {
   });
 
   it('rejects create when QueryBuilder finds an overlapping booking', async () => {
-    findOneRoom.mockResolvedValue(room);
     const qb = chainableQueryBuilder({
       getOne: jest.fn().mockResolvedValue({ id: '99' }),
     });
@@ -198,66 +228,123 @@ describe('BookingsService', () => {
     await expect(service.create(createDto, '10')).rejects.toBeInstanceOf(
       ConflictException,
     );
-    expect(saveBooking).not.toHaveBeenCalled();
+    expect(bookingManagerRepo.save).not.toHaveBeenCalled();
     expect(qb.andWhere).not.toHaveBeenCalledWith(
       'booking.id != :excludeBookingId',
       expect.anything(),
     );
   });
 
-  it('rejects update when dates overlap another booking (excluding itself)', async () => {
-    bookingManagerRepo.findOne.mockResolvedValue({
+  // Luật 2: service không được coi 1 PENDING đã hết hold là "trống" trong
+  // khi vẫn để nguyên status PENDING trong DB — nếu không, insert kế tiếp
+  // sẽ bị EXCLUDE constraint (chỉ biết status) từ chối bằng
+  // exclusion_violation dù assertNoOverlappingBooking() đã cho qua.
+  it('expires stale PENDING holds for the room before checking overlap/inserting', async () => {
+    bookingManagerRepo.save.mockResolvedValue({
       id: '1',
-      userId: '10',
-      roomId: '5',
-      checkInDate: '2026-09-01',
-      checkOutDate: '2026-09-04',
-      pricePerNight: 1000000,
-      totalPrice: 3000000,
       status: BookingStatus.PENDING,
+      pricePerNight: new Decimal(1000000),
+      totalPrice: new Decimal(3000000),
     });
-    findOneRoom.mockResolvedValue(room);
-    const qb = chainableQueryBuilder({
-      getOne: jest.fn().mockResolvedValue({ id: '2' }),
-    });
-    createQueryBuilder.mockReturnValue(qb);
 
-    await expect(
-      service.update('1', '10', {
-        checkInDate: '2026-09-02',
-        checkOutDate: '2026-09-05',
-      }),
-    ).rejects.toBeInstanceOf(ConflictException);
-    expect(bookingManagerRepo.save).not.toHaveBeenCalled();
-    expect(qb.andWhere).toHaveBeenCalledWith(
-      'booking.id != :excludeBookingId',
-      { excludeBookingId: '1' },
-    );
+    await service.create(createDto, '10');
+
+    expect(managerCreateQueryBuilder).toHaveBeenCalled();
+    const expireQb = managerCreateQueryBuilder.mock.results[0]
+      .value as ReturnType<typeof chainableQueryBuilder>;
+    expect(expireQb.update).toHaveBeenCalled();
+    expect(expireQb.set).toHaveBeenCalledWith({
+      status: BookingStatus.EXPIRED,
+      holdExpiresAt: null,
+    });
+    expect(expireQb.execute).toHaveBeenCalled();
   });
 
-  it('applies note when updating a pending booking', async () => {
-    bookingManagerRepo.findOne.mockResolvedValue({
-      id: '1',
-      userId: '10',
-      roomId: '5',
-      checkInDate: '2026-09-01',
-      checkOutDate: '2026-09-04',
-      pricePerNight: 1000000,
-      totalPrice: 3000000,
-      status: BookingStatus.PENDING,
-      note: 'old note',
+  describe('update()', () => {
+    it('rejects an empty payload without touching the DB', async () => {
+      await expect(service.update('1', '10', {})).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+      expect(bookingManagerRepo.findOne).not.toHaveBeenCalled();
     });
-    findOneRoom.mockResolvedValue(room);
 
-    await expect(
-      service.update('1', '10', { note: 'new note' }),
-    ).resolves.toEqual({
-      statusCode: 200,
-      message: 'messages.BOOKING.UPDATED_SUCCESS',
+    it('rejects update when dates overlap another booking (excluding itself)', async () => {
+      bookingManagerRepo.findOne.mockResolvedValue({
+        id: '1',
+        userId: '10',
+        roomId: '5',
+        checkInDate: '2026-09-01',
+        checkOutDate: '2026-09-04',
+        pricePerNight: new Decimal(1000000),
+        totalPrice: new Decimal(3000000),
+        status: BookingStatus.PENDING,
+        holdExpiresAt: new Date(Date.now() + 5 * 60 * 1000),
+      });
+      const qb = chainableQueryBuilder({
+        getOne: jest.fn().mockResolvedValue({ id: '2' }),
+      });
+      createQueryBuilder.mockReturnValue(qb);
+
+      await expect(
+        service.update('1', '10', {
+          checkInDate: '2026-09-02',
+          checkOutDate: '2026-09-05',
+        }),
+      ).rejects.toBeInstanceOf(ConflictException);
+      expect(bookingManagerRepo.save).not.toHaveBeenCalled();
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        'booking.id != :excludeBookingId',
+        { excludeBookingId: '1' },
+      );
     });
-    expect(bookingManagerRepo.save).toHaveBeenCalledWith(
-      expect.objectContaining({ note: 'new note' }),
-    );
+
+    it('applies note when updating a pending booking', async () => {
+      bookingManagerRepo.findOne.mockResolvedValue({
+        id: '1',
+        userId: '10',
+        roomId: '5',
+        checkInDate: '2026-09-01',
+        checkOutDate: '2026-09-04',
+        pricePerNight: new Decimal(1000000),
+        totalPrice: new Decimal(3000000),
+        status: BookingStatus.PENDING,
+        holdExpiresAt: new Date(Date.now() + 5 * 60 * 1000),
+        note: 'old note',
+      });
+
+      await expect(
+        service.update('1', '10', { note: 'new note' }),
+      ).resolves.toEqual({
+        statusCode: 200,
+        message: 'messages.BOOKING.UPDATED_SUCCESS',
+      });
+      expect(bookingManagerRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ note: 'new note' }),
+      );
+    });
+
+    // Luật 1: 1 PENDING đã hết hold không được phép update nữa dù cron dọn
+    // nền (expireStaleHolds()) chưa kịp quét tới.
+    it('rejects updating a PENDING booking whose hold has expired, and self-heals its status', async () => {
+      bookingManagerRepo.findOne.mockResolvedValue({
+        id: '1',
+        userId: '10',
+        roomId: '5',
+        checkInDate: '2026-09-01',
+        checkOutDate: '2026-09-04',
+        status: BookingStatus.PENDING,
+        holdExpiresAt: new Date(Date.now() - 1000),
+      });
+
+      await expect(
+        service.update('1', '10', { note: 'new note' }),
+      ).rejects.toBeInstanceOf(ConflictException);
+      expect(bookingManagerRepo.update).toHaveBeenCalledWith('1', {
+        status: BookingStatus.EXPIRED,
+        holdExpiresAt: null,
+      });
+      expect(bookingManagerRepo.save).not.toHaveBeenCalled();
+    });
   });
 
   describe('pay()', () => {
@@ -265,8 +352,9 @@ describe('BookingsService', () => {
       bookingManagerRepo.findOne.mockResolvedValue({
         id: '1',
         userId: '10',
-        totalPrice: 3000000,
+        totalPrice: new Decimal(3000000),
         status: BookingStatus.PENDING,
+        holdExpiresAt: new Date(Date.now() + 5 * 60 * 1000),
       });
 
       const result = await service.pay('1', '10', {
@@ -297,7 +385,7 @@ describe('BookingsService', () => {
       bookingManagerRepo.findOne.mockResolvedValue({
         id: '1',
         userId: '10',
-        totalPrice: 3000000,
+        totalPrice: new Decimal(3000000),
         status: BookingStatus.ACCEPTED,
       });
 
@@ -305,6 +393,25 @@ describe('BookingsService', () => {
         service.pay('1', '10', { method: PaymentMethod.CASH }),
       ).rejects.toBeInstanceOf(ConflictException);
       expect(paymentManagerRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('rejects paying a PENDING booking whose hold has expired', async () => {
+      bookingManagerRepo.findOne.mockResolvedValue({
+        id: '1',
+        userId: '10',
+        totalPrice: new Decimal(3000000),
+        status: BookingStatus.PENDING,
+        holdExpiresAt: new Date(Date.now() - 1000),
+      });
+
+      await expect(
+        service.pay('1', '10', { method: PaymentMethod.CASH }),
+      ).rejects.toBeInstanceOf(ConflictException);
+      expect(paymentManagerRepo.save).not.toHaveBeenCalled();
+      expect(bookingManagerRepo.update).toHaveBeenCalledWith('1', {
+        status: BookingStatus.EXPIRED,
+        holdExpiresAt: null,
+      });
     });
 
     it('throws NotFoundException when the booking does not belong to the user', async () => {
@@ -321,7 +428,7 @@ describe('BookingsService', () => {
       bookingManagerRepo.findOne.mockResolvedValue({
         id: '1',
         status: BookingStatus.PENDING,
-        holdExpiresAt: new Date(),
+        holdExpiresAt: new Date(Date.now() + 5 * 60 * 1000),
       });
 
       await expect(service.accept('1')).resolves.toEqual({
@@ -350,14 +457,28 @@ describe('BookingsService', () => {
       });
 
       await expect(service.accept('1')).rejects.toBeInstanceOf(
-        BadRequestException,
+        ConflictException,
       );
+    });
+
+    it('rejects accepting a PENDING booking whose hold has expired', async () => {
+      bookingManagerRepo.findOne.mockResolvedValue({
+        id: '1',
+        status: BookingStatus.PENDING,
+        holdExpiresAt: new Date(Date.now() - 1000),
+      });
+
+      await expect(service.accept('1')).rejects.toBeInstanceOf(
+        ConflictException,
+      );
+      expect(bookingManagerRepo.save).not.toHaveBeenCalled();
     });
 
     it('rejects a PENDING booking with a reason', async () => {
       bookingManagerRepo.findOne.mockResolvedValue({
         id: '1',
         status: BookingStatus.PENDING,
+        holdExpiresAt: new Date(Date.now() + 5 * 60 * 1000),
       });
 
       await expect(

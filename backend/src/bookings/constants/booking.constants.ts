@@ -15,3 +15,9 @@ export const BOOKING_PAGINATION = {
   DEFAULT_LIMIT: 10,
   MAX_LIMIT: 100,
 } as const;
+
+// Độ dài tối đa cho các trường text tự do trong DTO — tách khỏi magic
+// number rải rác để có 1 chỗ chỉnh sửa duy nhất.
+export const BOOKING_NOTE_MAX_LENGTH = 1000;
+export const BOOKING_REASON_MAX_LENGTH = 500;
+export const BOOKING_SEARCH_MAX_LENGTH = 100;
