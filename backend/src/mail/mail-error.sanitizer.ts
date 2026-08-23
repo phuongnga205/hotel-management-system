@@ -1,20 +1,23 @@
 import { Injectable } from '@nestjs/common';
+import { MAIL_ERROR_CODE } from './errors/mail-delivery.error';
 
 @Injectable()
 export class MailErrorSanitizer {
   toPublicCode(error: unknown): string {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = (
+      error instanceof Error ? error.message : String(error)
+    ).toLowerCase();
 
-    if (message.includes('Auth')) {
-      return 'SMTP_AUTH_FAILED';
+    if (message.includes('auth')) {
+      return MAIL_ERROR_CODE.SMTP_AUTH_FAILED;
     }
-    if (message.includes('Timeout') || message.includes('ETIMEDOUT')) {
-      return 'SMTP_TIMEOUT';
+    if (message.includes('timeout') || message.includes('etimedout')) {
+      return MAIL_ERROR_CODE.SMTP_TIMEOUT;
     }
-    if (message.includes('Recipient') || message.includes('rejected')) {
-      return 'SMTP_RECIPIENT_REJECTED';
+    if (message.includes('recipient') || message.includes('rejected')) {
+      return MAIL_ERROR_CODE.SMTP_RECIPIENT_REJECTED;
     }
 
-    return 'SMTP_DELIVERY_FAILED';
+    return MAIL_ERROR_CODE.SMTP_DELIVERY_FAILED;
   }
 }

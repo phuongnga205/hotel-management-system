@@ -53,6 +53,7 @@ export class MailService {
 
     const outbox = manager.create(MailOutbox, {
       emailLogId: savedEmailLog.id,
+      retryGeneration: savedEmailLog.retryGeneration,
       status: OutboxStatus.PENDING,
       payload: {
         to: dto.to,
@@ -74,6 +75,7 @@ export class MailService {
       MailOutbox,
       manager.create(MailOutbox, {
         emailLogId: emailLog.id,
+        retryGeneration: emailLog.retryGeneration,
         status: OutboxStatus.PENDING,
         payload: {
           to: emailLog.recipient,
@@ -160,20 +162,26 @@ export class MailService {
   }
 
   async retryEmailLog(id: string): Promise<{ message: string }> {
-    const emailLog = await this.emailLogRepository.findOneBy({ id });
-    if (!emailLog) {
-      throw new NotFoundException(
-        this.i18n.t('messages.MAIL.LOG_NOT_FOUND', { args: { id } }),
-      );
-    }
-
-    if (emailLog.status !== EmailStatus.FAILED) {
-      throw new ConflictException(
-        this.i18n.t('messages.MAIL.RETRY_INVALID_STATUS'),
-      );
-    }
-
     await this.dataSource.transaction(async (manager) => {
+      const emailLog = await manager
+        .getRepository(EmailLog)
+        .createQueryBuilder('emailLog')
+        .setLock('pessimistic_write')
+        .where('emailLog.id = :id', { id })
+        .getOne();
+
+      if (!emailLog) {
+        throw new NotFoundException(
+          this.i18n.t('messages.MAIL.LOG_NOT_FOUND', { args: { id } }),
+        );
+      }
+
+      if (emailLog.status !== EmailStatus.FAILED) {
+        throw new ConflictException(
+          this.i18n.t('messages.MAIL.RETRY_INVALID_STATUS'),
+        );
+      }
+
       emailLog.status = EmailStatus.PENDING;
       emailLog.lastError = null;
       emailLog.retryGeneration += 1;

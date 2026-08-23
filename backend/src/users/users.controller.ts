@@ -1,4 +1,3 @@
-/* sunlint-disable S037, S044, S028 */
 import {
   Body,
   Controller,

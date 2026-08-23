@@ -19,10 +19,21 @@ function assertSafeE2eEnvironment(): void {
     throw new Error('E2E tests require NODE_ENV=test');
   }
 
-  const databaseUrl = process.env.DATABASE_URL || '';
-  if (!databaseUrl.trim()) {
-    throw new Error('E2E tests require DATABASE_URL to be configured');
+  const rawUrl = process.env.E2E_DATABASE_URL;
+  if (!rawUrl) {
+    throw new Error('E2E_DATABASE_URL is required');
   }
+
+  if (
+    process.env.E2E_DATABASE_DESTRUCTIVE_ACK !== 'hotel-management-e2e-only'
+  ) {
+    throw new Error(
+      'E2E_DATABASE_DESTRUCTIVE_ACK=hotel-management-e2e-only is required to ensure database safety',
+    );
+  }
+
+  // Force TypeORM to use the ephemeral E2E database
+  process.env.DATABASE_URL = rawUrl;
 }
 
 describe('Admin Email Logs (e2e)', () => {
@@ -91,15 +102,6 @@ describe('Admin Email Logs (e2e)', () => {
   });
 
   afterAll(async () => {
-    if (testEmailLog) {
-      await emailLogRepository?.delete({ id: testEmailLog.id });
-    }
-    if (testAdmin) {
-      await userRepository?.delete({ id: testAdmin.id });
-    }
-    if (testUser) {
-      await userRepository?.delete({ id: testUser.id });
-    }
     await app?.close();
   });
 

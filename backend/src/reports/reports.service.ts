@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
-import { NotFoundException } from '@nestjs/common';
+import { Decimal } from 'decimal.js';
 import { CronJob } from 'cron';
 import { MailService } from '../mail/mail.service';
 import {
@@ -21,7 +21,11 @@ import { Payment } from '../payments/entities/payment.entity';
 import { PaymentStatus } from '../payments/enums/payment-status.enum';
 import { Booking } from '../bookings/entities/booking.entity';
 import { getMonthlyReportHtml } from '../mail/templates/monthly-report.template';
-import { ENVIRONMENT_KEYS } from '../config/environment.constants';
+import {
+  ENVIRONMENT_KEYS,
+  DEFAULT_REPORT_CRON,
+} from '../config/environment.constants';
+import { ReportEmailLogNotFoundError } from './errors/report-email-log-not-found.error';
 import { REPORT_CLOCK } from './report-clock.provider';
 import type { ReportClock } from './report-clock.provider';
 
@@ -55,23 +59,37 @@ export class ReportsService implements OnModuleInit {
     try {
       const cronExpression = this.configService.get<string>(
         ENVIRONMENT_KEYS.REPORT_CRON,
-        '5 0 1 * *',
+        DEFAULT_REPORT_CRON,
       );
 
-      const job = new CronJob(cronExpression, () => {
-        this.generateMonthlyReport().catch((err: unknown) => {
-          this.logger.error(
-            'Error generating monthly report',
-            err instanceof Error ? err.stack : String(err),
-          );
-        });
-      });
+      const timeZone = this.configService.getOrThrow<string>(
+        ENVIRONMENT_KEYS.REPORT_TIME_ZONE,
+      );
+
+      const job = new CronJob(
+        cronExpression,
+        () => {
+          this.generateMonthlyReport().catch((err: unknown) => {
+            this.logger.error(
+              'Error generating monthly report',
+              err instanceof Error ? err.stack : String(err),
+            );
+          });
+        },
+        null,
+        false,
+        timeZone,
+      );
 
       this.schedulerRegistry.addCronJob(MONTHLY_REPORT_JOB_NAME, job);
       job.start();
       this.logger.log(`Scheduled monthly report with cron: ${cronExpression}`);
     } catch (error: unknown) {
-      this.logger.error('Failed to initialize monthly report schedule', error);
+      this.logger.error(
+        'Failed to initialize monthly report schedule',
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw error;
     }
   }
 
@@ -116,7 +134,7 @@ export class ReportsService implements OnModuleInit {
       const revenueSummary = await this.dataSource
         .createQueryBuilder(Payment, 'payment')
         .select('COUNT(DISTINCT payment.bookingId)', 'paidBookingsCount')
-        .addSelect('SUM(payment.amount)', 'totalRevenue')
+        .addSelect('COALESCE(SUM(payment.amount), 0)', 'totalRevenue')
         .where('payment.status = :status', { status: PaymentStatus.SUCCESS })
         .andWhere('payment.paidAt >= :startDate', { startDate })
         .andWhere('payment.paidAt < :nextMonth', { nextMonth })
@@ -126,7 +144,8 @@ export class ReportsService implements OnModuleInit {
         revenueSummary?.paidBookingsCount || '0',
         10,
       );
-      const totalRevenue = parseFloat(revenueSummary?.totalRevenue || '0');
+      const totalRevenueStr = revenueSummary?.totalRevenue || '0';
+      const totalRevenue = new Decimal(totalRevenueStr).toNumber();
 
       const title = this.i18n.t('messages.REPORTS.MONTHLY.TITLE', {
         args: { reportMonth },
@@ -145,7 +164,7 @@ export class ReportsService implements OnModuleInit {
       });
 
       let offset = 0;
-      let totalQueued = 0;
+      let totalDispatched = 0;
 
       while (true) {
         const admins = await this.userRepository
@@ -222,9 +241,7 @@ export class ReportsService implements OnModuleInit {
                     where: { id: dispatch.emailLogId },
                   });
                   if (!existingEmailLog) {
-                    throw new NotFoundException(
-                      this.i18n.t('messages.REPORTS.EMAIL_LOG_NOT_FOUND'),
-                    );
+                    throw new ReportEmailLogNotFoundError(dispatch.emailLogId);
                   }
                   existingEmailLog.status = EmailStatus.PENDING;
                   existingEmailLog.lastError = null;
@@ -252,7 +269,7 @@ export class ReportsService implements OnModuleInit {
                   MonthlyReportDispatch,
                   { reportMonth, recipientId: admin.id },
                   {
-                    status: ReportDispatchStatus.QUEUED,
+                    status: ReportDispatchStatus.PENDING,
                     emailLogId: emailLog.id,
                   },
                 );
@@ -262,7 +279,7 @@ export class ReportsService implements OnModuleInit {
             );
 
             if (emailLog) {
-              totalQueued++;
+              totalDispatched++;
             }
           } catch (error: unknown) {
             this.logger.error(`Failed to process admin ${admin.id}`, {
@@ -275,13 +292,14 @@ export class ReportsService implements OnModuleInit {
       }
 
       this.logger.log(
-        `Monthly report for ${reportMonth} queued successfully to ${totalQueued} admins.`,
+        `Monthly report for ${reportMonth} queued successfully to ${totalDispatched} admins.`,
       );
     } catch (error: unknown) {
       this.logger.error('Failed to generate monthly report', {
         error: error instanceof Error ? error.message : String(error),
         context: 'generateMonthlyReport',
       });
+      throw error;
     }
   }
 }

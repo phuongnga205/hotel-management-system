@@ -38,10 +38,7 @@
     "REMOVE_SUCCESS": "Amenity removed successfully."
   },
   "MAIL": {
-    "LOG_NOT_FOUND": "Email log {id} not found.",
-    "RETRY_INVALID_STATUS": "Can only retry failed emails (FAILED).",
-    "RETRY_SUCCESS": "Successfully queued email {id} for retry.",
-    "TEST_SUCCESS": "Successfully queued test email."
+    "LOG_NOT_FOUND": "Email log {id} not found."
   },
   "BOOKING": {
     "NOT_FOUND": "Booking not found.",
@@ -106,14 +103,15 @@
     "AVATAR_REMOVE_SUCCESS": "Avatar removed successfully."
   },
   "REPORTS": {
+    "EMAIL_LOG_NOT_FOUND": "Email log not found.",
     "MONTHLY": {
+      "TITLE": "Monthly Revenue Report - {reportMonth}",
       "SUBJECT": "Monthly Revenue Report - {reportMonth}",
+      "TOTAL_BOOKINGS_LABEL": "Total Bookings:",
+      "TOTAL_PAID_BOOKINGS_LABEL": "Total Paid Bookings:",
+      "TOTAL_REVENUE_LABEL": "Total Revenue:",
       "DEFAULT_RECIPIENT_NAME": "Admin",
-      "TITLE": "Monthly Revenue Report {reportMonth}",
-      "DESCRIPTION": "Hello {firstName}, this is the revenue report for {reportMonth}.",
-      "TOTAL_BOOKINGS_LABEL": "Total bookings:",
-      "TOTAL_PAID_BOOKINGS_LABEL": "Paid bookings:",
-      "TOTAL_REVENUE_LABEL": "Total revenue:"
+      "DESCRIPTION": "Dear {firstName},\nHere is the revenue report for {reportMonth}."
     }
   }
 }

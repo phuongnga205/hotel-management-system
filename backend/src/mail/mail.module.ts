@@ -10,6 +10,7 @@ import { MailProcessor } from './mail.processor';
 import { MailService } from './mail.service';
 import { OutboxProcessor } from './outbox.processor';
 import { MailErrorSanitizer } from './mail-error.sanitizer';
+import { EmailReconciliationService } from './email-reconciliation.service';
 
 @Module({
   imports: [
@@ -19,7 +20,13 @@ import { MailErrorSanitizer } from './mail-error.sanitizer';
     }),
   ],
   controllers: [MailController, AdminEmailLogsController],
-  providers: [MailService, MailProcessor, OutboxProcessor, MailErrorSanitizer],
+  providers: [
+    MailService,
+    MailProcessor,
+    OutboxProcessor,
+    MailErrorSanitizer,
+    EmailReconciliationService,
+  ],
   exports: [MailService],
 })
 export class MailModule {}

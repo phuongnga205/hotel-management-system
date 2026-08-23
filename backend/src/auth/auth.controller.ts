@@ -38,8 +38,6 @@ const EXPIRES_VALUE = '0';
 const SURROGATE_CONTROL_HEADER = 'Surrogate-Control';
 const SURROGATE_CONTROL_VALUE = 'no-store';
 
-// sunlint-disable S041
-// sunlint-disable S037
 @ApiTags('Auth')
 @Controller('auth')
 @UseInterceptors(ClassSerializerInterceptor)

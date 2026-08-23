@@ -1,4 +1,12 @@
-import { Check, Column, Entity, PrimaryGeneratedColumn, Unique } from 'typeorm';
+import {
+  Check,
+  Column,
+  CreateDateColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  Unique,
+  UpdateDateColumn,
+} from 'typeorm';
 
 export type ReportDispatchStatus = 'PENDING' | 'QUEUED' | 'SUCCESS' | 'FAILED';
 export const ReportDispatchStatus = {
@@ -33,4 +41,10 @@ export class MonthlyReportDispatch {
     default: ReportDispatchStatus.PENDING,
   })
   status!: ReportDispatchStatus;
+
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
+  createdAt!: Date;
+
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
+  updatedAt!: Date;
 }

@@ -21,12 +21,18 @@ export const OutboxStatus = {
   `"status" IN ('PENDING','PROCESSING','PROCESSED','FAILED')`,
 )
 @Index('idx_mail_outbox_status_created_at', ['status', 'createdAt'])
+@Index('uq_mail_outbox_generation', ['emailLogId', 'retryGeneration'], {
+  unique: true,
+})
 export class MailOutbox {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
   @Column({ name: 'email_log_id', type: 'bigint' })
   emailLogId!: string;
+
+  @Column({ name: 'retry_generation', type: 'integer', default: 0 })
+  retryGeneration!: number;
 
   @Column({ type: 'varchar', length: 20, default: OutboxStatus.PENDING })
   status!: OutboxStatus;

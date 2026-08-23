@@ -29,7 +29,7 @@ export enum NodeEnvironment {
 export const DEFAULT_SERVER_PORT = 3000;
 export const DEFAULT_REDIS_HOST = 'localhost';
 export const DEFAULT_REDIS_PORT = 6379;
-export const DEFAULT_REPORT_CRON = '55 23 28-31 * *';
+export const DEFAULT_REPORT_CRON = '5 0 1 * *';
 export const DEFAULT_REPORT_TIME_ZONE = 'Asia/Ho_Chi_Minh';
 
 export const DEFAULT_AVATAR_MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB

@@ -38,10 +38,7 @@
     "REMOVE_SUCCESS": "Xóa tiện nghi thành công."
   },
   "MAIL": {
-    "LOG_NOT_FOUND": "Không tìm thấy nhật ký email {id}.",
-    "RETRY_INVALID_STATUS": "Chỉ có thể thử gửi lại các email bị lỗi (FAILED).",
-    "RETRY_SUCCESS": "Đã xếp hàng gửi lại email {id} thành công.",
-    "TEST_SUCCESS": "Đã xếp hàng gửi email thử nghiệm thành công."
+    "LOG_NOT_FOUND": "Không tìm thấy nhật ký email {id}."
   },
   "BOOKING": {
     "NOT_FOUND": "Không tìm thấy yêu cầu đặt phòng.",
@@ -105,14 +102,15 @@
     "AVATAR_REMOVE_SUCCESS": "Xoá ảnh đại diện thành công."
   },
   "REPORTS": {
+    "EMAIL_LOG_NOT_FOUND": "Không tìm thấy nhật ký email.",
     "MONTHLY": {
+      "TITLE": "Báo cáo Doanh thu Tháng - {reportMonth}",
       "SUBJECT": "Báo cáo Doanh thu Tháng - {reportMonth}",
+      "TOTAL_BOOKINGS_LABEL": "Tổng số lượng đặt phòng:",
+      "TOTAL_PAID_BOOKINGS_LABEL": "Số lượng đặt phòng đã thanh toán:",
+      "TOTAL_REVENUE_LABEL": "Tổng doanh thu:",
       "DEFAULT_RECIPIENT_NAME": "Quản trị viên",
-      "TITLE": "Báo Cáo Doanh Thu Tháng {reportMonth}",
-      "DESCRIPTION": "Xin chào {firstName}, đây là báo cáo doanh thu tháng {reportMonth} của hệ thống.",
-      "TOTAL_BOOKINGS_LABEL": "Tổng số booking:",
-      "TOTAL_PAID_BOOKINGS_LABEL": "Số Booking đã thanh toán (PAID):",
-      "TOTAL_REVENUE_LABEL": "Tổng doanh thu:"
+      "DESCRIPTION": "Chào {firstName},\nDưới đây là báo cáo doanh thu cho tháng {reportMonth}."
     }
   }
 }

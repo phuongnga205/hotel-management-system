@@ -1,4 +1,3 @@
-/* sunlint-disable C018, C030, C033, S041 */
 import { Repository } from 'typeorm';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';

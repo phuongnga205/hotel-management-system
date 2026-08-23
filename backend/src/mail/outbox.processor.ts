@@ -15,6 +15,7 @@ import {
 } from '../reports/entities/monthly-report-dispatch.entity';
 import { MailOutboxPayloadDto } from './dto/mail-outbox-payload.dto';
 import { InvalidOutboxPayloadError } from './errors/invalid-outbox-payload.error';
+import { MAIL_ERROR_CODE } from './errors/mail-delivery.error';
 import {
   MAIL_JOB,
   MAIL_QUEUE,
@@ -116,9 +117,21 @@ export class OutboxProcessor {
           },
         );
 
-        await this.outboxRepository.update(outbox.id, {
-          status: OutboxStatus.PROCESSED,
-          lockedAt: null,
+        await this.dataSource.transaction(async (manager) => {
+          await manager.update(
+            MailOutbox,
+            { id: outbox.id },
+            {
+              status: OutboxStatus.PROCESSED,
+              lockedAt: null,
+            },
+          );
+
+          await manager.update(
+            MonthlyReportDispatch,
+            { emailLogId: outbox.emailLogId },
+            { status: ReportDispatchStatus.QUEUED },
+          );
         });
       } catch (error: unknown) {
         const nextAttemptCount = outbox.attemptCount + 1;
@@ -146,7 +159,7 @@ export class OutboxProcessor {
               { id: outbox.emailLogId },
               {
                 status: EmailStatus.FAILED,
-                lastError: 'OUTBOX_EXHAUSTED',
+                lastError: MAIL_ERROR_CODE.OUTBOX_EXHAUSTED,
               },
             );
 

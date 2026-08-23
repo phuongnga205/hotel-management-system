@@ -1,4 +1,3 @@
-/* sunlint-disable C018, C030, C033 */
 import {
   ConflictException,
   Injectable,

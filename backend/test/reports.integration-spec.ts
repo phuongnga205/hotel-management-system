@@ -3,7 +3,11 @@ import { INestApplication } from '@nestjs/common';
 import { AppModule } from '../src/app.module';
 import { ReportsService } from '../src/reports/reports.service';
 import { User, UserRole, UserStatus } from '../src/users/entities/user.entity';
-import { EmailLog, EmailStatus } from '../src/mail/entities/email-log.entity';
+import {
+  EmailLog,
+  EmailStatus,
+  EmailType,
+} from '../src/mail/entities/email-log.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -22,34 +26,30 @@ import {
 import { DateTime } from 'luxon';
 import { MailProcessor } from '../src/mail/mail.processor';
 import { OutboxProcessor } from '../src/mail/outbox.processor';
-
-const E2E_DATABASE_NAME = 'neondb'; // based on neon URL
-const E2E_ALLOWED_HOSTS = [
-  'localhost',
-  '127.0.0.1',
-  'ep-cool-feather-axwc6i9s-pooler.c-4.us-east-2.aws.neon.tech',
-];
+import { MAIL_ERROR_CODE } from '../src/mail/errors/mail-delivery.error';
+import { NodeEnvironment } from '../src/config/environment.constants';
 
 function assertSafeE2eEnvironment(): void {
-  if (process.env.NODE_ENV !== 'test') {
+  if (process.env.NODE_ENV !== NodeEnvironment.TEST) {
     throw new Error('E2E requires NODE_ENV=test');
   }
 
-  const rawUrl = process.env.DATABASE_URL; // Using DATABASE_URL since E2E_DATABASE_URL is not set
+  const rawUrl = process.env.E2E_DATABASE_URL;
 
   if (!rawUrl) {
-    throw new Error('DATABASE_URL is required');
+    throw new Error('E2E_DATABASE_URL is required');
   }
-
-  const databaseUrl = new URL(rawUrl);
-  const databaseName = databaseUrl.pathname.slice(1);
 
   if (
-    databaseName !== E2E_DATABASE_NAME ||
-    !E2E_ALLOWED_HOSTS.includes(databaseUrl.hostname)
+    process.env.E2E_DATABASE_DESTRUCTIVE_ACK !== 'hotel-management-e2e-only'
   ) {
-    throw new Error('Unsafe E2E database configuration');
+    throw new Error(
+      'E2E_DATABASE_DESTRUCTIVE_ACK=hotel-management-e2e-only is required to ensure database safety',
+    );
   }
+
+  // Force TypeORM and ConfigService to use the E2E database
+  process.env.DATABASE_URL = rawUrl;
 }
 
 class FakeReportClock implements ReportClock {
@@ -71,6 +71,7 @@ describe('ReportsModule (e2e)', () => {
   let emailLogRepository: Repository<EmailLog>;
   let dispatchRepository: Repository<MonthlyReportDispatch>;
   let outboxRepository: Repository<MailOutbox>;
+  let outboxProcessor: OutboxProcessor;
   let testAdmin: User;
   let fakeClock: FakeReportClock;
 
@@ -97,8 +98,6 @@ describe('ReportsModule (e2e)', () => {
       .useValue(fakeClock)
       .overrideProvider(MailProcessor)
       .useValue({})
-      .overrideProvider(OutboxProcessor)
-      .useValue({})
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -117,12 +116,15 @@ describe('ReportsModule (e2e)', () => {
     outboxRepository = moduleFixture.get<Repository<MailOutbox>>(
       getRepositoryToken(MailOutbox),
     );
+    outboxProcessor = moduleFixture.get<OutboxProcessor>(OutboxProcessor);
 
-    // Deactivate all existing admins to isolate test
-    await userRepository.update(
-      { role: UserRole.ADMIN },
-      { status: UserStatus.INACTIVE },
-    );
+    // Verify that the E2E database is completely clean before proceeding
+    const existingUsers = await userRepository.count();
+    if (existingUsers !== 0) {
+      throw new Error(
+        'E2E database must be empty before running reports suite',
+      );
+    }
 
     // Create a single test admin
     testAdmin = userRepository.create({
@@ -138,12 +140,7 @@ describe('ReportsModule (e2e)', () => {
   }, 30000);
 
   afterAll(async () => {
-    // Cleanup
-    if (testAdmin && testAdmin.id) {
-      await dispatchRepository?.delete({ recipientId: testAdmin.id });
-      await emailLogRepository?.delete({ recipientUserId: testAdmin.id });
-      await userRepository?.delete({ id: testAdmin.id });
-    }
+    // Database is ephemeral, no need to hard delete items here.
     await app?.close();
   }, 30000);
 
@@ -163,9 +160,15 @@ describe('ReportsModule (e2e)', () => {
       reportsService.generateMonthlyReport(),
     ]);
 
-    const dispatches = await dispatchRepository.findBy({
-      reportMonth: '2026-08',
-      recipientId: testAdmin.id,
+    // Process outbox to trigger state change to QUEUED
+    await outboxProcessor.processOutbox();
+
+    const dispatches = await dispatchRepository.find({
+      where: {
+        reportMonth: '2026-08',
+        recipientId: testAdmin.id,
+      },
+      take: 2,
     });
 
     expect(dispatches).toHaveLength(1);
@@ -199,14 +202,14 @@ describe('ReportsModule (e2e)', () => {
     // Create a FAILED dispatch
     const failedLog = await emailLogRepository.save(
       emailLogRepository.create({
-        type: 'monthly-report',
+        type: EmailType.MONTHLY_REPORT,
         recipient: testAdmin.email,
         subject: 'Failed Report',
         text: 'Failed',
         status: EmailStatus.FAILED,
         recipientUserId: testAdmin.id,
         reportMonth: '2026-09',
-        lastError: 'OUTBOX_EXHAUSTED',
+        lastError: MAIL_ERROR_CODE.OUTBOX_EXHAUSTED,
       }),
     );
 
@@ -222,18 +225,74 @@ describe('ReportsModule (e2e)', () => {
     // Run generation
     await reportsService.generateMonthlyReport();
 
+    // Process outbox to trigger state change to QUEUED
+    await outboxProcessor.processOutbox();
+
     // Verify it retried
     const dispatch = await dispatchRepository.findOneBy({
       id: failedDispatch.id,
     });
+
     expect(dispatch!.status).toBe(ReportDispatchStatus.QUEUED);
 
     const updatedLog = await emailLogRepository.findOneBy({ id: failedLog.id });
     expect(updatedLog!.status).toBe(EmailStatus.PENDING);
     expect(updatedLog!.retryGeneration).toBe(1);
 
-    await dispatchRepository.delete({ id: dispatch!.id });
-    await outboxRepository.delete({ emailLogId: failedLog.id });
-    await emailLogRepository.delete({ id: failedLog.id });
+    // We do not hard delete in ephemeral DB
+  }, 30000);
+
+  it('fails dispatch when Redis queue is unavailable', async () => {
+    const mockDate = new Date(Date.UTC(2026, 10, 1, 0, 5, 0));
+    fakeClock.setSystemTime(mockDate);
+
+    // Mock BullMQ add to reject
+    mailQueueMock.add.mockRejectedValueOnce(new Error('Redis unavailable'));
+
+    await reportsService.generateMonthlyReport();
+
+    // Process outbox which should try and fail
+    try {
+      await outboxProcessor.processOutbox();
+    } catch {
+      // ignore
+    }
+
+    const dispatches = await dispatchRepository.find({
+      where: {
+        reportMonth: '2026-10',
+        recipientId: testAdmin.id,
+      },
+    });
+
+    expect(dispatches).toHaveLength(1);
+    const dispatch = dispatches[0];
+
+    const emailLog = await emailLogRepository.findOneBy({
+      id: dispatch.emailLogId!,
+    });
+    expect(emailLog).toBeDefined();
+
+    // Check it remains PENDING since Outbox will retry it up to MAX_ATTEMPTS.
+    // If it reaches max attempts, Outbox processor sets it to FAILED.
+    // Assuming outboxProcessor runs again to exhaust attempts:
+    for (let i = 0; i < 5; i++) {
+      mailQueueMock.add.mockRejectedValueOnce(new Error('Redis unavailable'));
+      try {
+        await outboxProcessor.processOutbox();
+      } catch {
+        // ignore
+      }
+    }
+
+    const exhaustedLog = await emailLogRepository.findOneBy({
+      id: dispatch.emailLogId!,
+    });
+    expect(exhaustedLog!.status).toBe(EmailStatus.FAILED);
+
+    const exhaustedDispatch = await dispatchRepository.findOneBy({
+      id: dispatch.id,
+    });
+    expect(exhaustedDispatch!.status).toBe(ReportDispatchStatus.FAILED);
   }, 30000);
 });

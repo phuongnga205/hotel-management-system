@@ -15,11 +15,13 @@ import {
 // Cột `email_logs.status`/`.type` đều là varchar + CHECK (status) hoặc
 // varchar tự do quy ước theo EmailType (type) — không phải Postgres enum,
 // nên dùng type + const object thay vì TS `enum`, khớp đúng bản chất cột DB.
-export type EmailStatus = 'PENDING' | 'SENT' | 'FAILED';
+export type EmailStatus =
+  'PENDING' | 'SENT' | 'FAILED' | 'DELIVERED_UNCONFIRMED';
 export const EmailStatus = {
   PENDING: 'PENDING',
   SENT: 'SENT',
   FAILED: 'FAILED',
+  DELIVERED_UNCONFIRMED: 'DELIVERED_UNCONFIRMED',
 } as const satisfies Record<string, EmailStatus>;
 
 export type EmailType =
@@ -39,7 +41,10 @@ export const EmailType = {
 @Entity('email_logs')
 @Check('chk_email_logs_retry_count', '"retry_count" >= 0')
 @Check('chk_email_logs_retry_generation', '"retry_generation" >= 0')
-@Check('chk_email_logs_status', `"status" IN ('PENDING','SENT','FAILED')`)
+@Check(
+  'chk_email_logs_status',
+  `"status" IN ('PENDING','SENT','FAILED','DELIVERED_UNCONFIRMED')`,
+)
 @Index(
   'uq_monthly_report_recipient_month',
   ['reportMonth', 'recipientUserId'],

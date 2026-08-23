@@ -17,6 +17,7 @@ import {
   MAIL_ERROR_CODE,
 } from './errors/mail-delivery.error';
 import { MailErrorSanitizer } from './mail-error.sanitizer';
+import { RedisUtil } from '../token/redis.util';
 
 interface SendMailJobData {
   emailLogId: string;
@@ -38,6 +39,7 @@ export class MailProcessor extends WorkerHost {
     private readonly emailLogRepository: Repository<EmailLog>,
     private readonly dataSource: DataSource,
     private readonly mailErrorSanitizer: MailErrorSanitizer,
+    private readonly redisUtil: RedisUtil,
   ) {
     super();
 
@@ -90,17 +92,24 @@ export class MailProcessor extends WorkerHost {
       const maxAttempts = job.opts.attempts ?? MAIL_JOB.MAX_ATTEMPTS;
       const isFinalAttempt = job.attemptsMade + 1 >= maxAttempts;
 
-      await this.emailLogRepository.update(emailLogId, {
-        status: isFinalAttempt ? EmailStatus.FAILED : EmailStatus.PENDING,
-        lastError: sanitizedMessage,
-      });
-
-      if (isFinalAttempt) {
-        await this.dataSource.query(
-          'UPDATE monthly_report_dispatches SET status = $1 WHERE "email_log_id" = $2',
-          [ReportDispatchStatus.FAILED, emailLogId],
+      await this.dataSource.transaction(async (manager) => {
+        await manager.update(
+          EmailLog,
+          { id: emailLogId },
+          {
+            status: isFinalAttempt ? EmailStatus.FAILED : EmailStatus.PENDING,
+            lastError: sanitizedMessage,
+          },
         );
-      }
+
+        if (isFinalAttempt) {
+          await manager.update(
+            MonthlyReportDispatch,
+            { emailLogId },
+            { status: ReportDispatchStatus.FAILED },
+          );
+        }
+      });
 
       this.logger.error('Email delivery failed', {
         emailLogId,
@@ -137,9 +146,14 @@ export class MailProcessor extends WorkerHost {
       });
     } catch (error) {
       this.logger.error(
-        'Email delivered but status persistence failed',
+        'Email delivered but status persistence failed. Pushing to unconfirmed queue.',
         error instanceof Error ? error.stack : String(error),
       );
+      try {
+        await this.redisUtil.lpush('email:delivery:unconfirmed', emailLogId);
+      } catch (redisError) {
+        this.logger.error('Failed to push to unconfirmed queue', redisError);
+      }
     }
 
     return messageId;
