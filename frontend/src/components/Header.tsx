@@ -2,7 +2,7 @@ import { Link, NavLink } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Dropdown } from 'antd'
 import type { MenuProps } from 'antd'
-import { LogoutOutlined, ProfileOutlined, GlobalOutlined, DownOutlined } from '@ant-design/icons'
+import { LogoutOutlined, ProfileOutlined, GlobalOutlined, DownOutlined, SettingOutlined } from '@ant-design/icons'
 import { ROUTES } from '../router/paths'
 import { getAccessToken, clearAccessToken } from '../api/axiosClient'
 
@@ -34,6 +34,14 @@ export const Header = () => {
 
   const userMenuItems: MenuProps['items'] = [
     {
+      key: 'admin',
+      icon: <SettingOutlined />,
+      // Luon hien voi moi user da dang nhap - khong biet role tu Header (chua
+      // fetch profile o day) nen khong an duoc theo role; AdminGuard se tu
+      // chan/redirect nguoi khong phai ADMIN khi ho thuc su bam vao.
+      label: <Link to={ROUTES.ADMIN.DASHBOARD}>{t('navigation.admin')}</Link>,
+    },
+    {
       key: 'profile',
       icon: <ProfileOutlined />,
       label: <Link to="/profile">{t('navigation.profile')}</Link>,
@@ -49,7 +57,7 @@ export const Header = () => {
   return (
     <header className="bg-navy text-white flex items-center justify-between px-8 py-4 sticky top-0 z-50 shadow-md">
       <Link to={ROUTES.HOME} className="text-xl font-serif font-bold tracking-wide text-white hover:text-gray-200 flex items-center gap-2">
-        <span className="text-[#eab308]">✨</span> Grandeur
+        <span className="text-gold">✨</span> Grandeur
       </Link>
 
       <div className="flex items-center gap-6 text-sm font-bold">

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bullmq';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
@@ -43,6 +44,10 @@ const DEFAULT_THROTTLE_LIMIT = 10;
         limit: DEFAULT_THROTTLE_LIMIT,
       },
     ]),
+
+    // Cần cho @Cron trong BookingsService (dọn các booking PENDING hết hạn
+    // giữ chỗ) — lần đầu dùng @nestjs/schedule trong dự án.
+    ScheduleModule.forRoot(),
 
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],

@@ -1,11 +1,11 @@
 {
   "app": {
-    "name": "Grandeur",
-    "setupDescription": "Setup mẫu: Vite + React + Tailwind CSS + Ant Design + i18n (vi/en). Routes và style guide chính thức sẽ được bổ sung sau."
+    "name": "Grandeur"
   },
   "common": {
     "save": "Lưu",
     "cancel": "Huỷ",
+    "close": "Đóng",
     "confirm": "Xác nhận",
     "loading": "Đang tải...",
     "search": "Tìm kiếm",
@@ -28,5 +28,57 @@
     "admin": "Quản trị",
     "profile": "Tài khoản",
     "logout": "Đăng xuất"
+  },
+  "pagination": {
+    "showing": "Hiển thị {{from}}–{{to}} trên {{total}}",
+    "prev": "← Trước",
+    "next": "Sau →"
+  },
+  "roomCard": {
+    "perNight": "/ đêm",
+    "bookNow": "Đặt ngay",
+    "upToGuests": "tối đa {{count}} khách"
+  },
+  "bookingCard": {
+    "idLabel": "Đặt phòng #{{id}}",
+    "checkIn": "Nhận phòng",
+    "checkOut": "Trả phòng",
+    "duration": "Thời lượng",
+    "nights": "{{count}} đêm",
+    "total": "Tổng tiền",
+    "viewDetails": "Xem chi tiết",
+    "payNow": "Thanh toán",
+    "cancel": "Huỷ"
+  },
+  "priceSummary": {
+    "perNight": "mỗi đêm · chưa gồm thuế phí",
+    "taxesFees": "Thuế & phí",
+    "total": "Tổng cộng",
+    "currencyNote": "USD · đã gồm mọi thuế phí",
+    "bookThisRoom": "Đặt phòng này",
+    "processing": "Đang xử lý…"
+  },
+  "dateRangeBar": {
+    "checkIn": "Nhận phòng",
+    "checkOut": "Trả phòng",
+    "checkInPlaceholder": "Ngày nhận phòng",
+    "checkOutPlaceholder": "Ngày trả phòng",
+    "guests": "Số khách",
+    "guestCount": "{{count}} khách",
+    "search": "Tìm phòng"
+  },
+  "footer": {
+    "tagline": "Khách sạn hạng sang từng đoạt giải thưởng ngay trung tâm thành phố. Kiến tạo những trải nghiệm khó quên từ năm 2010.",
+    "quickLinks": "Liên kết nhanh",
+    "rooms": "Phòng & Suite",
+    "dining": "Ẩm thực",
+    "spa": "Spa & Chăm sóc sức khoẻ",
+    "events": "Sự kiện",
+    "contact": "Liên hệ",
+    "contactTitle": "Liên hệ",
+    "address": "1 Đại lộ Grandeur, Trung tâm thành phố",
+    "phone": "+1 (800) GRANDEUR",
+    "email": "reservations@grandeur.com",
+    "copyright": "© {{year}} Khách sạn Grandeur. Bảo lưu mọi quyền."
   }
 }

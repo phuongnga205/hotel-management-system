@@ -1,5 +1,9 @@
 {
   "HELLO": "Xin chào",
+  "SEEDER": {
+    "DISABLED": "Chức năng tạo dữ liệu mẫu đang bị tắt. Chỉ bật chức năng này cho cơ sở dữ liệu local hoặc test.",
+    "PRODUCTION": "Không được phép tạo dữ liệu mẫu trên môi trường production."
+  },
   "USER_NOT_FOUND": "Không tìm thấy người dùng trong hệ thống.",
   "ROOM": {
     "NOT_FOUND": "Không tìm thấy phòng.",
@@ -42,6 +46,9 @@
   },
   "BOOKING": {
     "NOT_FOUND": "Không tìm thấy yêu cầu đặt phòng.",
+    "CREATE_SUCCESS": "Tạo yêu cầu đặt phòng thành công.",
+    "FIND_ONE_SUCCESS": "Lấy thông tin đặt phòng thành công.",
+    "FIND_ALL_SUCCESS": "Lấy danh sách đặt phòng thành công.",
     "UPDATED_SUCCESS": "Đã cập nhật yêu cầu đặt phòng thành công.",
     "DELETED_SUCCESS": "Đã xóa yêu cầu đặt phòng thành công.",
     "CANCEL_SUCCESS": "Đã hủy yêu cầu đặt phòng thành công.",
@@ -51,7 +58,15 @@
     "CHECK_IN_DATE_IN_PAST": "Ngày checkin ở quá khứ.",
     "INVALID_DATE_RANGE": "Thời gian không phù hợp.",
     "DATES_OVERLAP": "Phòng đã được đặt trong khoảng thời gian này.",
-    "ROOM_UNAVAILABLE": "Phòng hiện không khả dụng để đặt."
+    "ROOM_UNAVAILABLE": "Phòng hiện không khả dụng để đặt.",
+    "CANNOT_ACCEPT": "Yêu cầu đặt phòng không thể chấp nhận.",
+    "ACCEPT_SUCCESS": "Đã chấp nhận yêu cầu đặt phòng thành công.",
+    "CANNOT_REJECT": "Yêu cầu đặt phòng không thể từ chối.",
+    "REJECT_SUCCESS": "Đã từ chối yêu cầu đặt phòng thành công.",
+    "CANNOT_PAY": "Yêu cầu đặt phòng không thể thanh toán.",
+    "PAY_SUCCESS": "Thanh toán thành công.",
+    "HOLD_EXPIRED": "Thời gian giữ chỗ của booking này đã hết hạn nên không thể cập nhật, thanh toán hoặc duyệt.",
+    "NO_FIELDS_TO_UPDATE": "Phải cung cấp ít nhất 1 trường (checkInDate, checkOutDate hoặc note) để cập nhật."
   },
   "AUTH": {
     "EMAIL_EXISTED": "Email này đã được đăng ký trong hệ thống.",

@@ -49,7 +49,7 @@
 |---|---|---|---|
 | `pages/bookings/BookingHistoryPage.tsx` | `/bookings` | `GET /bookings/me` | |
 | `pages/bookings/BookingDetailPage.tsx` | `/bookings/:bookingId` | `GET /bookings/:id`, `PATCH /bookings/:id` (sửa), `PATCH /bookings/:id/cancel` (huỷ, qua modal) | Nút "Viết đánh giá" điều hướng sang `BookingReviewPage`, nút "Thanh toán" điều hướng sang `BookingPaymentPage`. |
-| `pages/bookings/BookingPaymentPage.tsx` | `/bookings/:bookingId/payment` | `POST /bookings/:id/pay` *(stub — BE chưa làm thật)* | Để UI placeholder/disabled, chưa cần xử lý response thật. |
+| `pages/bookings/BookingPaymentPage.tsx` | `/bookings/:bookingId/payment` | `POST /bookings/:id/pay` | BE đã implement (mock — luôn thành công ngay, không phải cổng thanh toán thật): màn hình chỉ cần cho chọn `method` rồi gọi API 1 lần, không cần polling/callback. `bookingApi.pay()` + mock đã có sẵn ở `frontend/src/api/booking.api.ts`, trang này vẫn **chưa được dựng**. |
 | `pages/bookings/BookingReviewPage.tsx` | `/bookings/:bookingId/review` | `POST /reviews` | Chỉ hiện nút dẫn tới trang này khi booking đã/đang ở (check ở `BookingDetailPage`). |
 
 ## F. Admin — Users
@@ -70,16 +70,22 @@
 | Page component | Route | API sử dụng | Ghi chú |
 |---|---|---|---|
 | `pages/admin/rooms/AdminRoomListPage.tsx` | `/admin/rooms` | `GET /admin/rooms`, `DELETE /admin/rooms/:id` (popup xoá theo dòng), `GET /admin/rooms/export` 🚧 | |
-| `pages/admin/rooms/AdminRoomDetailPage.tsx` | `/admin/rooms/:roomId` | `GET /admin/rooms/:id` | |
-| `pages/admin/rooms/AdminRoomCreatePage.tsx` | `/admin/rooms/new` | `POST /admin/rooms` | |
-| `pages/admin/rooms/AdminRoomEditPage.tsx` | `/admin/rooms/:roomId/edit` | `GET /admin/rooms/:id` (load form) + `PATCH /admin/rooms/:id` | |
+| `pages/admin/rooms/AdminRoomDetailPage.tsx` | `/admin/rooms/:roomId` | `GET /admin/rooms/:id` | `room.amenities`/`room.images` trả kèm trong response, không cần gọi API riêng để hiển thị. |
+| `pages/admin/rooms/AdminRoomCreatePage.tsx` | `/admin/rooms/new` | `POST /admin/rooms`, `GET /amenities` (nạp danh sách tiện nghi cho phần chọn gán) | |
+| `pages/admin/rooms/AdminRoomEditPage.tsx` | `/admin/rooms/:roomId/edit` | `GET /admin/rooms/:id` (load form), `PATCH /admin/rooms/:id`, `GET /amenities` + `POST /admin/rooms/:id/amenities` + `DELETE /admin/rooms/:id/amenities/:amenityId` (gán/gỡ tiện nghi), `POST /admin/rooms/:id/images` + `DELETE /admin/rooms/:id/images/:imageId` (đổi ảnh đại diện — xem quy ước 1-ảnh/phòng ở `frontend/docs/bridge.md` mục 4) | |
+
+## G2. Admin — Amenities
+
+| Page component | Route | API sử dụng | Ghi chú |
+|---|---|---|---|
+| `pages/admin/amenities/AdminAmenityListPage.tsx` | `/admin/amenities` | `GET /amenities`, `POST /amenities` (tạo, qua modal), `PATCH /amenities/:id` (sửa, qua modal), `DELETE /amenities/:id` (xoá, popup xác nhận) | Danh sách đơn giản (tên + mô tả), không cần trang chi tiết/route con riêng — tạo/sửa dùng modal trên cùng trang, giống pattern `ConfirmModal` đã dùng ở các trang admin khác. |
 
 ## H. Admin — Bookings
 
 | Page component | Route | API sử dụng | Ghi chú |
 |---|---|---|---|
-| `pages/admin/bookings/AdminBookingListPage.tsx` | `/admin/bookings` | `GET /admin/bookings` 🚧 | |
-| `pages/admin/bookings/AdminBookingDetailPage.tsx` | `/admin/bookings/:bookingId` | `GET /admin/bookings/:id` 🚧, `PATCH /admin/bookings/:id/accept` 🚧, `PATCH /admin/bookings/:id/reject` 🚧 | 2 nút Chấp nhận/Từ chối cùng nằm trang này, không route riêng. |
+| `pages/admin/bookings/AdminBookingListPage.tsx` | `/admin/bookings` | `GET /admin/bookings` | Đã có cột "Payment" (dùng lại `PaymentBadge`) bên cạnh cột "Status" — hiện cả booking status lẫn payment status. |
+| `pages/admin/bookings/AdminBookingDetailPage.tsx` | `/admin/bookings/:bookingId` | `GET /admin/bookings/:id`, `PATCH /admin/bookings/:id/accept`, `PATCH /admin/bookings/:id/reject` | 2 nút Chấp nhận/Từ chối cùng nằm trang này, không route riêng. Đã hiện cả `StatusBadge` (booking) lẫn `PaymentBadge` (payment). |
 
 ## I. Admin — Reviews
 
@@ -126,3 +132,7 @@ Toàn bộ endpoint trong `backend/docs/DANH_SACH_API.md` đều đã được g
 chọn `GET /rooms/:id/reviews` (đánh dấu optional ở doc BE) nếu team quyết
 định không làm, thì bỏ luôn dòng review-listing trong `RoomDetailPage`
 (không ảnh hưởng các màn khác).
+
+> 🆕 Mục G/G2 (Rooms/Amenities) mô tả theo thiết kế đã chốt ở 1 nhánh git
+> riêng chưa merge — xem cảnh báo đầu `backend/docs/DANH_SACH_API.md` và
+> `frontend/docs/bridge.md`.

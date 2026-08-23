@@ -1,6 +1,8 @@
 export const ENVIRONMENT_KEYS = {
   DATABASE_SSL_REJECT_UNAUTHORIZED: 'DATABASE_SSL_REJECT_UNAUTHORIZED',
   DATABASE_URL: 'DATABASE_URL',
+  DATABASE_SEEDING_ENABLED: 'DATABASE_SEEDING_ENABLED',
+  E2E_DATABASE_URL: 'E2E_DATABASE_URL',
   SIGNATURE: 'JWT_SECRET',
   NODE_ENV: 'NODE_ENV',
   PORT: 'PORT',
@@ -9,16 +11,22 @@ export const ENVIRONMENT_KEYS = {
   CLOUDINARY_CLOUD_NAME: 'CLOUDINARY_CLOUD_NAME',
   CLOUDINARY_API_KEY: 'CLOUDINARY_API_KEY',
   CLOUDINARY_API_SECRET: 'CLOUDINARY_API_SECRET',
+  HOTEL_TIMEZONE: 'HOTEL_TIMEZONE',
 } as const;
 
 export enum NodeEnvironment {
   DEVELOPMENT = 'development',
+  PRODUCTION = 'production',
   TEST = 'test',
 }
 
 export const DEFAULT_SERVER_PORT = 3000;
 
 export const DEFAULT_AVATAR_MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+
+// Múi giờ dùng để tính "hôm nay" khi validate ngày check-in booking (VD:
+// chặn đặt phòng cho ngày quá khứ)
+export const DEFAULT_HOTEL_TIMEZONE = 'Asia/Ho_Chi_Minh';
 
 // public_id cố định theo userId (thư mục "avatars" trên Cloudinary) — cho
 // phép upload sau ghi đè (overwrite:true) và xoá mà không cần lưu riêng
