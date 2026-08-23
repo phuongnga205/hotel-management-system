@@ -1,5 +1,9 @@
 {
   "HELLO": "Hello",
+  "SEEDER": {
+    "DISABLED": "Database seeding is disabled. Enable it only for a local or test database.",
+    "PRODUCTION": "Database seeding is forbidden in production."
+  },
   "USER_NOT_FOUND": "User not found in the system.",
   "ROOM": {
     "NOT_FOUND": "Room not found.",
@@ -45,12 +49,11 @@
     "UPDATED_SUCCESS": "Booking request updated successfully.",
     "DELETED_SUCCESS": "Booking request deleted successfully.",
     "CANCEL_SUCCESS": "Booking request cancelled successfully.",
-    "REQUEST_FAIL" : "Booking request failed.",
+    "REQUEST_FAIL": "Booking request failed.",
     "CANNOT_CANCEL": "Booking request cannot be cancelled.",
     "CANNOT_UPDATE": "Booking request cannot be updated.",
     "CHECK_IN_DATE_IN_PAST": "Checkin date in the past.",
     "INVALID_DATE_RANGE": "Date range invalid."
-
   },
   "AUTH": {
     "EMAIL_EXISTED": "This email is already registered.",
@@ -82,11 +85,11 @@
     "ARRAY_NOT_EMPTY": "{property} should not be empty.",
     "ARRAY_UNIQUE": "{property} must not contain duplicate values."
   },
-  "USERS":{
-    "PHONE_ALREADY_EXISTS":"phone already exists.",
+  "USERS": {
+    "PHONE_ALREADY_EXISTS": "phone already exists.",
     "NOT_FOUND": "User not found.",
     "INVALID_CURRENT_PASSWORD": "Current password invalid.",
-    "EMAIL_ALREADY_EXISTS" : "Email already exist.",
+    "EMAIL_ALREADY_EXISTS": "Email already exist.",
     "USERNAME_ALREADY_EXISTS": "Username already exist.",
     "NEW_PASSWORD_MUST_BE_DIFFERENT": "New password must be different.",
     "CHANGE_PASSWORD_SUCCESS": "Password changed successfully.",
