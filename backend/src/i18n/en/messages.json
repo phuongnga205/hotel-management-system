@@ -30,6 +30,7 @@
     "IMAGE_UPLOAD_SUCCESS": "Room image uploaded successfully.",
     "AVAILABLE_SUCCESS": "Available rooms retrieved successfully.",
     "INVALID_DATE_RANGE": "Check-out date must be after check-in date.",
+    "INVALID_PRICE_RANGE": "minPrice must be less than or equal to maxPrice.",
     "THUMBNAIL_SET_SUCCESS": "Thumbnail image updated successfully."
   },
   "AMENITY": {
