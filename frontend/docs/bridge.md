@@ -23,11 +23,33 @@
 - **Tất cả timestamp là ISO 8601 có timezone** (Postgres `timestamptz`),
   ví dụ `"2026-08-19T10:30:00.000Z"`. Field ngày thuần (`checkInDate`,
   `checkOutDate`) là kiểu `date`, dạng chuỗi `"YYYY-MM-DD"`, không có giờ.
-- **Số tiền / giá (`pricePerNight`, `totalPrice`, `amount`)**: cột DB là
-  `DECIMAL(10,2)`. Entity có transformer chuyển về kiểu `number` JS khi đọc
-  (`Room`, `Booking`), nhưng `Payment.amount` hiện **không** có transformer
-  nên trả về **string** (ví dụ `"150.00"`) — FE cần `Number(...)` trước khi
-  tính toán/format tiền cho riêng field này. Luôn tối đa 2 chữ số thập phân.
+- **Số tiền / giá (`pricePerNight`, `totalPrice`, `amount`) — LUÔN LÀ
+  `string` trong response, không phải `number`.** Cột DB là `DECIMAL(10,2)`.
+  Entity dùng `decimalTransformer`
+  (`backend/src/common/transformers/decimal.transformer.ts`) nên khi đọc từ
+  DB, `Room.pricePerNight`/`Booking.pricePerNight`/`Booking.totalPrice` là
+  instance **`Decimal` (decimal.js)** ở tầng entity — nhưng cả
+  `RoomResponseDto` lẫn `BookingResponseDto` đều gọi tường minh
+  `.toString()` (xem comment trong `room-response.dto.ts`: bắt buộc phải ép
+  vậy, không thì `class-transformer` cố `new Decimal()` lại và throw) trước
+  khi trả ra JSON — nên **API thực tế trả về string** (`"150.00"`), giống
+  hệt `Payment.amount` (field này chưa từng có transformer, luôn là string
+  ngay từ đầu). **Cả 3 field — `pricePerNight`, `totalPrice`, `amount` —
+  đều cùng 1 quy tắc: FE phải `Number(...)` trước khi tính toán/format tiền
+  (`.toLocaleString()` gọi thẳng trên string sẽ không lỗi nhưng cũng không
+  thêm dấu phân cách nghìn — chỉ trả lại nguyên chuỗi).** Luôn tối đa 2 chữ
+  số thập phân.
+  > ✅ **Đã sửa (từng lệch với `frontend/src/api/types.ts`, nay đã khớp).**
+  > `Room.pricePerNight`, `Booking.pricePerNight`, `Booking.totalPrice`
+  > từng khai `number` trong `types.ts` (chỉ `Payment.amount` khai đúng
+  > `string` từ đầu) — đã đổi cả 3 sang `string`, và mọi chỗ hiển thị
+  > (`BookingCard.tsx`, `PriceSummaryCard.tsx`, `RoomCard.tsx`,
+  > `AdminBookingListPage.tsx`, `AdminBookingDetailPage.tsx`,
+  > `AdminDashboardPage.tsx`, `AdminUserDetailPage.tsx`,
+  > `AdminRoomListPage.tsx`, `AdminRoomDetailPage.tsx`) đã bọc
+  > `Number(...)` trước khi `.toLocaleString()`/tính toán. Mock
+  > (`room.mock.ts`, `booking.mock.ts`) cũng đã đổi fixture sang string
+  > (`"320.00"`) khớp đúng shape API thật.
 - **Trường trạng thái (status-like) là `varchar` + CHECK constraint**,
   không phải Postgres enum — nhưng giá trị luôn nằm trong tập cố định liệt
   kê bên dưới cho từng bảng. FE nên định nghĩa các union type/enum tương ứng
@@ -109,7 +131,7 @@ liên quan trực tiếp tới FE vì không trả ra API.
 | `description` | `string \| null` | optional | `text`, không giới hạn độ dài rõ ràng ở DB |
 | `viewType` | `'CITY_VIEW' \| 'GARDEN_VIEW' \| 'SEA_VIEW' \| null` | optional | enum cố định — dùng đúng 3 giá trị này cho dropdown filter/form |
 | `capacity` | `number` (int, dương) | ✔ | `IsInt`, `IsPositive` — số nguyên > 0 |
-| `pricePerNight` | `number` | ✔ | `DECIMAL(10,2)`, `Min(0)`, tối đa 2 chữ số thập phân |
+| `pricePerNight` | **`string`** trong response (`number` khi gửi lên qua `CreateRoomDto`/`UpdateRoomPriceDto`) | ✔ | `DECIMAL(10,2)`, `Min(0)`, tối đa 2 chữ số thập phân — xem cảnh báo ở "Quy ước chung" phía trên |
 | `status` | `'ACTIVE' \| 'INACTIVE' \| 'MAINTENANCE'` | optional (mặc định `ACTIVE`) | trạng thái vận hành, **không** phản ánh còn trống ngày cụ thể hay không (xem `GET /rooms/available` trong `DANH_SACH_API.md`) |
 | `amenities` | `{ id: string; name: string }[] \| undefined` | — | chỉ có khi API load quan hệ (list/detail đều có) — `undefined` = chưa load, `[]` = load rồi nhưng phòng chưa gán tiện nghi nào, phân biệt rõ 2 trường hợp |
 | `images` | `{ id: string; imageUrl: string; isThumbnail: boolean }[] \| undefined` | — | tương tự `amenities` — FE nên chỉ quan tâm ảnh có `isThumbnail === true` nếu theo khuyến nghị 1-ảnh/phòng (xem mục 4) |
@@ -187,8 +209,8 @@ riêng.
 | `roomId` (chỉ **request** tạo) | `string` | numeric string, `CreateBookingDto.roomId` |
 | `checkInDate` | `string` (`YYYY-MM-DD`) | `IsDateString`, bắt buộc khi tạo |
 | `checkOutDate` | `string` (`YYYY-MM-DD`) | phải **sau** `checkInDate` (`chk_bookings_dates`), bắt buộc khi tạo |
-| `pricePerNight` | `number` | snapshot giá phòng tại thời điểm đặt, BE tự set, FE không gửi |
-| `totalPrice` | `number` | BE tự tính, FE không gửi — cũng là `amount` mà `POST .../pay` sẽ tự lấy, FE không gửi `amount` |
+| `pricePerNight` | **`string`** (không phải `number`) | snapshot giá phòng tại thời điểm đặt, BE tự set, FE không gửi — xem cảnh báo ở "Quy ước chung" |
+| `totalPrice` | **`string`** (không phải `number`) | BE tự tính, FE không gửi — cũng là `amount` mà `POST .../pay` sẽ tự lấy, FE không gửi `amount` |
 | `status` | `'PENDING' \| 'ACCEPTED' \| 'REJECTED' \| 'CANCELLED' \| 'EXPIRED'` | mặc định `PENDING`; BE quản lý transition, FE chỉ hiển thị + gọi action tương ứng (`/cancel`, `/pay`, admin `/accept`, `/reject`) |
 | `note` | `string \| null` | optional khi tạo/sửa, tối đa 1000 ký tự |
 | `cancelReason` | `string \| null` | do user điền khi huỷ (`CancelBookingDto.cancelReason`, tối đa 500 ký tự, optional) hoặc admin điền khi từ chối (`RejectBookingDto.cancelReason`, **cùng tên field**, cùng cột DB `bookings.cancel_reason`) |
@@ -211,6 +233,16 @@ toán) — nên hiển thị thông báo khác, không gộp chung với lỗi t
 phải `403`, ở mọi route self-service (`GET/PATCH /bookings/:id`,
 `.../cancel`, `.../pay`) — quyết định có chủ đích để tránh lộ thông tin
 "booking này tồn tại".
+
+> 🆕 **Migration `ExcludeBookingsIgnoreSoftDeleted`** (sau
+> `CreateInitialSchema`) sửa 1 bug ở constraint chống trùng lịch cấp DB
+> (`excl_bookings_no_overlap`): trước migration này, 1 booking
+> `PENDING`/`ACCEPTED` đã bị **xoá mềm** (`deleted_at IS NOT NULL`) vẫn tiếp
+> tục chặn người khác đặt trùng phòng/ngày — giờ EXCLUDE constraint đã lọc
+> thêm điều kiện `deleted_at IS NULL`. Không ảnh hưởng FE hiện tại (chưa có
+> API nào xoá mềm booking — soft-delete chỉ có sẵn ở cột DB, không có
+> `DELETE /bookings/:id` nào cả), nhưng cần biết nếu sau này có tính năng
+> "xoá booking" thì phòng/ngày đó sẽ nhả ra ngay lập tức đúng như kỳ vọng.
 
 ## 7. `payments`
 
@@ -238,6 +270,39 @@ phải `403`, ở mọi route self-service (`GET/PATCH /bookings/:id`,
 > `component/BookingCard.tsx` — đã dựng sẵn nút "Pay" (`onPay` prop,
 > `canPay = status === 'ACCEPTED' && payment?.status !== 'SUCCESS'`) nhưng
 > **chưa được import/dùng ở đâu cả**, chỉ là khung chờ nối vào trang thật.
+
+> 🆕 **2 API đọc danh sách payment, tách riêng — `PaymentsModule`
+> (`backend/src/payments/`) giờ có Controller/Service thật, không chỉ còn
+> mỗi Entity:**
+>
+> - **`GET /admin/payments`** (Admin, `AdminPaymentsController`) — dùng ở
+>   bảng "Transactions" trong màn Statistics > Revenue (FE). Query
+>   `page`/`limit`/`status`/`method`. Mỗi item **kèm sẵn thông tin khách +
+>   phòng** (`booking: { id, guestName, guestEmail, roomName, roomNumber }`)
+>   — join `payment.booking` → `booking.user`/`booking.room` bằng
+>   `QueryBuilder`, không cần FE gọi thêm request nào khác. Type FE tương
+>   ứng: `AdminPayment` (`frontend/src/api/types.ts`), gọi qua
+>   `paymentApi.adminList()` (`frontend/src/api/payment.api.ts`).
+> - **`GET /payments/me`** (User, `PaymentsController`) — lịch sử thanh
+>   toán của **chính user hiện tại, gộp từ mọi booking** (không scope theo
+>   1 booking cụ thể, giống cách `GET /bookings/me` không scope theo
+>   phòng). `userId` lấy từ JWT, không nhận từ query. Cùng query
+>   `page`/`limit`/`status`/`method`, nhưng response **không** kèm thông
+>   tin khách (đã biết là chính mình) — chỉ kèm tóm tắt booking để phân
+>   biệt giao dịch nào ứng với booking nào: `booking: { id, roomName,
+>   roomNumber, checkInDate, checkOutDate }`.
+> - Cả 2 endpoint đều **chỉ đọc danh sách** — không có API xem chi tiết 1
+>   giao dịch riêng (`GET /payments/:id`), mỗi item trong list đã đủ thông
+>   tin cần thiết. Việc **tạo** `Payment` vẫn nằm nguyên trong
+>   `BookingsService.pay()` (không phải `PaymentsService`) vì gắn liền 1
+>   transaction với đổi `booking.status`.
+> - **BE đã xong cả 2, FE mới dựng UI cho Admin** (bảng trong
+>   `AdminRevenueStatsPage.tsx` + `PaymentDetailModal.tsx` xem chi tiết 1
+>   dòng). **Trang `/payments` cho user (`PaymentHistoryPage.tsx`) chưa
+>   dựng** — API `GET /payments/me` đã sẵn sàng dùng ngay, chỉ còn thiếu
+>   UI, xem TODO ở `frontend/docs/DANH_SACH_MAN_HINH.md` mục E và
+>   `frontend/docs/CAU_TRUC_ROUTE.md`. Chi tiết đầy đủ (mẫu response,
+>   Swagger) xem `backend/docs/DANH_SACH_API.md` mục 4a và mục 11.
 
 ## 8. `reviews`
 
@@ -317,7 +382,12 @@ type EmailType =
   đã lệch so với migration thật, xem ghi chú ở mục 1 — luôn ưu tiên
   migration/entity khi có mâu thuẫn).
 - `backend/src/migrations/1787060046910-CreateInitialSchema.ts` — schema
-  SQL **thực tế** đang chạy.
+  SQL gốc. Có thêm các migration sau đó trong cùng thư mục
+  (`backend/src/migrations/`) chỉnh sửa/vá lại 1 phần schema gốc — luôn đọc
+  **toàn bộ thư mục theo thứ tự timestamp**, không chỉ file đầu tiên, để
+  biết đúng schema đang chạy thật. Migration ảnh hưởng trực tiếp tới
+  booking/payment tính tới thời điểm viết tài liệu này:
+  `ExcludeBookingsIgnoreSoftDeleted` (xem ghi chú ở mục 6).
 - `backend/src/**/entities/*.entity.ts` — mapping TypeORM, kiểu dữ liệu
   runtime (đặc biệt các transformer số/tiền).
 - `backend/src/**/dto/*.dto.ts` — validation rule chính xác cho request

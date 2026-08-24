@@ -54,4 +54,6 @@ export const API_ENDPOINTS = {
 
   ADMIN_STATISTICS_BOOKINGS: '/admin/statistics/bookings',
   ADMIN_STATISTICS_REVENUE: '/admin/statistics/revenue',
+
+  ADMIN_PAYMENTS: '/admin/payments',
 } as const

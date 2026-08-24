@@ -4,13 +4,23 @@ import { useTranslation } from 'react-i18next'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
 import PageHeader from '../../../components/PageHeader'
 import Card from '../../../components/Card'
+import Dropdown from '../../../components/Dropdown'
+import Pagination from '../../../components/Pagination'
 import { PageLoader } from '../../../components/common/PageLoader'
-import { StatTile } from '../../../components/admin'
+import { StatTile, AdminTable, PaymentDetailModal } from '../../../components/admin'
+import PaymentBadge from '../../../components/PaymentBadge'
 import { colors } from '../../../tokens/colors'
 import { ROUTES } from '../../../router/paths'
 import { statisticsApi } from '../../../api/statistics.api'
+import { paymentApi } from '../../../api/payment.api'
 import { getErrorMessage } from '../../../api/errorMessage'
-import type { RevenueStatistics } from '../../../api/types'
+import type { AdminPayment, PaymentMethod, PaymentStatus, RevenueStatistics } from '../../../api/types'
+
+const TRANSACTIONS_PER_PAGE = 10
+
+const PAYMENT_STATUS_DOTS: Record<string, string> = { ALL: 'bg-slate-300', PENDING: 'bg-amber-400', SUCCESS: 'bg-emerald-400', FAILED: 'bg-red-400', REFUNDED: 'bg-slate-400' }
+const PAYMENT_STATUSES: PaymentStatus[] = ['PENDING', 'SUCCESS', 'FAILED', 'REFUNDED']
+const PAYMENT_METHODS: PaymentMethod[] = ['CASH', 'BANK_TRANSFER', 'CREDIT_CARD', 'VNPAY']
 
 export default function AdminRevenueStatsPage() {
   const { t } = useTranslation('admin')
@@ -18,11 +28,35 @@ export default function AdminRevenueStatsPage() {
   const [totalBookings, setTotalBookings] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
+  const [statusFilter, setStatusFilter] = useState('ALL')
+  const [methodFilter, setMethodFilter] = useState('ALL')
+  const [txPage, setTxPage] = useState(1)
+  const [transactions, setTransactions] = useState<AdminPayment[]>([])
+  const [txTotal, setTxTotal] = useState(0)
+  const [txLoading, setTxLoading] = useState(true)
+  const [txError, setTxError] = useState<string | null>(null)
+  const [selectedPayment, setSelectedPayment] = useState<AdminPayment | null>(null)
+
   useEffect(() => {
     Promise.all([statisticsApi.revenue(), statisticsApi.bookings()])
       .then(([rs, bs]) => { setStats(rs); setTotalBookings(bs.totalBookings) })
       .catch((err) => setError(getErrorMessage(err, t('common.notFoundGeneric'))))
   }, [t])
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setTxLoading(true)
+    paymentApi
+      .adminList({
+        page: txPage,
+        limit: TRANSACTIONS_PER_PAGE,
+        status: statusFilter === 'ALL' ? undefined : (statusFilter as PaymentStatus),
+        method: methodFilter === 'ALL' ? undefined : (methodFilter as PaymentMethod),
+      })
+      .then((res) => { setTransactions(res.items); setTxTotal(res.total) })
+      .catch((err) => setTxError(getErrorMessage(err, t('common.notFoundGeneric'))))
+      .finally(() => setTxLoading(false))
+  }, [txPage, statusFilter, methodFilter, t])
 
   if (error) return <p className="text-danger text-sm">{error}</p>
   if (!stats) return <PageLoader />
@@ -38,6 +72,15 @@ export default function AdminRevenueStatsPage() {
   ]
 
   const maxMonthlyRevenue = Math.max(1, ...stats.monthly.map((m) => m.revenue))
+
+  const statusOptions = [
+    { value: 'ALL', label: t('statistics.revenue.statusAll') },
+    ...PAYMENT_STATUSES.map((s) => ({ value: s, label: t(`status.payment.${s}`) })),
+  ]
+  const methodOptions = [
+    { value: 'ALL', label: t('statistics.revenue.methodAll') },
+    ...PAYMENT_METHODS.map((m) => ({ value: m, label: t(`status.paymentMethod.${m}`) })),
+  ]
 
   return (
     <div className="space-y-5">
@@ -105,6 +148,55 @@ export default function AdminRevenueStatsPage() {
           </div>
         </Card>
       </div>
+
+      <Card>
+        <div className="flex items-center justify-between gap-3 p-4 border-b border-slate-100">
+          <h3 className="font-semibold text-navy text-sm">{t('statistics.revenue.transactionsTitle')}</h3>
+          <div className="flex items-center gap-3">
+            <Dropdown
+              value={statusFilter}
+              onChange={(v) => { setStatusFilter(v); setTxPage(1) }}
+              options={statusOptions}
+              statusDots={PAYMENT_STATUS_DOTS}
+              size="sm"
+              className="w-40"
+            />
+            <Dropdown
+              value={methodFilter}
+              onChange={(v) => { setMethodFilter(v); setTxPage(1) }}
+              options={methodOptions}
+              size="sm"
+              className="w-44"
+            />
+          </div>
+        </div>
+
+        {txLoading ? (
+          <PageLoader fullPage={false} />
+        ) : txError ? (
+          <p className="p-6 text-danger text-sm">{txError}</p>
+        ) : transactions.length === 0 ? (
+          <p className="p-6 text-sm text-slate-500">{t('statistics.revenue.noTransactions')}</p>
+        ) : (
+          <>
+            <AdminTable
+              rowKey={(p: AdminPayment) => p.id}
+              rows={transactions}
+              onRowClick={setSelectedPayment}
+              columns={[
+                { key: 'id', header: t('table.id'), render: (p) => <span className="font-mono text-xs font-semibold text-navy">#{p.bookingId}</span> },
+                { key: 'guest', header: t('table.guest'), render: (p) => p.booking?.guestName ?? p.booking?.guestEmail ?? '—' },
+                { key: 'room', header: t('table.room'), render: (p) => p.booking?.roomName ?? '—' },
+                { key: 'amount', header: t('table.amount'), render: (p) => `$${Number(p.amount).toLocaleString()}` },
+                { key: 'status', header: t('common.status'), render: (p) => <PaymentBadge status={p.status} /> },
+              ]}
+            />
+            <Pagination page={txPage} total={txTotal} perPage={TRANSACTIONS_PER_PAGE} onChange={setTxPage} />
+          </>
+        )}
+      </Card>
+
+      <PaymentDetailModal payment={selectedPayment} onClose={() => setSelectedPayment(null)} />
     </div>
   )
 }

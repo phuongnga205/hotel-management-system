@@ -78,7 +78,7 @@ export default function AdminBookingListPage() {
                     </>
                   ),
                 },
-                { key: 'total', header: t('table.total'), render: (b) => `$${b.totalPrice.toLocaleString()}` },
+                { key: 'total', header: t('table.total'), render: (b) => `$${Number(b.totalPrice).toLocaleString()}` },
                 { key: 'status', header: t('common.status'), render: (b) => <StatusBadge status={b.status} config={BOOKING_STATUS_CONFIG} /> },
                 { key: 'payment', header: t('table.payment'), render: (b) => <PaymentBadge status={b.payment?.status ?? null} /> },
                 {

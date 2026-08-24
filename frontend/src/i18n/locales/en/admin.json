@@ -55,7 +55,12 @@
     "joined": "Joined",
     "checkIn": "Check-in",
     "checkOut": "Check-out",
-    "payment": "Payment"
+    "payment": "Payment",
+    "amount": "Amount",
+    "method": "Method",
+    "transactionId": "Transaction ID",
+    "paidAt": "Paid At",
+    "createdAt": "Created At"
   },
   "rooms": {
     "viewType": {
@@ -272,7 +277,11 @@
       "tileTotalBookings": "Total Bookings",
       "trendChartTitle": "Revenue Trend",
       "byRoomTypeChartTitle": "Revenue by Room Type",
-      "monthlyBreakdownTitle": "Monthly Breakdown"
+      "monthlyBreakdownTitle": "Monthly Breakdown",
+      "transactionsTitle": "Transactions",
+      "statusAll": "All Status",
+      "methodAll": "All Methods",
+      "noTransactions": "No transactions found."
     }
   },
   "status": {
@@ -311,6 +320,12 @@
     "role": {
       "ADMIN": "Admin",
       "USER": "User"
+    },
+    "paymentMethod": {
+      "CASH": "Cash",
+      "BANK_TRANSFER": "Bank Transfer",
+      "CREDIT_CARD": "Credit Card",
+      "VNPAY": "VNPay"
     }
   }
 }

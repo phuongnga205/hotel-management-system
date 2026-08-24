@@ -30,6 +30,7 @@
     "IMAGE_UPLOAD_SUCCESS": "Room image uploaded successfully.",
     "AVAILABLE_SUCCESS": "Available rooms retrieved successfully.",
     "INVALID_DATE_RANGE": "Check-out date must be after check-in date.",
+    "INVALID_PRICE_RANGE": "minPrice must be less than or equal to maxPrice.",
     "THUMBNAIL_SET_SUCCESS": "Thumbnail image updated successfully."
   },
   "AMENITY": {
@@ -43,6 +44,9 @@
   },
   "MAIL": {
     "LOG_NOT_FOUND": "Email log {id} not found."
+  },
+  "PAYMENT": {
+    "FIND_ALL_SUCCESS": "Payment list retrieved successfully."
   },
   "BOOKING": {
     "NOT_FOUND": "Booking not found.",
@@ -64,6 +68,7 @@
     "CANNOT_REJECT": "Booking request cannot be rejected.",
     "REJECT_SUCCESS": "Booking request rejected successfully.",
     "CANNOT_PAY": "Booking request cannot be paid.",
+    "ALREADY_PAID": "This booking request has already been paid.",
     "PAY_SUCCESS": "Payment completed successfully.",
     "HOLD_EXPIRED": "This booking's hold has expired and can no longer be updated, paid, or approved.",
     "NO_FIELDS_TO_UPDATE": "At least one field (checkInDate, checkOutDate, or note) must be provided."

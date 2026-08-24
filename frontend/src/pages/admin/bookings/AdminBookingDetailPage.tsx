@@ -89,7 +89,7 @@ export default function AdminBookingDetailPage() {
                   { label: t('table.checkIn'), val: dateFmt(booking.checkInDate) },
                   { label: t('table.checkOut'), val: dateFmt(booking.checkOutDate) },
                   { label: t('bookings.detail.fieldDuration'), val: t('bookings.detail.nightsCount', { count: nights }) },
-                  { label: t('table.total'), val: `$${booking.totalPrice.toLocaleString()}` },
+                  { label: t('table.total'), val: `$${Number(booking.totalPrice).toLocaleString()}` },
                 ].map(({ label, val }) => (
                   <div key={label}>
                     <div className="text-xs text-slate-400 mb-0.5">{label}</div>
@@ -159,13 +159,13 @@ export default function AdminBookingDetailPage() {
           <h3 className="font-semibold text-navy text-sm uppercase tracking-wide mb-4">{t('bookings.detail.priceSummaryTitle')}</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-slate-500">{t('bookings.detail.pricePerNightLine', { price: booking.pricePerNight, nights })}</span>
-              <span className="font-semibold text-navy">${(booking.pricePerNight * nights).toLocaleString()}</span>
+              <span className="text-slate-500">{t('bookings.detail.pricePerNightLine', { price: Number(booking.pricePerNight), nights })}</span>
+              <span className="font-semibold text-navy">${(Number(booking.pricePerNight) * nights).toLocaleString()}</span>
             </div>
           </div>
           <div className="flex justify-between pt-3 mt-3 border-t border-slate-100">
             <span className="font-bold text-navy">{t('table.total')}</span>
-            <span className="font-bold text-navy text-lg">${booking.totalPrice.toLocaleString()}</span>
+            <span className="font-bold text-navy text-lg">${Number(booking.totalPrice).toLocaleString()}</span>
           </div>
           <div className="mt-3">
             <PaymentBadge status={booking.payment?.status ?? null} />

@@ -41,7 +41,7 @@ export function RoomGridCard({ room, onView, onBook }: RoomCardProps) {
         </div>
         <div className="flex items-center justify-between pt-3 border-t border-slate-100">
           <div>
-            <span className="text-xl font-bold text-navy">${room.pricePerNight}</span>
+            <span className="text-xl font-bold text-navy">${Number(room.pricePerNight).toLocaleString()}</span>
             <span className="text-xs text-slate-400 ml-1">{t('roomCard.perNight')}</span>
           </div>
           <button
@@ -84,7 +84,7 @@ export function RoomListCard({ room, onView, onBook }: RoomCardProps) {
         </div>
         <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100">
           <div>
-            <span className="text-xl font-bold text-navy">${room.pricePerNight}</span>
+            <span className="text-xl font-bold text-navy">${Number(room.pricePerNight).toLocaleString()}</span>
             <span className="text-xs text-slate-400 ml-1">
               {t('roomCard.perNight')} · {t('roomCard.upToGuests', { count: room.capacity })}
             </span>

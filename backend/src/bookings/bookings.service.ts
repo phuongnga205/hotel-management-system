@@ -263,6 +263,17 @@ export class BookingsService {
   // luôn lấy từ booking.totalPrice, không nhận từ FE (Luật 5). Mock: thanh
   // toán luôn thành công ngay lập tức, nhưng luồng dữ liệu (Payment thật,
   // transaction thật) đã sẵn sàng để nối cổng thanh toán thật sau này.
+  //
+  // Cho phép trả CẢ 2 trường hợp (khác điều kiện cũ chỉ nhận PENDING):
+  //  - PENDING + hold còn hạn: luồng gốc — thanh toán để tự chuyển ACCEPTED.
+  //  - ACCEPTED mà CHƯA có Payment SUCCESS nào: "trả bù" cho booking đã được
+  //    Admin duyệt thẳng (accept()) mà không qua thanh toán online — không
+  //    giới hạn thời gian (ACCEPTED không có hold), khớp đúng điều kiện
+  //    `canPay` FE đã cài sẵn ở BookingCard.tsx từ trước. Không đổi lại
+  //    booking.status (đã đúng ACCEPTED), chỉ thêm dòng Payment.
+  // Mọi trạng thái khác (REJECTED/CANCELLED/EXPIRED, hoặc ACCEPTED đã có
+  // Payment SUCCESS rồi) đều bị chặn — không cho trả tiền cho booking đã
+  // "chết" hoặc trả trùng lần 2.
   async pay(id: string, userId: string, dto: PayBookingDto) {
     return this.dataSource.transaction(async (manager) => {
       const bookingRepository = manager.getRepository(Booking);
@@ -274,12 +285,25 @@ export class BookingsService {
       if (!booking) {
         throw new NotFoundException(this.i18n.t('messages.BOOKING.NOT_FOUND'));
       }
+      // No-op trừ khi đang PENDING và hold đã hết hạn — tự expire rồi throw,
+      // không ảnh hưởng nhánh ACCEPTED bên dưới.
       await this.assertHoldStillActive(manager, booking);
-      if (booking.status !== BookingStatus.PENDING) {
+
+      const paymentRepository = manager.getRepository(Payment);
+
+      if (booking.status === BookingStatus.ACCEPTED) {
+        const alreadyPaid = await paymentRepository.exists({
+          where: { bookingId: booking.id, status: PaymentStatus.SUCCESS },
+        });
+        if (alreadyPaid) {
+          throw new ConflictException(
+            this.i18n.t('messages.BOOKING.ALREADY_PAID'),
+          );
+        }
+      } else if (booking.status !== BookingStatus.PENDING) {
         throw new ConflictException(this.i18n.t('messages.BOOKING.CANNOT_PAY'));
       }
 
-      const paymentRepository = manager.getRepository(Payment);
       await paymentRepository.save(
         paymentRepository.create({
           bookingId: booking.id,
@@ -291,9 +315,11 @@ export class BookingsService {
         }),
       );
 
-      booking.status = BookingStatus.ACCEPTED;
-      booking.holdExpiresAt = null;
-      await bookingRepository.save(booking);
+      if (booking.status === BookingStatus.PENDING) {
+        booking.status = BookingStatus.ACCEPTED;
+        booking.holdExpiresAt = null;
+        await bookingRepository.save(booking);
+      }
 
       return {
         statusCode: 201,

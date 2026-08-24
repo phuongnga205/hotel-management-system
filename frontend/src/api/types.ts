@@ -125,7 +125,11 @@ export interface Room {
   description: string | null
   viewType: RoomViewType | null
   capacity: number
-  pricePerNight: number
+  // Cot decimal khong co transformer o BE (RoomResponseDto ep .toString())
+  // -> LUON la string, phai tu Number() khi hien thi/tinh toan, khong duoc
+  // coi la number (khac CreateRoomPayload/UpdateRoomPayload - request van
+  // gui number).
+  pricePerNight: string
   status: RoomStatus
   amenities?: RoomAmenitySummary[]
   images?: RoomImage[]
@@ -197,8 +201,10 @@ export interface Booking {
   status: BookingStatus
   checkInDate: string
   checkOutDate: string
-  pricePerNight: number
-  totalPrice: number
+  // Cung ly do voi Room.pricePerNight - BE ep .toString() truoc khi tra ve,
+  // LUON la string, phai tu Number() khi hien thi/tinh toan.
+  pricePerNight: string
+  totalPrice: string
   note: string | null
   cancelReason: string | null
   createdAt: string
@@ -244,6 +250,25 @@ export interface Payment {
   transactionId: string | null
   paidAt: string | null
   createdAt: string
+}
+
+// --- admin payments (GET /admin/payments, dung o man Statistics > Revenue -
+// xem backend/docs/DANH_SACH_API.md muc 11) ---
+export interface AdminPaymentBookingSummary {
+  id: string
+  guestName: string | null
+  guestEmail: string
+  roomName: string
+  roomNumber: string
+}
+
+export interface AdminPayment extends Payment {
+  booking?: AdminPaymentBookingSummary
+}
+
+export interface ListAdminPaymentsQuery extends ListQuery {
+  status?: PaymentStatus
+  method?: PaymentMethod
 }
 
 // --- reviews (khong co field "status" that o backend - review chi ton tai
