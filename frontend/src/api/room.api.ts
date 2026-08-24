@@ -4,6 +4,7 @@ import { env } from '../config/env'
 import { roomMockApi } from './mocks/room.mock'
 import type {
   CreateRoomPayload,
+  ListAvailableRoomsQuery,
   ListRoomsQuery,
   MessageResponse,
   PagedResult,
@@ -16,6 +17,13 @@ const roomRealApi = {
   // Cong khai, khong can dang nhap - luon loc status=ACTIVE.
   listPublic: async (query: ListRoomsQuery): Promise<PagedResult<Room>> => {
     const res = await axiosClient.get(API_ENDPOINTS.ROOMS, { params: query })
+    return res.data.data
+  },
+  // Tim phong con trong theo checkIn/checkOut (bat buoc) + guests/minPrice/
+  // maxPrice/amenities (optional) - khac listPublic() o cho luon ket hop
+  // check overlap booking, khong chi loc status=ACTIVE tinh.
+  listAvailable: async (query: ListAvailableRoomsQuery): Promise<PagedResult<Room>> => {
+    const res = await axiosClient.get(API_ENDPOINTS.ROOMS_AVAILABLE, { params: query })
     return res.data.data
   },
   getPublicById: async (id: string): Promise<Room> => {

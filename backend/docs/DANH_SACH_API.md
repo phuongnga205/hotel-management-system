@@ -202,6 +202,15 @@ chung toàn app), không thêm field tuỳ biến:
 >   `data.items[].amenities` (`{id, name}[]`) và `data.items[].images`
 >   (`{id, roomId, imageUrl, isThumbnail, createdAt}[]`, xem mục 7) trong
 >   response phòng — không cần gọi thêm API riêng để lấy 2 danh sách này.
+>
+> **🆕 Query `guests` (optional) — lọc theo sức chứa phòng.** Cả
+> `GET /rooms` và `GET /rooms/available` đều nhận thêm `guests` (số nguyên
+> ≥ 1) — khi có, chỉ trả phòng có `rooms.capacity >= guests`. Trước đây
+> `rooms.capacity` tồn tại trong DB nhưng chưa từng được dùng để lọc ở bất
+> kỳ endpoint nào; giờ đã nối vào cả 2 list endpoint (không áp dụng cho
+> `GET /admin/rooms` — admin không cần tìm theo sức chứa). Xem thêm mục 4
+> (`guests` giờ cũng là field bắt buộc khi tạo booking, được validate lại
+> lần nữa ở đúng phòng cụ thể lúc `POST /bookings`).
 
 ## 4. Bookings (user)
 
@@ -223,14 +232,45 @@ chung toàn app), không thêm field tuỳ biến:
 > chứ không tách riêng bước check quyền sở hữu để trả `403`. Khác hẳn
 > `GET /admin/bookings/:id` (mục 8) — không giới hạn theo chủ sở hữu.
 
+> **🆕 `guests` (số khách) — bắt buộc khi tạo, cố định sau khi tạo.**
+> `POST /bookings` nhận thêm field bắt buộc `guests` (số nguyên ≥ 1),
+> validate `guests <= room.capacity` ngay tại thời điểm tạo — trả `400`
+> (`BOOKING.GUESTS_EXCEED_CAPACITY`) nếu vượt sức chứa phòng. **`totalPrice`
+> giờ tính theo cả số khách**: `totalPrice = nights × pricePerNight ×
+> guests` (trước đây chỉ `nights × pricePerNight`, không phụ thuộc số
+> người ở). `guests` được lưu lại trên booking (cột `bookings.guests`,
+> migration `AddGuestsToBookings`) và trả về trong mọi response
+> (`BookingResponseDto.guests`) — nhưng **KHÔNG có trong
+> `PATCH /bookings/:id`** (`UpdateBookingDto` không nhận field này): số
+> khách cố định ngay từ lúc tạo, muốn đổi phải huỷ và đặt lại. `PATCH
+> /bookings/:id` (sửa ngày/note) vẫn validate lại `guests` cũ so với
+> `room.capacity` mỗi lần sửa (phòng phòng trường hợp sau này cho đổi
+> phòng), và tính lại `totalPrice` theo `guests` cũ × số đêm mới.
+
 > **Đã implement đầy đủ — kể cả `POST /bookings/:id/pay`** (không còn là
 > stub). Body chỉ nhận `{ method }` (`PaymentMethod`), **không có field
 > `amount`** — số tiền luôn lấy từ `booking.totalPrice` ở server, không tin
 > dữ liệu tiền từ FE. Thanh toán hiện là **mock**: luôn trả `SUCCESS` ngay
 > lập tức (không gọi cổng thanh toán thật), nhưng tạo `Payment` thật trong
-> DB và tự động chuyển `booking.status` sang `ACCEPTED` — luồng dữ liệu
-> (entity, transaction) đã sẵn sàng để nối cổng thanh toán thật sau này chỉ
-> bằng cách thay phần "luôn SUCCESS" bằng gọi API cổng thanh toán thực tế.
+> DB — luồng dữ liệu (entity, transaction) đã sẵn sàng để nối cổng thanh
+> toán thật sau này chỉ bằng cách thay phần "luôn SUCCESS" bằng gọi API
+> cổng thanh toán thực tế.
+>
+> **🆕 2 tình huống hợp lệ để gọi `.../pay`** (bảng phía trên ghi gọn "chỉ
+> khi đang PENDING" nhưng thực ra rộng hơn — FE cần tính đúng cả 2 khi hiện
+> nút "Thanh toán"):
+> 1. Booking đang `PENDING` **và** hold còn hạn → thanh toán xong tự chuyển
+>    `booking.status → ACCEPTED`, xoá hold.
+> 2. Booking đã `ACCEPTED` nhưng **chưa có payment nào `SUCCESS`** (ví dụ
+>    Admin `accept` thẳng trước khi khách kịp trả tiền — mục 8) → coi là
+>    "thanh toán bù", **không đổi status** (đã `ACCEPTED` sẵn), không giới
+>    hạn bởi hold 10 phút, chỉ tạo thêm 1 `Payment SUCCESS` mới gắn với
+>    booking đó.
+>
+> Trả `409 Conflict` nếu: booking đã `REJECTED`/`CANCELLED`/`EXPIRED`
+> (không case nào ở trên áp dụng được); booking `PENDING` nhưng hold đã hết
+> hạn; hoặc booking đã có sẵn 1 payment `SUCCESS` từ trước (chặn trả trùng
+> lần 2, áp dụng cho cả 2 case).
 >
 > **Cơ chế giữ chỗ (hold) 10 phút, chống race condition đặt trùng phòng**
 > (xem thêm `frontend/docs/bridge.md` mục `bookings`):
@@ -353,6 +393,9 @@ chung toàn app), không thêm field tuỳ biến:
 | Xem chi tiết 1 phòng (view quản trị) | GET | `/api/v1/admin/rooms/:id` | Admin | JWT + RolesGuard(ADMIN) |
 | Tạo phòng | POST | `/api/v1/admin/rooms` | Admin | JWT + RolesGuard(ADMIN) |
 | Chỉnh sửa thông tin phòng | PATCH | `/api/v1/admin/rooms/:id` | Admin | JWT + RolesGuard(ADMIN) |
+| Cập nhật riêng giá phòng | PATCH | `/api/v1/admin/rooms/:id/price` | Admin | JWT + RolesGuard(ADMIN) |
+| Gán tiện nghi cho phòng | POST | `/api/v1/admin/rooms/:id/amenities` | Admin | JWT + RolesGuard(ADMIN) |
+| Gỡ 1 tiện nghi khỏi phòng | DELETE | `/api/v1/admin/rooms/:id/amenities/:amenityId` | Admin | JWT + RolesGuard(ADMIN) |
 | Xoá phòng | DELETE | `/api/v1/admin/rooms/:id` | Admin | JWT + RolesGuard(ADMIN) |
 | Export danh sách phòng ra Excel | GET | `/api/v1/admin/rooms/export` | Admin | JWT + RolesGuard(ADMIN) |
 
@@ -361,6 +404,17 @@ chung toàn app), không thêm field tuỳ biến:
 > thái. `roomType` là field tự do (`varchar`, không phải bảng danh mục
 > riêng) — set/sửa được qua `CreateRoomDto`/`UpdateRoomDto` khi
 > tạo/sửa phòng, không có endpoint quản lý danh mục riêng cho nó.
+>
+> **🆕 3 dòng bổ sung (có trong code, trước đây thiếu trong bảng này)**:
+> - `PATCH /admin/rooms/:id/price` (`UpdateRoomPriceDto`) — cập nhật riêng
+>   `pricePerNight`, tách khỏi `PATCH /admin/rooms/:id` (sửa thông tin
+>   chung). Dùng khi FE chỉ cần đổi giá mà không đụng các field khác.
+> - `POST /admin/rooms/:id/amenities` (`UpdateRoomAmenitiesDto`, body
+>   `{ amenityIds: string[] }`) và
+>   `DELETE /admin/rooms/:id/amenities/:amenityId` — đây chính là "2 API
+>   riêng" đã được nhắc tới ở mục 13 ("xem mục 6") nhưng trước đây chưa
+>   thực sự có dòng nào trong bảng ở mục 6 — nay bổ sung cho khớp code
+>   (`AdminRoomsController.addAmenities()`/`removeAmenity()`).
 
 ## 7. Admin — Room Images
 
@@ -556,6 +610,29 @@ chung toàn app), không thêm field tuỳ biến:
 | Xem chi tiết 1 email log | GET | `/api/v1/admin/email-logs/:id` | Admin | JWT + RolesGuard(ADMIN) |
 | Gửi lại email thất bại | POST | `/api/v1/admin/email-logs/:id/retry` | Admin | JWT + RolesGuard(ADMIN) |
 
+## 12a. Mail — endpoint dev/test (⚠️ chưa chốt, không nên coi là API chính thức)
+
+| Chức năng | Method | URL | Quyền | Auth |
+|---|---|---|---|---|
+| Gửi thử 1 email (verify Redis/BullMQ/Nodemailer còn sống) | POST | `/api/v1/mail/test` | — | **Không guard** |
+| Xem trạng thái gửi 1 email theo id | GET | `/api/v1/mail/:id` | — | **Không guard** |
+
+> **🆕 Phát hiện khi đối chiếu code thật — `MailController`
+> (`backend/src/mail/mail.controller.ts`) chưa từng có trong bất kỳ bản
+> docs nào trước đây.** Đây là 2 route dev/test nội bộ, **không gắn
+> `JwtAuthGuard`/`RolesGuard` nào** — ai cũng gọi được kể cả chưa đăng
+> nhập, kể cả trigger gửi 1 email thật (`POST .../test`, body `SendMailDto`)
+> hoặc đọc `status`/`retryCount`/`lastError`/`recipient` của bất kỳ email
+> log nào theo `id` (`GET .../:id`), không giới hạn theo quyền sở hữu hay
+> role.
+>
+> 🚧 **Cần team quyết định trước khi lên môi trường thật** (không thuộc
+> phạm vi audit docs — đây là quyết định implement, để PR BE khác xử lý):
+> xoá hẳn khỏi router, chuyển sang `RolesGuard(ADMIN)`, hoặc chỉ bật khi
+> `NODE_ENV` là local/test. Không có route FE nào gọi 2 endpoint này —
+> không thuộc luồng nghiệp vụ chính thức, khác hẳn `/admin/email-logs/**`
+> (mục 12) là API thật cho màn hình Admin.
+
 ---
 
 ## 13. Admin — Amenities
@@ -634,6 +711,18 @@ chung toàn app), không thêm field tuỳ biến:
       xem mục 7.
 - [x] `GET/POST/PATCH/DELETE /amenities` đã implement, gán/gỡ tiện nghi cho
       phòng qua `/admin/rooms/:id/amenities` cũng đã implement — xem mục 13.
+- [x] `PATCH /admin/rooms/:id/price`, `POST /admin/rooms/:id/amenities`,
+      `DELETE /admin/rooms/:id/amenities/:amenityId` — có sẵn trong code từ
+      trước nhưng thiếu dòng trong bảng mục 6, đã bổ sung sau khi đối chiếu
+      lại `AdminRoomsController`.
+- [ ] `GET /admin/statistics/bookings`, `GET /admin/statistics/revenue`
+      (mục 11) — **chưa có module/controller nào trong code** (không có
+      `StatisticsModule` trong `app.module.ts`). Để nguyên trong docs như
+      hợp đồng API, việc implement dời sang 1 PR BE riêng.
+- [ ] `POST /mail/test`, `GET /mail/:id` (mục 12a) — tồn tại trong code,
+      không guard, chưa từng có trong docs trước đây, nay đã bổ sung để rà
+      security. Cần team quyết định giữ/xoá/khoá guard trước khi lên
+      production (thuộc phạm vi 1 PR BE khác).
 - [ ] Emit đủ 5 event gửi mail: `UserRegistered`, `PasswordResetRequested`,
       `BookingStatusChanged`, `ReviewDeleted`, + cron báo cáo doanh thu —
       xem mục 14.

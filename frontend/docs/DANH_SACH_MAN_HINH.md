@@ -32,9 +32,9 @@
 
 | Page component | Route | API sử dụng | Ghi chú |
 |---|---|---|---|
-| `pages/rooms/RoomListPage.tsx` | `/rooms` | `GET /rooms` (mặc định) **hoặc** `GET /rooms/available` (khi user đã nhập `checkIn`/`checkOut`) | 🚧 **CHƯA DỰNG — file/route chưa tồn tại.** 2 API cho cùng 1 màn — chọn API theo việc query có `checkIn`/`checkOut` hay không. `roomApi.listPublic()` đã sẵn sàng gọi thật (đã được `HomePage.tsx` dùng cho phần "phòng nổi bật"), chỉ thiếu đúng trang này. **`HomePage.tsx` đã có link trỏ tới route này — dead link hiện tại.** |
-| `pages/rooms/RoomDetailPage.tsx` | `/rooms/:roomId` | `GET /rooms/:id` + `GET /rooms/:roomId/reviews` | 🚧 **CHƯA DỰNG — file/route chưa tồn tại.** Nút "Đặt phòng" điều hướng sang `BookRoomPage`, không gọi API ở đây. `reviewApi.listByRoom(roomId, query)` đã được chứng minh hoạt động thật (dùng trong `HomePage.tsx` cho carousel đánh giá) — không còn là API "chưa gọi bao giờ", chỉ thiếu trang chi tiết phòng để nối vào. **`HomePage.tsx` đã có nút "Xem chi tiết" trỏ tới route này — dead link hiện tại.** |
-| `pages/rooms/BookRoomPage.tsx` | `/rooms/:roomId/book` | `POST /bookings` | 🚧 **CHƯA DỰNG — file/route chưa tồn tại.** Bắt riêng lỗi `409 Conflict` (race condition) theo `backend/docs/DANH_SACH_API.md`. `bookingApi.create()` đã sẵn sàng gọi thật. **`HomePage.tsx` đã có nút "Đặt phòng" trỏ tới route này — dead link hiện tại.** |
+| `pages/rooms/RoomListPage.tsx` | `/rooms` | `GET /rooms` (mặc định, qua `roomApi.listPublic()`) **hoặc** `GET /rooms/available` (khi user đã nhập `checkIn`/`checkOut`, qua `roomApi.listAvailable()` 🆕) | 🚧 **CHƯA DỰNG — file/route chưa tồn tại.** 2 API cho cùng 1 màn — chọn API theo việc query có `checkIn`/`checkOut` hay không. `roomApi.listPublic()` đã sẵn sàng gọi thật (đã được `HomePage.tsx` dùng cho phần "phòng nổi bật"), chỉ thiếu đúng trang này. **`HomePage.tsx` đã có link trỏ tới route này — dead link hiện tại.** 🆕 Cả 2 API giờ nhận thêm `guests` (optional, lọc theo `room.capacity`) — đọc từ query string `?guests=` mà `HomePage.tsx` đã build sẵn (`ListRoomsQuery.guests`/`ListAvailableRoomsQuery.guests`, `api/types.ts`). `roomApi.listAvailable()` trước đây **hoàn toàn chưa tồn tại** (dù `API_ENDPOINTS.ROOMS_AVAILABLE` đã có constant), giờ đã có sẵn để gọi. |
+| `pages/rooms/RoomDetailPage.tsx` | `/rooms/:roomId` | `GET /rooms/:id` + `GET /rooms/:roomId/reviews` | 🚧 **CHƯA DỰNG — file/route chưa tồn tại.** Nút "Đặt phòng" điều hướng sang `BookRoomPage`, không gọi API ở đây. `reviewApi.listByRoom(roomId, query)` đã được chứng minh hoạt động thật (dùng trong `HomePage.tsx` cho carousel đánh giá) — không còn là API "chưa gọi bao giờ", chỉ thiếu trang chi tiết phòng để nối vào. **`HomePage.tsx` đã có nút "Xem chi tiết" trỏ tới route này — dead link hiện tại.** Gợi ý UX (không bắt buộc): hiển thị `room.capacity` dạng "up to N guests", giống cách `RoomCard.tsx` đang hiển thị ở list/home. |
+| `pages/rooms/BookRoomPage.tsx` | `/rooms/:roomId/book` | `POST /bookings` — **body giờ bắt buộc có `guests`** 🆕 | 🚧 **CHƯA DỰNG — file/route chưa tồn tại.** Bắt riêng lỗi `409 Conflict` (race condition) theo `backend/docs/DANH_SACH_API.md`. `bookingApi.create()` đã sẵn sàng gọi thật. **`HomePage.tsx` đã có nút "Đặt phòng" trỏ tới route này — dead link hiện tại.** 🆕 Form cần input chọn số khách (`guests`), validate client-side `<= room.capacity` trước khi submit (BE vẫn validate lại, 400 `GUESTS_EXCEED_CAPACITY` nếu vượt), và nên hiển thị `totalPrice` ước tính = `nights × pricePerNight × guests` trước khi bấm đặt (khớp công thức BE — xem `bridge.md` mục 6). |
 
 ## D. Profile (user)
 
@@ -148,6 +148,16 @@
   `BookingPaymentPage` chưa tồn tại** → dead link, ưu tiên cao (mục E).
 - `POST /reviews` — có method thật (`reviewApi.create()`) nhưng **không
   màn nào gọi**, kể cả không có nút dẫn vào (mục E).
+- 🆕 `GET /rooms/available` (`roomApi.listAvailable()`) và `guests` query
+  trên cả `GET /rooms`/`GET /rooms/available` — đã có method + type thật
+  (`ListRoomsQuery.guests`, `ListAvailableRoomsQuery`, `api/types.ts`) và
+  `HomePage.tsx` đã build sẵn `?guests=` trong query string, nhưng **chưa
+  màn nào tiêu thụ** vì `RoomListPage` chưa tồn tại (mục C) — sẵn sàng ở
+  tầng data, chỉ chờ dựng UI.
+- 🆕 `guests` trên `Booking`/`CreateBookingPayload` (`api/types.ts`) — field
+  mới, `bookingApi.create()` đã nhận đúng type, nhưng **chưa màn nào gọi**
+  vì `BookRoomPage` chưa tồn tại (mục C) — tương tự các field khác đã sẵn
+  sàng ở tầng data, chờ dựng UI.
 - `POST /mail/test`, `GET /mail/:id` (mục 12a ở doc BE) — route dev/test
   nội bộ, không guard, **không map vào màn hình FE nào cả theo thiết kế**
   (không thuộc luồng nghiệp vụ chính thức) — khác các API "thiếu UI" khác ở

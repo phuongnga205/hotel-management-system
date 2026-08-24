@@ -63,6 +63,7 @@
     "INVALID_DATE_RANGE": "Date range invalid.",
     "DATES_OVERLAP": "This room is already booked for the selected dates.",
     "ROOM_UNAVAILABLE": "This room is not available for booking.",
+    "GUESTS_EXCEED_CAPACITY": "Number of guests exceeds the room's capacity.",
     "CANNOT_ACCEPT": "Booking request cannot be accepted.",
     "ACCEPT_SUCCESS": "Booking request accepted successfully.",
     "CANNOT_REJECT": "Booking request cannot be rejected.",

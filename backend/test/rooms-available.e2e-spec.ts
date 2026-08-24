@@ -200,5 +200,41 @@ describeWithDatabase(
       const ids = result.data.items.map((room) => room.id);
       expect(ids).toContain(roomWifiAndPoolId);
     });
+
+    it('findAvailableRooms lọc theo guests <= capacity', async () => {
+      // Cả 3 phòng fixture đều capacity = 2.
+      const fitsCapacity = await service.findAvailableRooms({
+        page: 1,
+        limit: 20,
+        checkIn: '2027-08-10',
+        checkOut: '2027-08-12',
+        guests: 2,
+      });
+      const fitsIds = fitsCapacity.data.items.map((room) => room.id);
+      expect(fitsIds).toContain(roomWifiOnlyId);
+      expect(fitsIds).toContain(roomWifiAndPoolId);
+
+      const exceedsCapacity = await service.findAvailableRooms({
+        page: 1,
+        limit: 20,
+        checkIn: '2027-08-10',
+        checkOut: '2027-08-12',
+        guests: 3,
+      });
+      const exceedsIds = exceedsCapacity.data.items.map((room) => room.id);
+      expect(exceedsIds).not.toContain(roomWifiOnlyId);
+      expect(exceedsIds).not.toContain(roomWifiAndPoolId);
+    });
+
+    it('findPublicList (GET /rooms) lọc theo guests <= capacity', async () => {
+      const result = await service.findPublicList({
+        page: 1,
+        limit: 50,
+        guests: 3,
+      });
+      const ids = result.data.items.map((room) => room.id);
+      expect(ids).not.toContain(roomWifiOnlyId);
+      expect(ids).not.toContain(roomWifiAndPoolId);
+    });
   },
 );

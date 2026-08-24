@@ -158,6 +158,23 @@ export interface UpdateRoomPayload {
 export interface ListRoomsQuery extends ListQuery {
   search?: string
   status?: RoomStatus
+  // Chi ap dung khi goi roomApi.listPublic() (GET /rooms cong khai) - loc
+  // theo room.capacity >= guests. BE khong nhan field nay o GET /admin/rooms
+  // (admin khong can tim theo suc chua), du type nay dang dung chung cho ca
+  // 2 (xem room.api.ts).
+  guests?: number
+}
+
+// Khop FindAvailableRoomsDto o BE (GET /rooms/available) - truoc day chua
+// co type nao khop shape nay o FE, endpoint constant ROOMS_AVAILABLE ton
+// tai san nhung chua method nao goi (xem room.api.ts listAvailable()).
+export interface ListAvailableRoomsQuery extends ListQuery {
+  checkIn: string
+  checkOut: string
+  minPrice?: number
+  maxPrice?: number
+  amenities?: string[]
+  guests?: number
 }
 
 // --- amenities ---
@@ -201,9 +218,14 @@ export interface Booking {
   status: BookingStatus
   checkInDate: string
   checkOutDate: string
+  // Bat buoc khi tao (CreateBookingPayload), co dinh sau khi tao - KHONG co
+  // trong UpdateBookingPayload (PATCH /bookings/:id khong cho sua guests).
+  // Duoc validate <= room.capacity o BE, va nhan vao cong thuc totalPrice.
+  guests: number
   // Cung ly do voi Room.pricePerNight - BE ep .toString() truoc khi tra ve,
   // LUON la string, phai tu Number() khi hien thi/tinh toan.
   pricePerNight: string
+  // = nights * pricePerNight * guests (BE tu tinh, FE khong gui).
   totalPrice: string
   note: string | null
   cancelReason: string | null
@@ -217,6 +239,9 @@ export interface CreateBookingPayload {
   roomId: string
   checkInDate: string
   checkOutDate: string
+  // Bat buoc, validate <= room.capacity o BE (400 GUESTS_EXCEED_CAPACITY
+  // neu vuot) - anh huong truc tiep totalPrice tra ve.
+  guests: number
   note?: string
 }
 

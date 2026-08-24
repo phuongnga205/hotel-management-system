@@ -88,6 +88,7 @@ describeWithDatabase('BookingsService overlap (e2e, real Postgres)', () => {
       roomId,
       checkInDate: '2027-01-10',
       checkOutDate: '2027-01-12',
+      guests: 2,
     };
 
     const results = await Promise.allSettled([

@@ -40,6 +40,7 @@ describe('ReviewsService', () => {
     roomId: '5',
     checkInDate: '2026-01-01',
     checkOutDate: '2026-01-02',
+    guests: 1,
     pricePerNight: new Decimal(1500000),
     totalPrice: new Decimal(1500000),
     status: BookingStatus.ACCEPTED,

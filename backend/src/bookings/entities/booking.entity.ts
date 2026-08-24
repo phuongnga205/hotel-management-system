@@ -24,6 +24,7 @@ import { decimalTransformer } from '../../common/transformers/decimal.transforme
   'chk_bookings_status',
   `"status" IN ('PENDING','ACCEPTED','REJECTED','CANCELLED','EXPIRED')`,
 )
+@Check('chk_bookings_guests', '"guests" > 0')
 @Index('idx_bookings_user_id', ['userId'])
 @Index('idx_bookings_room_id', ['roomId'])
 @Index('idx_bookings_status', ['status'])
@@ -56,6 +57,12 @@ export class Booking {
 
   @Column({ name: 'check_out_date', type: 'date' })
   checkOutDate!: string;
+
+  // Số khách đặt cùng booking này — bắt buộc khi tạo (validate <=
+  // room.capacity ở service, xem BookingsService.findBookableRoom()), cố
+  // định sau khi tạo (UpdateBookingDto không nhận field này).
+  @Column({ type: 'smallint' })
+  guests!: number;
 
   // Snapshot of the room's price at booking time — protects the booking
   // from later changes to rooms.price_per_night.

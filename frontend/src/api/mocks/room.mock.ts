@@ -5,6 +5,7 @@
  */
 import type {
   CreateRoomPayload,
+  ListAvailableRoomsQuery,
   ListRoomsQuery,
   MessageResponse,
   PagedResult,
@@ -22,7 +23,10 @@ function mockDelay<T>(data: T, ms = MOCK_DELAY_MS): Promise<T> {
 
 const SEED_TIMESTAMP = '2026-01-01T00:00:00Z'
 
-let rooms: Room[] = [
+// Export de booking.mock.ts tra cuu pricePerNight/capacity that theo roomId
+// khi tinh totalPrice mock - giong pattern amenityCatalog export o
+// amenity.mock.ts (dung chung 1 nguon fixture, khong lap lai du lieu).
+export let rooms: Room[] = [
   {
     id: '1',
     roomNumber: '101',
@@ -121,8 +125,28 @@ function nextId(): string {
 
 export const roomMockApi = {
   listPublic: async (query: ListRoomsQuery): Promise<PagedResult<Room>> => {
-    const active = rooms.filter((r) => r.status === 'ACTIVE')
-    return mockDelay(paginate(active, query))
+    let filtered = rooms.filter((r) => r.status === 'ACTIVE')
+    if (query.guests !== undefined) filtered = filtered.filter((r) => r.capacity >= query.guests!)
+    return mockDelay(paginate(filtered, query))
+  },
+  // Gia lap don gian: loc theo status/capacity/gia/tien nghi giong BE that,
+  // nhung KHONG check trung ngay voi booking da co (can import bookings tu
+  // booking.mock.ts, se tao circular import vi booking.mock.ts da import
+  // nguoc lai `rooms` tu file nay de tinh gia - du "co the tim duoc phong
+  // that ra da het" trong mock, chap nhan duoc vi day chi la du lieu demo).
+  listAvailable: async (query: ListAvailableRoomsQuery): Promise<PagedResult<Room>> => {
+    let filtered = rooms.filter((r) => r.status === 'ACTIVE')
+    if (query.guests !== undefined) filtered = filtered.filter((r) => r.capacity >= query.guests!)
+    if (query.minPrice !== undefined) filtered = filtered.filter((r) => Number(r.pricePerNight) >= query.minPrice!)
+    if (query.maxPrice !== undefined) filtered = filtered.filter((r) => Number(r.pricePerNight) <= query.maxPrice!)
+    if (query.amenities && query.amenities.length > 0) {
+      const wanted = query.amenities.map((a) => a.toLowerCase())
+      filtered = filtered.filter((r) => {
+        const roomAmenityNames = (r.amenities ?? []).map((a) => a.name.toLowerCase())
+        return wanted.every((w) => roomAmenityNames.includes(w))
+      })
+    }
+    return mockDelay(paginate(filtered, query))
   },
   getPublicById: async (id: string): Promise<Room> => {
     const room = rooms.find((r) => r.id === id && r.status === 'ACTIVE')

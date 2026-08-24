@@ -265,6 +265,7 @@ describeWithDatabase(
             roomId,
             checkInDate: '2027-06-01',
             checkOutDate: '2027-06-03',
+            guests: 2,
           })
           .expect(201);
         const bookingId = (createRes.body as BookingResponseBody).data.id;
@@ -315,6 +316,7 @@ describeWithDatabase(
           roomId,
           checkInDate: '2027-07-01',
           checkOutDate: '2027-07-03',
+          guests: 2,
         })
         .expect(201);
       const bookingId = (createRes.body as BookingResponseBody).data.id;

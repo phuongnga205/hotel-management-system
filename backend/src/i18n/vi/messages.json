@@ -63,6 +63,7 @@
     "INVALID_DATE_RANGE": "Thời gian không phù hợp.",
     "DATES_OVERLAP": "Phòng đã được đặt trong khoảng thời gian này.",
     "ROOM_UNAVAILABLE": "Phòng hiện không khả dụng để đặt.",
+    "GUESTS_EXCEED_CAPACITY": "Số khách vượt quá sức chứa của phòng.",
     "CANNOT_ACCEPT": "Yêu cầu đặt phòng không thể chấp nhận.",
     "ACCEPT_SUCCESS": "Đã chấp nhận yêu cầu đặt phòng thành công.",
     "CANNOT_REJECT": "Yêu cầu đặt phòng không thể từ chối.",

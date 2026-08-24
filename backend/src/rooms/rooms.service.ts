@@ -7,7 +7,13 @@ import {
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { plainToInstance } from 'class-transformer';
-import { DataSource, EntityManager, In, Repository } from 'typeorm';
+import {
+  DataSource,
+  EntityManager,
+  In,
+  MoreThanOrEqual,
+  Repository,
+} from 'typeorm';
 import { I18nService } from 'nestjs-i18n';
 import { Amenity } from '../amenities/entities/amenity.entity';
 import { RoomAmenity } from '../amenities/entities/room-amenity.entity';
@@ -96,8 +102,8 @@ export class RoomsService {
   // GET /rooms — public/user CHỈ được thấy phòng ACTIVE. Ép cứng ở đây,
   // không nhận status từ client (ListPublicRoomsDto không có field đó).
   async findPublicList(query: ListPublicRoomsDto) {
-    const { page, limit } = query;
-    const data = await this.listRooms(page, limit, RoomStatus.ACTIVE);
+    const { page, limit, guests } = query;
+    const data = await this.listRooms(page, limit, RoomStatus.ACTIVE, guests);
 
     return {
       statusCode: 200,
@@ -110,6 +116,7 @@ export class RoomsService {
     page: number,
     limit: number,
     status?: RoomStatus,
+    guests?: number,
   ): Promise<PaginatedRooms> {
     const repository = this.dataSource.getRepository(Room);
 
@@ -119,7 +126,10 @@ export class RoomsService {
     // bằng QueryBuilder, tuân Luật 4 (danh sách có Relations bắt buộc
     // QueryBuilder).
     const [ids, total] = await repository.findAndCount({
-      where: status ? { status } : {},
+      where: {
+        ...(status ? { status } : {}),
+        ...(guests !== undefined ? { capacity: MoreThanOrEqual(guests) } : {}),
+      },
       select: { id: true },
       order: { id: 'ASC' },
       take: limit,
@@ -154,8 +164,16 @@ export class RoomsService {
   // luôn chỉ xét phòng ACTIVE + không trùng ngày với booking
   // ACCEPTED/PENDING nào (xem note ở docs/DANH_SACH_API.md mục Rooms).
   async findAvailableRooms(queryDto: FindAvailableRoomsDto) {
-    const { page, limit, checkIn, checkOut, minPrice, maxPrice, amenities } =
-      queryDto;
+    const {
+      page,
+      limit,
+      checkIn,
+      checkOut,
+      minPrice,
+      maxPrice,
+      guests,
+      amenities,
+    } = queryDto;
 
     if (checkOut <= checkIn) {
       throw new BadRequestException(
@@ -193,6 +211,10 @@ export class RoomsService {
 
     if (maxPrice !== undefined) {
       filterQuery.andWhere('room.pricePerNight <= :maxPrice', { maxPrice });
+    }
+
+    if (guests !== undefined) {
+      filterQuery.andWhere('room.capacity >= :guests', { guests });
     }
 
     if (amenities && amenities.length > 0) {
