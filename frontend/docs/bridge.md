@@ -130,7 +130,7 @@ liên quan trực tiếp tới FE vì không trả ra API.
 | `roomType` | `string` | ✔ | tối đa 50 ký tự, **free text**, không phải enum — DB column nullable nhưng `CreateRoomDto` bắt buộc không rỗng khi tạo phòng, đừng coi đây là 1 tập giá trị cố định (không dựng dropdown chọn sẵn kiểu SINGLE/DOUBLE/... — không tồn tại ở backend) |
 | `description` | `string \| null` | optional | `text`, không giới hạn độ dài rõ ràng ở DB |
 | `viewType` | `'CITY_VIEW' \| 'GARDEN_VIEW' \| 'SEA_VIEW' \| null` | optional | enum cố định — dùng đúng 3 giá trị này cho dropdown filter/form |
-| `capacity` | `number` (int, dương) | ✔ | `IsInt`, `IsPositive` — số nguyên > 0 |
+| `capacity` | `number` (int, dương) | ✔ | `IsInt`, `IsPositive` — số nguyên > 0. 🆕 Giờ được dùng thật để lọc phòng theo query `guests` ở `GET /rooms`/`GET /rooms/available` (xem ngay dưới) — trước đây field này có sẵn nhưng chưa lọc ở đâu cả. |
 | `pricePerNight` | **`string`** trong response (`number` khi gửi lên qua `CreateRoomDto`/`UpdateRoomPriceDto`) | ✔ | `DECIMAL(10,2)`, `Min(0)`, tối đa 2 chữ số thập phân — xem cảnh báo ở "Quy ước chung" phía trên |
 | `status` | `'ACTIVE' \| 'INACTIVE' \| 'MAINTENANCE'` | optional (mặc định `ACTIVE`) | trạng thái vận hành, **không** phản ánh còn trống ngày cụ thể hay không (xem `GET /rooms/available` trong `DANH_SACH_API.md`) |
 | `amenities` | `{ id: string; name: string }[] \| undefined` | — | chỉ có khi API load quan hệ (list/detail đều có) — `undefined` = chưa load, `[]` = load rồi nhưng phòng chưa gán tiện nghi nào, phân biệt rõ 2 trường hợp |
@@ -142,9 +142,21 @@ liên quan trực tiếp tới FE vì không trả ra API.
 `page` (int ≥ 1, mặc định 1), `limit` (int, 1–100, mặc định 10) — **đúng
 quy ước chung `page`/`limit`** nêu trong `DANH_SACH_API.md`, không phải
 `skip`/`take` (bản trước của tài liệu này ghi nhầm `skip`/`take`, đã sửa).
-`ListPublicRoomsDto` (`GET /rooms`, `GET /rooms/available`) cùng `page`/
-`limit` nhưng **không có** field `status` — public không tự chọn được xem
-phòng trạng thái gì, server luôn tự lọc `status = ACTIVE`.
+`ListPublicRoomsDto` (`GET /rooms`) cùng `page`/`limit` nhưng **không có**
+field `status` — public không tự chọn được xem phòng trạng thái gì, server
+luôn tự lọc `status = ACTIVE`. 🆕 Có thêm `guests?: number` (optional) —
+lọc `capacity >= guests`, khớp FE `ListRoomsQuery.guests` (`api/types.ts`).
+
+🆕 **`FindAvailableRoomsDto` (`GET /rooms/available`)** — trước đây tài
+liệu này gộp chung với `ListPublicRoomsDto` nhưng thực ra **shape khác
+hẳn**: `checkIn`/`checkOut` (bắt buộc, `YYYY-MM-DD`), `minPrice`/`maxPrice`
+(optional), `amenities` (optional, mảng tên tiện nghi), `guests` (optional,
+lọc `capacity >= guests`), cộng `page`/`limit`. Khớp FE type
+`ListAvailableRoomsQuery` (`api/types.ts`) — **type này trước đây chưa tồn
+tại**, không có shape nào khớp `GET /rooms/available` ở FE. Gọi qua
+`roomApi.listAvailable(query)` (`api/room.api.ts`) — endpoint constant
+`API_ENDPOINTS.ROOMS_AVAILABLE` đã có sẵn từ trước nhưng **chưa từng có
+method nào gọi tới**, giờ đã nối xong.
 
 ## 4. `images` (ảnh phòng)
 
@@ -209,8 +221,9 @@ riêng.
 | `roomId` (chỉ **request** tạo) | `string` | numeric string, `CreateBookingDto.roomId` |
 | `checkInDate` | `string` (`YYYY-MM-DD`) | `IsDateString`, bắt buộc khi tạo |
 | `checkOutDate` | `string` (`YYYY-MM-DD`) | phải **sau** `checkInDate` (`chk_bookings_dates`), bắt buộc khi tạo |
+| `guests` | `number` (int, dương) | 🆕 **Bắt buộc khi tạo** (`CreateBookingPayload.guests`), BE validate `guests <= room.capacity` (400 `GUESTS_EXCEED_CAPACITY` nếu vượt). **KHÔNG có trong `UpdateBookingPayload`** — cố định sau khi tạo, `PATCH /bookings/:id` chỉ sửa được `checkInDate`/`checkOutDate`/`note`, không sửa được số khách (muốn đổi phải huỷ đặt lại). |
 | `pricePerNight` | **`string`** (không phải `number`) | snapshot giá phòng tại thời điểm đặt, BE tự set, FE không gửi — xem cảnh báo ở "Quy ước chung" |
-| `totalPrice` | **`string`** (không phải `number`) | BE tự tính, FE không gửi — cũng là `amount` mà `POST .../pay` sẽ tự lấy, FE không gửi `amount` |
+| `totalPrice` | **`string`** (không phải `number`) | 🆕 **BE tự tính = `nights × pricePerNight × guests`** (trước đây chỉ `nights × pricePerNight`, không phụ thuộc số khách) — FE không gửi, cũng là `amount` mà `POST .../pay` sẽ tự lấy, FE không gửi `amount` |
 | `status` | `'PENDING' \| 'ACCEPTED' \| 'REJECTED' \| 'CANCELLED' \| 'EXPIRED'` | mặc định `PENDING`; BE quản lý transition, FE chỉ hiển thị + gọi action tương ứng (`/cancel`, `/pay`, admin `/accept`, `/reject`) |
 | `note` | `string \| null` | optional khi tạo/sửa, tối đa 1000 ký tự |
 | `cancelReason` | `string \| null` | do user điền khi huỷ (`CancelBookingDto.cancelReason`, tối đa 500 ký tự, optional) hoặc admin điền khi từ chối (`RejectBookingDto.cancelReason`, **cùng tên field**, cùng cột DB `bookings.cancel_reason`) |

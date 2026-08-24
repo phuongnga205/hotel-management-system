@@ -6,6 +6,9 @@ import { ActivatePage } from '../pages/auth/ActivatePage'
 import { ForgotPasswordPage } from '../pages/auth/ForgotPasswordPage'
 import { ResetPasswordPage } from '../pages/auth/ResetPasswordPage'
 import { ProfilePage } from '../pages/profile/ProfilePage'
+import { BookingHistoryPage } from '../pages/bookings/BookingHistoryPage'
+import NotFoundPage from '../pages/NotFoundPage'
+import ForbiddenPage from '../pages/ForbiddenPage'
 import { PublicLayout } from '../components/layouts/PublicLayout'
 import { AuthGuard } from '../components/layouts/AuthGuard'
 import { AdminGuard } from '../components/layouts/AdminGuard'
@@ -56,14 +59,29 @@ export const router = createBrowserRouter([
         element: <HomePage />,
       },
       {
+        path: ROUTES.FORBIDDEN,
+        element: <ForbiddenPage />,
+      },
+      {
         element: <AuthGuard />,
         children: [
           {
             path: ROUTES.PROFILE,
             element: <ProfilePage />,
           },
+          {
+            path: ROUTES.BOOKINGS,
+            element: <BookingHistoryPage />,
+          },
         ]
-      }
+      },
+      {
+        // Fallback cho moi URL khong khop route nao o tren - phai dat cuoi
+        // cung trong PublicLayout de con header/footer chung, va phai la
+        // route cuoi cung duoc dang ky (react-router match theo thu tu).
+        path: '*',
+        element: <NotFoundPage />,
+      },
     ]
   },
   {

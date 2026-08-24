@@ -84,6 +84,16 @@ export class FindAvailableRoomsDto {
   maxPrice?: number;
 
   @ApiPropertyOptional({
+    example: 2,
+    description: 'Số khách tối thiểu phòng phải chứa được (lọc theo capacity)',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: i18nValidationMessage('messages.VALIDATION.IS_INT') })
+  @Min(1, { message: i18nValidationMessage('messages.VALIDATION.MIN') })
+  guests?: number;
+
+  @ApiPropertyOptional({
     example: 'wifi,pool',
     description: 'Danh sách tên tiện nghi, phân tách bởi dấu phẩy',
   })

@@ -71,6 +71,7 @@ export class BookingsService {
       const room = await this.findBookableRoom(
         manager,
         createBookingDto.roomId,
+        createBookingDto.guests,
       );
       await this.assertNoOverlappingBooking(
         manager,
@@ -82,6 +83,7 @@ export class BookingsService {
         createBookingDto.checkInDate,
         createBookingDto.checkOutDate,
         room.pricePerNight,
+        createBookingDto.guests,
       );
 
       const booking = await this.saveBooking(manager.getRepository(Booking), {
@@ -197,7 +199,14 @@ export class BookingsService {
       // kịp quét (xem expireStaleHoldsForRoom()).
       await this.expireStaleHoldsForRoom(manager, booking.roomId);
 
-      const room = await this.findBookableRoom(manager, booking.roomId);
+      // guests KHONG duoc sua qua update() (chot voi user) - luon dung lai
+      // gia tri da luu tu luc tao, chi truyen lai de validate capacity +
+      // tinh gia theo dung phong (co the doi neu sau nay cho doi phong).
+      const room = await this.findBookableRoom(
+        manager,
+        booking.roomId,
+        booking.guests,
+      );
       await this.assertNoOverlappingBooking(
         manager,
         booking.roomId,
@@ -217,6 +226,7 @@ export class BookingsService {
         checkInDate,
         checkOutDate,
         room.pricePerNight,
+        booking.guests,
       );
 
       await this.saveBooking(bookingRepository, booking);
@@ -632,6 +642,7 @@ export class BookingsService {
   private async findBookableRoom(
     manager: EntityManager,
     roomId: string,
+    guests: number,
   ): Promise<Room> {
     const room = await manager
       .getRepository(Room)
@@ -644,6 +655,11 @@ export class BookingsService {
         this.i18n.t('messages.BOOKING.ROOM_UNAVAILABLE'),
       );
     }
+    if (guests > room.capacity) {
+      throw new BadRequestException(
+        this.i18n.t('messages.BOOKING.GUESTS_EXCEED_CAPACITY'),
+      );
+    }
     return room;
   }
 
@@ -651,11 +667,12 @@ export class BookingsService {
     checkInDate: string,
     checkOutDate: string,
     pricePerNight: Decimal,
+    guests: number,
   ): Decimal {
     const checkIn = new Date(`${checkInDate}T00:00:00Z`);
     const checkOut = new Date(`${checkOutDate}T00:00:00Z`);
     const nights = (checkOut.getTime() - checkIn.getTime()) / MS_PER_DAY;
-    return pricePerNight.times(nights);
+    return pricePerNight.times(nights).times(guests);
   }
 
   private async saveBooking(

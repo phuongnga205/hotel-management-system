@@ -11,6 +11,9 @@ export const ROUTES = {
   FORGOT_PASSWORD: '/forgot-password',
   RESET_PASSWORD: '/reset-password',
   PROFILE: '/profile',
+  BOOKINGS: '/bookings',
+  FORBIDDEN: '/403',
+  NOT_FOUND: '/404',
 
   // Cong khai (chua co trang dich - se dung khi build man hinh danh sach/chi
   // tiet/dat phong o mot phien lam viec sau, gio moi co Trang chu tro toi).

@@ -1,0 +1,64 @@
+{
+  "title": "Booking History",
+  "subtitle": "Manage and track all your reservations in one place.",
+  "myAccount": "MY ACCOUNT",
+  "tabs": {
+    "all": "All Bookings",
+    "pending": "Pending",
+    "accepted": "Accepted",
+    "rejected": "Rejected",
+    "cancelled": "Cancelled",
+    "expired": "Expired"
+  },
+  "status": {
+    "PENDING": "Pending",
+    "ACCEPTED": "Accepted",
+    "REJECTED": "Rejected",
+    "CANCELLED": "Cancelled",
+    "EXPIRED": "Expired"
+  },
+  "paymentStatus": {
+    "UNPAID": "UNPAID",
+    "PAID": "Payment Complete",
+    "REFUNDED": "Refunded"
+  },
+  "labels": {
+    "bookingId": "Booking #",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "duration": "Duration",
+    "nights": "nights",
+    "night": "night",
+    "total": "Total",
+    "pastStay": "Past Stay",
+    "reason": "Reason",
+    "unknownRoom": "Room"
+  },
+  "buttons": {
+    "payNow": "Pay Now",
+    "editDates": "Edit Dates",
+    "cancelBooking": "Cancel Booking",
+    "keepBooking": "Keep Booking"
+  },
+  "modal": {
+    "editDatesTitle": "Edit Stay Dates",
+    "newCheckIn": "NEW CHECK-IN",
+    "newCheckOut": "NEW CHECK-OUT",
+    "datesRequired": "Please select new dates",
+    "updateDates": "Update Dates",
+    "cancelTitle": "Cancel Booking?",
+    "cancelWarning": "This action cannot be undone. You may be subject to cancellation fees.",
+    "yesCancel": "Yes, Cancel",
+    "reasonPlaceholder": "Reason for cancellation (optional)"
+  },
+  "messages": {
+    "noBookings": "No bookings found.",
+    "noBookingsDesc": "You haven't made any reservations in this category yet.",
+    "fetchError": "Failed to load your bookings. Please try again.",
+    "cancelSuccess": "Booking cancelled successfully",
+    "updateSuccess": "Booking dates updated successfully",
+    "updateError": "Failed to update dates",
+    "cancelError": "Failed to cancel booking",
+    "dateConflict": "This room is already booked for the selected dates. Please choose different dates."
+  }
+}

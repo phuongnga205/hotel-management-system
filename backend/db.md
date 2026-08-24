@@ -106,8 +106,9 @@ CREATE TABLE bookings (
   user_id          BIGINT NOT NULL REFERENCES users(user_id),
   check_in_date    DATE NOT NULL,
   check_out_date   DATE NOT NULL,
+  guests           SMALLINT NOT NULL DEFAULT 1,  -- so khach, bat buoc khi tao (POST /bookings), co dinh sau khi tao - validate <= rooms.capacity o service (migration AddGuestsToBookings)
   price_per_night  DECIMAL(10,2) NOT NULL,  -- snapshot at booking time
-  total_price      DECIMAL(10,2) NOT NULL,
+  total_price      DECIMAL(10,2) NOT NULL,  -- = nights * price_per_night * guests
   status           VARCHAR(20) NOT NULL DEFAULT 'PENDING',
                    -- PENDING, ACCEPTED, REJECTED, CANCELLED, EXPIRED
   hold_expires_at  TIMESTAMPTZ,  -- for pay-later slot holds; NULL once paid/accepted
@@ -117,7 +118,8 @@ CREATE TABLE bookings (
   updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
   deleted_at       TIMESTAMPTZ,
   CONSTRAINT chk_bookings_status CHECK (status IN ('PENDING','ACCEPTED','REJECTED','CANCELLED','EXPIRED')),
-  CONSTRAINT chk_bookings_dates  CHECK (check_out_date > check_in_date)
+  CONSTRAINT chk_bookings_dates  CHECK (check_out_date > check_in_date),
+  CONSTRAINT chk_bookings_guests CHECK (guests > 0)
 );
 CREATE INDEX idx_bookings_room_dates ON bookings(room_id, check_in_date, check_out_date);
 

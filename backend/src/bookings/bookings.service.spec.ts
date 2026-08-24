@@ -110,6 +110,7 @@ describe('BookingsService', () => {
     roomId: '5',
     checkInDate: '2026-09-01',
     checkOutDate: '2026-09-04',
+    guests: 2,
     note: 'extra towels',
   };
 
@@ -180,7 +181,8 @@ describe('BookingsService', () => {
       statusCode: 201,
       data: {
         id: '1',
-        totalPrice: '3000000',
+        // 3 nights * 1,000,000 pricePerNight * 2 guests (createDto.guests).
+        totalPrice: '6000000',
         pricePerNight: '1000000',
         room: { id: '5', name: 'Deluxe Room', roomNumber: '101' },
       },
@@ -219,6 +221,14 @@ describe('BookingsService', () => {
     await expect(service.create(createDto, '10')).rejects.toBeInstanceOf(
       NotFoundException,
     );
+  });
+
+  it('rejects booking with guests exceeding room.capacity', async () => {
+    // room.capacity = 2 (xem fixture `room` ở trên).
+    await expect(
+      service.create({ ...createDto, guests: 3 }, '10'),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(bookingManagerRepo.save).not.toHaveBeenCalled();
   });
 
   it('rejects create when QueryBuilder finds an overlapping booking', async () => {
@@ -277,6 +287,7 @@ describe('BookingsService', () => {
         roomId: '5',
         checkInDate: '2026-09-01',
         checkOutDate: '2026-09-04',
+        guests: 2,
         pricePerNight: new Decimal(1000000),
         totalPrice: new Decimal(3000000),
         status: BookingStatus.PENDING,
@@ -307,6 +318,7 @@ describe('BookingsService', () => {
         roomId: '5',
         checkInDate: '2026-09-01',
         checkOutDate: '2026-09-04',
+        guests: 2,
         pricePerNight: new Decimal(1000000),
         totalPrice: new Decimal(3000000),
         status: BookingStatus.PENDING,

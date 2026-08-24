@@ -1,15 +1,18 @@
 import type {
   Booking,
   BookingStatus,
+  CancelBookingPayload,
   CreateBookingPayload,
   ListBookingsQuery,
   MessageResponse,
   PagedResult,
   PayBookingPayload,
   RejectBookingPayload,
+  UpdateBookingPayload
 } from '../types'
+import { rooms } from './room.mock'
 
-const MOCK_DELAY_MS = 400
+const MOCK_DELAY_MS = 100
 
 function mockDelay<T>(data: T, ms = MOCK_DELAY_MS): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(data), ms))
@@ -26,6 +29,7 @@ let bookings: Booking[] = [
     status: 'PENDING',
     checkInDate: '2026-08-25',
     checkOutDate: '2026-08-28',
+    guests: 1,
     pricePerNight: '320.00',
     totalPrice: '960.00',
     note: 'Late check-in around 11pm.',
@@ -39,6 +43,7 @@ let bookings: Booking[] = [
     status: 'ACCEPTED',
     checkInDate: '2026-08-20',
     checkOutDate: '2026-08-23',
+    guests: 1,
     pricePerNight: '480.00',
     totalPrice: '1440.00',
     note: null,
@@ -53,6 +58,7 @@ let bookings: Booking[] = [
     status: 'REJECTED',
     checkInDate: '2026-08-16',
     checkOutDate: '2026-08-17',
+    guests: 1,
     pricePerNight: '180.00',
     totalPrice: '180.00',
     note: null,
@@ -66,6 +72,7 @@ let bookings: Booking[] = [
     status: 'CANCELLED',
     checkInDate: '2026-08-10',
     checkOutDate: '2026-08-12',
+    guests: 1,
     pricePerNight: '320.00',
     totalPrice: '640.00',
     note: null,
@@ -82,6 +89,7 @@ let bookings: Booking[] = [
     status: 'ACCEPTED',
     checkInDate: '2026-09-05',
     checkOutDate: '2026-09-08',
+    guests: 1,
     pricePerNight: '250.00',
     totalPrice: '750.00',
     note: null,
@@ -97,6 +105,7 @@ let bookings: Booking[] = [
     status: 'PENDING',
     checkInDate: '2026-09-10',
     checkOutDate: '2026-09-12',
+    guests: 1,
     pricePerNight: '400.00',
     totalPrice: '800.00',
     note: null,
@@ -112,6 +121,7 @@ let bookings: Booking[] = [
     status: 'CANCELLED',
     checkInDate: '2026-08-01',
     checkOutDate: '2026-08-03',
+    guests: 1,
     pricePerNight: '300.00',
     totalPrice: '600.00',
     note: null,
@@ -126,31 +136,69 @@ let bookings: Booking[] = [
 
 export const bookingMockApi = {
   create: async (data: CreateBookingPayload): Promise<Booking> => {
+    // Tra cuu room that tu room.mock.ts de tinh gia dung cong thuc BE
+    // (nights * pricePerNight * guests) - truoc day hardcode '0.00', khong
+    // phan anh gia that nen khong test duoc luong guests -> totalPrice qua
+    // mock.
+    const room = rooms.find((r) => r.id === data.roomId)
+    const nights = Math.round(
+      (new Date(data.checkOutDate).getTime() - new Date(data.checkInDate).getTime()) / (1000 * 60 * 60 * 24),
+    )
+    const pricePerNight = room?.pricePerNight ?? '0.00'
+    const totalPrice = (Number(pricePerNight) * nights * data.guests).toFixed(2)
+
     const booking: Booking = {
       id: String(Date.now()),
       status: 'PENDING',
       checkInDate: data.checkInDate,
       checkOutDate: data.checkOutDate,
-      pricePerNight: '0.00',
-      totalPrice: '0.00',
+      guests: data.guests,
+      pricePerNight,
+      totalPrice,
       note: data.note ?? null,
       cancelReason: null,
       createdAt: new Date().toISOString(),
+      room: room ? { id: room.id, name: room.name, roomNumber: room.roomNumber, thumbnailUrl: room.images?.find((i) => i.isThumbnail)?.imageUrl ?? null } : undefined,
     }
     bookings = [booking, ...bookings]
     return mockDelay(booking)
   },
   listMine: async (query: ListBookingsQuery): Promise<PagedResult<Booking>> => {
-    return mockDelay(paginate(bookings, query.page, query.limit))
+    let filtered = bookings
+    if (query.status) {
+      filtered = filtered.filter(b => b.status === query.status)
+    }
+    return mockDelay(paginate(filtered, query.page, query.limit))
   },
   getById: async (id: string): Promise<Booking> => {
     const booking = bookings.find((b) => b.id === id)
     if (!booking) throw new Error('Booking not found (mock).')
     return mockDelay(booking)
   },
-  cancel: async (id: string): Promise<MessageResponse> => {
-    bookings = bookings.map((b) => (b.id === id ? { ...b, status: 'CANCELLED' as BookingStatus } : b))
+  cancel: async (id: string, data?: CancelBookingPayload): Promise<MessageResponse> => {
+    bookings = bookings.map((b) => (b.id === id ? { ...b, status: 'CANCELLED' as BookingStatus, cancelReason: data?.cancelReason ?? null } : b))
     return mockDelay({ message: 'Booking cancelled (mock).' })
+  },
+  updateBookingDates: async (id: string, data: UpdateBookingPayload): Promise<{ message: string, data: Booking }> => {
+    const booking = bookings.find(b => b.id === id)
+    if (!booking) throw new Error('Booking not found')
+
+    // Gia lap 409 - phai co isAxiosError: true de axios.isAxiosError() nhan
+    // dung (getErrorStatusCode()/getErrorMessage() o api/errorMessage.ts
+    // dua vao ham nay), khop dung shape loi that tra ve tu axios.
+    if (data.checkInDate === '2026-12-25') {
+      throw Object.assign(new Error('Room is already booked'), {
+        isAxiosError: true,
+        response: { status: 409, data: { message: 'Room not available for these dates' } },
+      })
+    }
+
+    const updated = { ...booking, checkInDate: data.checkInDate, checkOutDate: data.checkOutDate }
+    bookings = bookings.map(b => b.id === id ? updated : b)
+    return mockDelay({
+      message: 'Booking dates updated successfully',
+      data: updated
+    })
   },
   // Khop dung nghiep vu that: amount luon lay tu booking.totalPrice (khong
   // nhan tu payload), thanh toan mock luon SUCCESS ngay lap tuc va tu

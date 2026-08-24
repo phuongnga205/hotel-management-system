@@ -67,6 +67,18 @@
     "guestCount": "{{count}} Guest(s)",
     "search": "Search Rooms"
   },
+  "notFound": {
+    "eyebrow": "404 — Page Not Found",
+    "title": "Lost in the halls",
+    "desc": "The page you're looking for has checked out. Let us guide you back to familiar surroundings.",
+    "cta": "Return to Home"
+  },
+  "forbidden": {
+    "eyebrow": "403 — Access Forbidden",
+    "title": "Staff only",
+    "desc": "This area is reserved for {{brand}} staff. If you believe this is an error, please contact the concierge.",
+    "cta": "Return to Home"
+  },
   "footer": {
     "tagline": "Award-winning luxury hotel in the heart of the city. Crafting unforgettable experiences since 2010.",
     "quickLinks": "Quick Links",

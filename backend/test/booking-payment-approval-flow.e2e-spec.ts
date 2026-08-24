@@ -107,7 +107,12 @@ describeWithDatabase(
 
     it('Nhánh A: đặt phòng → khách thanh toán → tự ACCEPTED kèm Payment SUCCESS', async () => {
       const createResult = await service.create(
-        { roomId, checkInDate: '2027-03-01', checkOutDate: '2027-03-03' },
+        {
+          roomId,
+          checkInDate: '2027-03-01',
+          checkOutDate: '2027-03-03',
+          guests: 2,
+        },
         userId,
       );
       const bookingId = createResult.data.id;
@@ -151,7 +156,12 @@ describeWithDatabase(
 
     it('Nhánh B: đặt phòng → Admin duyệt trực tiếp (không qua thanh toán) → khách vẫn "trả bù" được sau đó, không giới hạn thời gian, nhưng chỉ 1 lần', async () => {
       const createResult = await service.create(
-        { roomId, checkInDate: '2027-04-01', checkOutDate: '2027-04-03' },
+        {
+          roomId,
+          checkInDate: '2027-04-01',
+          checkOutDate: '2027-04-03',
+          guests: 2,
+        },
         userId,
       );
       const bookingId = createResult.data.id;
@@ -198,7 +208,12 @@ describeWithDatabase(
 
     it('Nhánh C: đặt phòng → Admin từ chối kèm lý do', async () => {
       const createResult = await service.create(
-        { roomId, checkInDate: '2027-05-01', checkOutDate: '2027-05-03' },
+        {
+          roomId,
+          checkInDate: '2027-05-01',
+          checkOutDate: '2027-05-03',
+          guests: 2,
+        },
         userId,
       );
       const bookingId = createResult.data.id;

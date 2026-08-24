@@ -44,6 +44,7 @@ export class BookingResponseDto {
   status!: BookingStatus;
   checkInDate!: string;
   checkOutDate!: string;
+  guests!: number;
   pricePerNight!: string;
   totalPrice!: string;
   note!: string | null;
@@ -61,6 +62,7 @@ export class BookingResponseDto {
     this.status = booking.status;
     this.checkInDate = booking.checkInDate;
     this.checkOutDate = booking.checkOutDate;
+    this.guests = booking.guests;
     this.pricePerNight = booking.pricePerNight.toString();
     this.totalPrice = booking.totalPrice.toString();
     this.note = booking.note ?? null;
