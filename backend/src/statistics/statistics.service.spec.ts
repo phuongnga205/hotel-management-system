@@ -143,7 +143,7 @@ describe('StatisticsService', () => {
     );
   });
 
-  it('returns the database result when writing Redis cache fails', async () => {
+  it('rejects the request when writing mandatory Redis cache fails', async () => {
     redis.findOne.mockResolvedValue(null);
     redis.save.mockRejectedValue(new Error('Redis write unavailable'));
     paymentRepository.createQueryBuilder = jest
@@ -155,13 +155,12 @@ describe('StatisticsService', () => {
       .fn()
       .mockReturnValue(createQueryBuilder([{ label: '2026-08', value: '3' }]));
 
-    const result = await service.getRevenueAndBookings({
-      period: StatisticsPeriod.MONTH,
-      year: 2026,
-    });
-
-    expect(result.totalRevenue).toBe('250.00');
-    expect(result.totalBookings).toBe(3);
+    await expect(
+      service.getRevenueAndBookings({
+        period: StatisticsPeriod.MONTH,
+        year: 2026,
+      }),
+    ).rejects.toBeInstanceOf(ServiceUnavailableException);
   });
 
   it('rejects an invalid cache TTL instead of silently using a default', async () => {

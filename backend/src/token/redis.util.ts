@@ -5,6 +5,7 @@ import {
   ENVIRONMENT_KEYS,
   parseNetworkPort,
 } from '../config/environment.constants';
+import { InvalidRedisTtlError } from './errors/invalid-redis-ttl.error';
 
 const RELEASE_LOCK_SCRIPT =
   'if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("del", KEYS[1]) else return 0 end';
@@ -36,7 +37,7 @@ export class RedisUtil implements OnModuleInit, OnModuleDestroy {
 
   async save(key: string, value: string, ttlSeconds: number): Promise<void> {
     if (!Number.isInteger(ttlSeconds) || ttlSeconds <= 0) {
-      throw new RangeError('Redis TTL must be a positive integer');
+      throw new InvalidRedisTtlError();
     }
     await this.client.set(key, value, 'EX', ttlSeconds);
   }

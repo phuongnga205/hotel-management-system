@@ -344,10 +344,11 @@ export class StatisticsService {
     } catch (error: unknown) {
       this.logger.error({
         message:
-          'Statistics cache write failed; returning the generated database result without caching it',
+          'Statistics cache write failed; rejecting the request to prevent repeated heavy database queries',
         cacheKey: key,
         error,
       });
+      throw this.cacheUnavailableException();
     }
   }
 
