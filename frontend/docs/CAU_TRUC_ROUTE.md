@@ -54,6 +54,7 @@ Tất cả nằm dưới `AuthGuard`; chưa login → redirect `/login?redirect=
 | `/profile/change-password` | Đổi mật khẩu | Form old + new + confirm, khác với `/reset-password` (không cần old). Có thể làm tab trong `/profile` thay vì route riêng — tuỳ team quyết, nhưng nên có path riêng để deep-link được. |
 | `/profile` (khu vực avatar) | Thêm/thay/xoá avatar | Là 1 phần UI trong `/profile`, không tách route. |
 | `/bookings` | Lịch sử booking | Danh sách booking của user hiện tại. |
+| 🚧 `/payments` | Lịch sử thanh toán | **TODO — FE chưa dựng, để session sau** (BE đã implement `GET /payments/me`, xem `backend/docs/DANH_SACH_API.md` mục 4a, sẵn sàng dùng ngay). Trang riêng cho user xem toàn bộ giao dịch thanh toán của chính mình (mọi booking gộp lại). Route nằm ngang hàng `/bookings`, page component ở `pages/payments/` (ngang hàng `pages/bookings/`), không phải route con của `/bookings/:bookingId`. |
 | `/bookings/:bookingId` | Chi tiết booking | Gồm các action: |
 | — Sửa booking | Form chỉnh sửa (đổi ngày, số khách...) | Modal hoặc route con `/bookings/:bookingId/edit`, tuỳ độ phức tạp form. |
 | — Huỷ booking | Popup xác nhận, có ô nhập lý do (optional) | Modal, không có route riêng. |
@@ -109,6 +110,7 @@ Tất cả nằm dưới `AdminLayout` + `AdminGuard` (role !== admin → `/403`
 /profile                   (user)
 /profile/change-password   (user)
 /bookings                  (user)
+/payments                  (user — TODO, chưa dựng)
 /bookings/:bookingId       (user)
 /bookings/:bookingId/payment  (user — stub)
 /bookings/:bookingId/review   (user)

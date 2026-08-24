@@ -177,7 +177,10 @@ export class BookingsController {
   @ApiOperation({
     summary: 'Thanh toán yêu cầu đặt phòng',
     description:
-      'Mock: thanh toán luôn thành công ngay lập tức. amount lấy từ booking.totalPrice ở server (không nhận từ body). Thanh toán thành công sẽ tự chuyển booking sang ACCEPTED và xoá hold.',
+      'Mock: thanh toán luôn thành công ngay lập tức. amount lấy từ booking.totalPrice ở server (không nhận từ body). ' +
+      'Cho phép 2 trường hợp: (1) booking đang PENDING và hold còn hạn — thanh toán xong tự chuyển ACCEPTED, xoá hold; ' +
+      '(2) booking đã ACCEPTED nhưng chưa có payment SUCCESS nào (VD Admin duyệt thẳng, chưa thu tiền) — coi là "trả bù", ' +
+      'không giới hạn thời gian, không đổi status (đã ACCEPTED sẵn), chỉ thêm 1 payment SUCCESS mới.',
   })
   @ApiParam({
     name: 'id',
@@ -191,7 +194,8 @@ export class BookingsController {
   @ApiResponse({
     status: 409,
     description:
-      'Booking không ở trạng thái PENDING (đã accepted/rejected/cancelled/expired), hoặc hold giữ chỗ đã hết hạn, nên không thể thanh toán',
+      'Booking đã REJECTED/CANCELLED/EXPIRED (không thể thanh toán), booking PENDING nhưng hold giữ chỗ đã hết hạn, ' +
+      'hoặc booking đã có 1 payment SUCCESS từ trước (không cho trả trùng lần 2)',
   })
   pay(
     @GetUser('id') userId: string,

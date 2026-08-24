@@ -51,6 +51,7 @@
 | `pages/bookings/BookingDetailPage.tsx` | `/bookings/:bookingId` | `GET /bookings/:id`, `PATCH /bookings/:id` (sửa), `PATCH /bookings/:id/cancel` (huỷ, qua modal) | Nút "Viết đánh giá" điều hướng sang `BookingReviewPage`, nút "Thanh toán" điều hướng sang `BookingPaymentPage`. |
 | `pages/bookings/BookingPaymentPage.tsx` | `/bookings/:bookingId/payment` | `POST /bookings/:id/pay` | BE đã implement (mock — luôn thành công ngay, không phải cổng thanh toán thật): màn hình chỉ cần cho chọn `method` rồi gọi API 1 lần, không cần polling/callback. `bookingApi.pay()` + mock đã có sẵn ở `frontend/src/api/booking.api.ts`, trang này vẫn **chưa được dựng**. |
 | `pages/bookings/BookingReviewPage.tsx` | `/bookings/:bookingId/review` | `POST /reviews` | Chỉ hiện nút dẫn tới trang này khi booking đã/đang ở (check ở `BookingDetailPage`). |
+| 🚧 `pages/payments/PaymentHistoryPage.tsx` | `/payments` | `GET /payments/me` (BE đã implement, xem `backend/docs/DANH_SACH_API.md` mục 4a) | **TODO — FE chưa dựng, để session sau** (API đã sẵn sàng dùng ngay). Trang riêng liệt kê toàn bộ lịch sử thanh toán của user hiện tại (mọi booking gộp lại), nằm trong thư mục `pages/payments/` (ngang hàng `pages/bookings/`), không phải tab/section trong `BookingDetailPage`. Có nút/link dẫn tới đây từ `BookingHistoryPage` hoặc menu tài khoản. |
 
 ## F. Admin — Users
 
@@ -98,7 +99,7 @@
 | Page component | Route | API sử dụng | Ghi chú |
 |---|---|---|---|
 | `pages/admin/statistics/AdminBookingStatsPage.tsx` | `/admin/statistics/bookings` | `GET /admin/statistics/bookings` | Tab con của layout Statistics. |
-| `pages/admin/statistics/AdminRevenueStatsPage.tsx` | `/admin/statistics/revenue` | `GET /admin/statistics/revenue` | Tab con của layout Statistics. |
+| `pages/admin/statistics/AdminRevenueStatsPage.tsx` | `/admin/statistics/revenue` | `GET /admin/statistics/revenue`, `GET /admin/payments` | Tab con của layout Statistics. Ngoài các chart doanh thu, có thêm bảng "Transactions" (`AdminTable`) liệt kê từng giao dịch thanh toán — filter theo `status`/`method` (2 `Dropdown`), phân trang bằng `Pagination` riêng với phần chart phía trên (không share state `page`). Bảng chỉ hiện ít cột (booking, khách, phòng, số tiền, trạng thái) để đỡ chật — bấm vào 1 dòng mở `PaymentDetailModal` (`components/admin/PaymentDetailModal.tsx`) xem đầy đủ thông tin (kèm phương thức, mã giao dịch, thời gian thanh toán/tạo). Không có route/trang riêng cho bảng này — nằm chung `AdminRevenueStatsPage`. |
 
 ## K. Admin — Email Log
 
@@ -132,6 +133,10 @@ Toàn bộ endpoint trong `backend/docs/DANH_SACH_API.md` đều đã được g
 chọn `GET /rooms/:id/reviews` (đánh dấu optional ở doc BE) nếu team quyết
 định không làm, thì bỏ luôn dòng review-listing trong `RoomDetailPage`
 (không ảnh hưởng các màn khác).
+
+`GET /payments/me` (mục 4a ở doc BE) đã implement ở BE, nhưng FE chưa dựng
+trang gọi tới — TODO duy nhất còn treo, gắn với trang
+`PaymentHistoryPage.tsx` (`/payments`) ở mục E, để lại cho session sau.
 
 > 🆕 Mục G/G2 (Rooms/Amenities) mô tả theo thiết kế đã chốt ở 1 nhánh git
 > riêng chưa merge — xem cảnh báo đầu `backend/docs/DANH_SACH_API.md` và

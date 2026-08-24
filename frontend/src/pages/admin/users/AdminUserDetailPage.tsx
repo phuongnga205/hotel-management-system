@@ -110,7 +110,7 @@ export default function AdminUserDetailPage() {
                 { key: 'id', header: t('table.id'), render: (b) => <span className="font-mono text-xs font-semibold text-navy">#{b.id}</span> },
                 { key: 'room', header: t('table.room'), render: (b) => b.room?.name ?? '—' },
                 { key: 'checkIn', header: t('table.checkIn'), className: 'text-slate-500 whitespace-nowrap text-xs', render: (b) => new Date(b.checkInDate).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric', year: 'numeric' }) },
-                { key: 'total', header: t('table.total'), render: (b) => `$${b.totalPrice.toLocaleString()}` },
+                { key: 'total', header: t('table.total'), render: (b) => `$${Number(b.totalPrice).toLocaleString()}` },
                 { key: 'status', header: t('common.status'), render: (b) => <StatusBadge status={b.status} config={BOOKING_STATUS_CONFIG} /> },
               ]}
             />

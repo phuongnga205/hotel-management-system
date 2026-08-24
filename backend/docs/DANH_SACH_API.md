@@ -257,6 +257,66 @@ chung toàn app), không thêm field tuỳ biến:
 >   cùng sửa 1 booking (VD user `pay()` và admin `reject()` cùng lúc) đọc
 >   cùng lúc thấy `PENDING` rồi ghi đè nhau mà không ai báo lỗi.
 
+## 4a. Payments (user)
+
+| Chức năng | Method | URL | Quyền | Auth |
+|---|---|---|---|---|
+| Xem lịch sử thanh toán của chính mình (mọi booking) | GET | `/api/v1/payments/me` | User | JWT |
+
+> **Đã implement ở BE — `PaymentsController`**
+> (`backend/src/payments/payments.controller.ts`, tách khỏi
+> `AdminPaymentsController` cùng pattern `BookingsController`/
+> `AdminBookingsController`). **FE chưa dựng UI cho endpoint này** — xem TODO
+> ở `frontend/docs/DANH_SACH_MAN_HINH.md` mục E và
+> `frontend/docs/CAU_TRUC_ROUTE.md` (`/payments`), để lại cho session sau.
+>
+> - KHÔNG scope theo 1 booking cụ thể — trả **toàn bộ** payment của user
+>   hiện tại, gộp từ mọi booking họ từng có (giống cách `GET /bookings/me`
+>   không scope theo phòng). `userId` lấy từ JWT qua `@GetUser('id')`, không
+>   nhận từ query/param (Luật 5).
+> - Query: `page`, `limit` (cùng quy ước `.offset()/.limit()`, không
+>   `.skip()/.take()`), `status`, `method` (optional, giống bản Admin).
+> - Response mỗi item kèm tóm tắt booking (`booking.roomName`,
+>   `booking.roomNumber`, `booking.checkInDate`, `booking.checkOutDate`) để
+>   phân biệt giao dịch nào ứng với booking nào — **không** kèm thông tin
+>   khách (khác bản Admin) vì user tự biết đó là chính mình.
+> - Implement trong `PaymentsService.findAllForUser(userId, query)` — join
+>   `payment.booking` + `booking.room` bằng `QueryBuilder`, filter
+>   `booking.user_id = :userId`.
+>
+> Mẫu response:
+> ```jsonc
+> {
+>   "statusCode": 200,
+>   "message": "Lấy danh sách giao dịch thanh toán thành công.",
+>   "data": {
+>     "items": [
+>       {
+>         "id": "12",
+>         "bookingId": "1002",
+>         "amount": "1440.00",
+>         "method": "VNPAY",
+>         "status": "SUCCESS",
+>         "transactionId": "a1b2c3d4-...",
+>         "paidAt": "2026-08-17T17:00:00.000Z",
+>         "createdAt": "2026-08-17T17:00:00.000Z",
+>         "booking": {
+>           "id": "1002",
+>           "roomName": "Ocean View Suite",
+>           "roomNumber": "202",
+>           "checkInDate": "2026-08-20",
+>           "checkOutDate": "2026-08-23"
+>         }
+>       }
+>     ],
+>     "page": 1,
+>     "limit": 10,
+>     "total": 5,
+>     "totalPages": 1
+>   }
+> }
+> ```
+
 ## 5. Reviews (user)
 
 | Chức năng | Method | URL | Quyền | Auth |
@@ -408,6 +468,62 @@ chung toàn app), không thêm field tuỳ biến:
 |---|---|---|---|---|
 | Thống kê booking (theo tháng/quý/loại phòng/trạng thái) | GET | `/api/v1/admin/statistics/bookings` | Admin | JWT + RolesGuard(ADMIN) |
 | Thống kê doanh thu (theo thời gian/loại phòng) | GET | `/api/v1/admin/statistics/revenue` | Admin | JWT + RolesGuard(ADMIN) |
+| Danh sách giao dịch thanh toán (dùng ở bảng "Transactions" trong màn Revenue Statistics) | GET | `/api/v1/admin/payments` | Admin | JWT + RolesGuard(ADMIN) |
+
+> **Đã implement — `PaymentsController`/`PaymentsService`**
+> (`backend/src/payments/payments.controller.ts` /
+> `payments.service.ts`). Chỉ có API đọc danh sách, **không có** API xem chi
+> tiết 1 giao dịch riêng (`GET /admin/payments/:id`) — mỗi dòng trong bảng đã
+> đủ thông tin cần thiết, không cần trang chi tiết. Việc **tạo** `Payment`
+> vẫn nằm nguyên trong `BookingsService.pay()` (mục 4) vì gắn liền 1
+> transaction với đổi `booking.status`, không tách qua `PaymentsService` —
+> `PaymentsModule` ở đây chỉ sở hữu phần đọc.
+>
+> - Query: `page`, `limit` (theo đúng quy ước phân trang chung —
+>   `AdminPaymentQueryDto` dùng `.offset()/.limit()`, không phải
+>   `.skip()/.take()`), `status` (`PaymentStatus`, optional), `method`
+>   (`PaymentMethod`, optional). Không có `search` — `Payment` không có field
+>   text nào phù hợp để tìm kiếm gần đúng (`bookingId` là số, `transactionId`
+>   là UUID mock).
+> - Response mỗi item **kèm sẵn thông tin khách + phòng**
+>   (`booking.guestName`, `booking.guestEmail`, `booking.roomName`,
+>   `booking.roomNumber`) — join bằng `QueryBuilder`
+>   (`leftJoinAndSelect('payment.booking', ...)` → `booking.user`/
+>   `booking.room`) ngay trong `PaymentsService.findAllForAdmin()`, không cần
+>   FE gọi thêm request nào khác để hiển thị bảng.
+>
+> Mẫu response:
+> ```jsonc
+> {
+>   "statusCode": 200,
+>   "message": "Lấy danh sách giao dịch thanh toán thành công.",
+>   "data": {
+>     "items": [
+>       {
+>         "id": "12",
+>         "bookingId": "1002",
+>         "amount": "1440.00",
+>         "method": "VNPAY",
+>         "status": "SUCCESS",
+>         "transactionId": "a1b2c3d4-...",
+>         "paidAt": "2026-08-17T17:00:00.000Z",
+>         "createdAt": "2026-08-17T17:00:00.000Z",
+>         "booking": {
+>           "id": "1002",
+>           "guestName": "Isabella Romano",
+>           "guestEmail": "i.romano@mail.com",
+>           "roomName": "Ocean View Suite",
+>           "roomNumber": "202"
+>         }
+>       }
+>     ],
+>     "page": 1,
+>     "limit": 10,
+>     "total": 34,
+>     "totalPages": 4
+>   }
+> }
+> ```
 
 ## 12. Admin — Email Log
 
@@ -504,6 +620,11 @@ chung toàn app), không thêm field tuỳ biến:
       "booking tồn tại nhưng không phải của bạn", xem ghi chú ở mục 4).
 - [ ] Cân nhắc endpoint public `GET /rooms/:id/reviews` để trang chi tiết
       phòng hiển thị đánh giá (hiện chưa có trong yêu cầu gốc).
+- [x] `GET /admin/payments` (danh sách giao dịch thanh toán cho Admin) đã
+      implement — xem mục 11.
+- [x] `GET /payments/me` (lịch sử thanh toán của chính user) đã implement ở
+      BE — xem mục 4a. **FE chưa dựng UI** (route `/payments`,
+      `PaymentHistoryPage.tsx`), để lại TODO cho session sau.
 - [ ] Đối chiếu lại với `frontend/docs/CAU_TRUC_ROUTE.md` sau khi đổi
       namespace admin — đã rà, xem mục "Đối chiếu với FE" bên dưới.
 - [ ] Viết chung 1 `ResponseInterceptor` (bọc `{statusCode, message, data}`
@@ -540,3 +661,9 @@ tài liệu route FE (không đổi cấu trúc route):
 - Trang chi tiết phòng `/rooms/:roomId` (public) — nếu chốt dùng thêm
   `GET /rooms/:id/reviews`, không cần thêm route FE mới, chỉ là 1 API được
   gọi thêm trong cùng trang.
+- `/admin/statistics/revenue` → ngoài `GET /admin/statistics/revenue`, giờ
+  gọi thêm `GET /admin/payments` cho bảng "Transactions" — không cần route
+  FE mới, cùng 1 trang `AdminRevenueStatsPage`.
+- `/payments` (FE, user) 🚧 — `GET /payments/me` đã implement ở BE (mục 4a),
+  nhưng route + trang FE tương ứng **chưa dựng**, chỉ mới ghi TODO (xem
+  `frontend/docs/CAU_TRUC_ROUTE.md`).

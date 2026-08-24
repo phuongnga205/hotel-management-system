@@ -18,9 +18,13 @@ interface AdminTableProps<T> {
   columns: AdminTableColumn<T>[]
   rows: T[]
   rowKey: (row: T) => string
+  // Optional - khi truyen vao, moi dong co the click duoc (vd mo modal chi
+  // tiet) va co hover/cursor rieng de goi y dieu do. Khong truyen thi dong
+  // giu nguyen hanh vi cu (chi hover doi mau nen, khong click duoc).
+  onRowClick?: (row: T) => void
 }
 
-export function AdminTable<T>({ columns, rows, rowKey }: AdminTableProps<T>) {
+export function AdminTable<T>({ columns, rows, rowKey, onRowClick }: AdminTableProps<T>) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -35,7 +39,11 @@ export function AdminTable<T>({ columns, rows, rowKey }: AdminTableProps<T>) {
         </thead>
         <tbody>
           {rows.map((row, i) => (
-            <tr key={rowKey(row)} className={`border-b border-slate-50 hover:bg-surface transition-colors ${i % 2 === 1 ? 'bg-slate-50/30' : ''}`}>
+            <tr
+              key={rowKey(row)}
+              onClick={onRowClick ? () => onRowClick(row) : undefined}
+              className={`border-b border-slate-50 hover:bg-surface transition-colors ${i % 2 === 1 ? 'bg-slate-50/30' : ''} ${onRowClick ? 'cursor-pointer' : ''}`}
+            >
               {columns.map((c) => (
                 <td key={c.key} className={`px-4 py-3 ${c.className ?? ''}`}>
                   {c.render(row)}
