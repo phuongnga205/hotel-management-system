@@ -2,6 +2,7 @@ export const ENVIRONMENT_KEYS = {
   DATABASE_SSL_REJECT_UNAUTHORIZED: 'DATABASE_SSL_REJECT_UNAUTHORIZED',
   DATABASE_URL: 'DATABASE_URL',
   E2E_DATABASE_URL: 'E2E_DATABASE_URL',
+  E2E_DATABASE_SSL_REJECT_UNAUTHORIZED: 'E2E_DATABASE_SSL_REJECT_UNAUTHORIZED',
   SIGNATURE: 'JWT_SECRET',
   NODE_ENV: 'NODE_ENV',
   PORT: 'PORT',
@@ -23,6 +24,23 @@ export enum NodeEnvironment {
 }
 
 export const DEFAULT_SERVER_PORT = 3000;
+
+export const MIN_NETWORK_PORT = 1;
+export const MAX_NETWORK_PORT = 65_535;
+
+export function parseNetworkPort(value: unknown, variableName: string): number {
+  const port = typeof value === 'number' ? value : Number(value);
+  if (
+    !Number.isInteger(port) ||
+    port < MIN_NETWORK_PORT ||
+    port > MAX_NETWORK_PORT
+  ) {
+    throw new Error(
+      `${variableName} must be an integer between ${MIN_NETWORK_PORT} and ${MAX_NETWORK_PORT}`,
+    );
+  }
+  return port;
+}
 
 export const DEFAULT_AVATAR_MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 

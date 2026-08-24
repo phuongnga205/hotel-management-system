@@ -1,16 +1,29 @@
 import 'dotenv/config';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { Test } from '@nestjs/testing';
 import { randomUUID } from 'node:crypto';
+import Redis from 'ioredis';
+import request from 'supertest';
+import { App } from 'supertest/types';
 import { DataSource, EntitySchema } from 'typeorm';
 import { I18nService } from 'nestjs-i18n';
+import { JwtAuthGuard } from '../src/auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../src/auth/guards/roles.guard';
 import { Booking } from '../src/bookings/entities/booking.entity';
 import { BookingStatus } from '../src/bookings/enums/booking-status.enum';
-import { ENVIRONMENT_KEYS } from '../src/config/environment.constants';
+import {
+  ENVIRONMENT_KEYS,
+  parseNetworkPort,
+} from '../src/config/environment.constants';
 import { Payment } from '../src/payments/entities/payment.entity';
 import { PaymentMethod } from '../src/payments/enums/payment-method.enum';
 import { PaymentStatus } from '../src/payments/enums/payment-status.enum';
 import { RoomStatus } from '../src/rooms/enums/room-status.enum';
 import { StatisticsPeriod } from '../src/statistics/enums/statistics-period.enum';
+import { StatisticsController } from '../src/statistics/statistics.controller';
+import { StatisticsResponseDto } from '../src/statistics/dto/statistics-response.dto';
 import { StatisticsLogger } from '../src/statistics/statistics.logger';
 import { StatisticsService } from '../src/statistics/statistics.service';
 import { RedisUtil } from '../src/token/redis.util';
@@ -58,9 +71,12 @@ const e2eDatabaseUrl = configService.get<string>(
 const applicationDatabaseUrl = configService.get<string>(
   ENVIRONMENT_KEYS.DATABASE_URL,
 );
-const hasIsolatedDatabase =
-  Boolean(e2eDatabaseUrl) && e2eDatabaseUrl !== applicationDatabaseUrl;
-const describeWithDatabase = hasIsolatedDatabase ? describe : describe.skip;
+const e2eSslRejectUnauthorized = configService.get<string>(
+  ENVIRONMENT_KEYS.E2E_DATABASE_SSL_REJECT_UNAUTHORIZED,
+  'false',
+);
+const redisHost = configService.get<string>(ENVIRONMENT_KEYS.REDIS_HOST);
+const redisPortValue = configService.get<string>(ENVIRONMENT_KEYS.REDIS_PORT);
 const TEST_ROOM_NUMBER_PREFIX = 'STAT-';
 const TEST_ROOM_UUID_LENGTH = 12;
 const TEST_ROOM_CAPACITY = 2;
@@ -68,41 +84,92 @@ const TEST_ROOM_PRICE = 100;
 const TEST_PAYMENT_AMOUNT = 100;
 const TEST_REFUNDED_AMOUNT = 40;
 
-describeWithDatabase('Statistics aggregate SQL (e2e)', () => {
+describe('Statistics aggregate HTTP, SQL and Redis (e2e)', () => {
   let dataSource: DataSource;
-  let service: StatisticsService;
+  let app: INestApplication<App>;
+  let redisClient: Redis;
   let userId: string | undefined;
   let roomId: string | undefined;
   const bookingIds: string[] = [];
   const paymentIds: string[] = [];
 
   beforeAll(async () => {
+    if (!e2eDatabaseUrl) {
+      throw new Error('E2E_DATABASE_URL is required for statistics E2E tests');
+    }
+    if (e2eDatabaseUrl === applicationDatabaseUrl) {
+      throw new Error(
+        'E2E_DATABASE_URL must be isolated from DATABASE_URL to protect application data',
+      );
+    }
+    if (!redisHost || !redisPortValue) {
+      throw new Error(
+        'REDIS_HOST and REDIS_PORT are required for statistics E2E tests',
+      );
+    }
+    const redisPort = parseNetworkPort(
+      redisPortValue,
+      ENVIRONMENT_KEYS.REDIS_PORT,
+    );
+
     dataSource = new DataSource({
       type: 'postgres',
       url: e2eDatabaseUrl,
-      ssl: false,
+      ssl:
+        e2eSslRejectUnauthorized === 'true'
+          ? { rejectUnauthorized: true }
+          : false,
       synchronize: false,
       entities: [BookingAggregateSchema, PaymentAggregateSchema],
     });
     await dataSource.initialize();
 
-    const redis = {
-      findOne: jest.fn().mockResolvedValue(null),
-      save: jest.fn().mockResolvedValue(undefined),
-      acquireLock: jest.fn().mockResolvedValue(true),
-      extendLock: jest.fn().mockResolvedValue(true),
-      releaseLock: jest.fn().mockResolvedValue(undefined),
-    } as unknown as RedisUtil;
-    service = new StatisticsService(
-      dataSource.getRepository(Booking),
-      dataSource.getRepository(Payment),
-      redis,
-      new ConfigService({
-        [ENVIRONMENT_KEYS.STATISTICS_TIME_ZONE]: 'UTC',
-      }),
-      { t: (key: string) => key } as unknown as I18nService,
-      { error: jest.fn(), warn: jest.fn() } as unknown as StatisticsLogger,
+    const testConfig = new ConfigService({
+      [ENVIRONMENT_KEYS.REDIS_HOST]: redisHost,
+      [ENVIRONMENT_KEYS.REDIS_PORT]: redisPort,
+      [ENVIRONMENT_KEYS.STATISTICS_CACHE_TTL_SECONDS]: 30,
+      [ENVIRONMENT_KEYS.STATISTICS_TIME_ZONE]: 'UTC',
+    });
+    const moduleFixture = await Test.createTestingModule({
+      controllers: [StatisticsController],
+      providers: [
+        StatisticsService,
+        RedisUtil,
+        {
+          provide: getRepositoryToken(Booking),
+          useValue: dataSource.getRepository(Booking),
+        },
+        {
+          provide: getRepositoryToken(Payment),
+          useValue: dataSource.getRepository(Payment),
+        },
+        { provide: ConfigService, useValue: testConfig },
+        {
+          provide: I18nService,
+          useValue: { t: (key: string) => key },
+        },
+        {
+          provide: StatisticsLogger,
+          useValue: { error: jest.fn(), warn: jest.fn() },
+        },
+      ],
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(RolesGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
+
+    app = moduleFixture.createNestApplication();
+    app.setGlobalPrefix('api/v1');
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, transform: true }),
     );
+    await app.init();
+    redisClient = new Redis({ host: redisHost, port: redisPort });
+    await redisClient.ping();
+
+    await redisClient.del('statistics:revenue-bookings:v1:MONTH:2026:all:UTC');
 
     const suffix = randomUUID();
     const roomNumber = `${TEST_ROOM_NUMBER_PREFIX}${suffix.slice(
@@ -179,22 +246,42 @@ describeWithDatabase('Statistics aggregate SQL (e2e)', () => {
     paymentIds.push(refundedPayment[0].id);
   });
 
-  it('executes GROUP BY with explicit revenue and booking policies', async () => {
-    const result = await service.getRevenueAndBookings({
-      period: StatisticsPeriod.MONTH,
-      year: 2026,
-    });
+  it('serves aggregate SQL over HTTP and reuses a real Redis cache with TTL', async () => {
+    const endpoint = '/api/v1/statistics/revenue-bookings';
+    const firstResponse = await request(app.getHttpServer())
+      .get(endpoint)
+      .query({ period: StatisticsPeriod.MONTH, year: 2026 })
+      .expect(200);
+    const firstBody = firstResponse.body as StatisticsResponseDto;
 
-    expect(result.totalRevenue).toBe('100.00');
-    expect(result.totalBookings).toBe(Object.values(BookingStatus).length);
-    expect(result.buckets[7]).toMatchObject({
+    expect(firstBody.totalRevenue).toBe('100.00');
+    expect(firstBody.totalBookings).toBe(Object.values(BookingStatus).length);
+    expect(firstBody.buckets[7]).toMatchObject({
       label: '2026-08',
       revenue: '100.00',
       bookingCount: Object.values(BookingStatus).length,
     });
+    expect(firstBody.isCached).toBe(false);
+
+    const cacheKey = 'statistics:revenue-bookings:v1:MONTH:2026:all:UTC';
+    expect(await redisClient.ttl(cacheKey)).toBeGreaterThan(0);
+
+    const secondResponse = await request(app.getHttpServer())
+      .get(endpoint)
+      .query({ period: StatisticsPeriod.MONTH, year: 2026 })
+      .expect(200);
+    const secondBody = secondResponse.body as StatisticsResponseDto;
+    expect(secondBody.isCached).toBe(true);
   });
 
   afterAll(async () => {
+    if (redisClient) {
+      await redisClient.del(
+        'statistics:revenue-bookings:v1:MONTH:2026:all:UTC',
+      );
+      redisClient.disconnect();
+    }
+    if (app) await app.close();
     if (!dataSource?.isInitialized) return;
     if (paymentIds.length > 0) {
       await dataSource.query('DELETE FROM payments WHERE id = ANY($1)', [

@@ -269,9 +269,17 @@ export class StatisticsService {
         STATISTICS.DEFAULT_CACHE_TTL_SECONDS,
       ),
     );
-    return Number.isInteger(configuredTtl) && configuredTtl > 0
-      ? configuredTtl
-      : STATISTICS.DEFAULT_CACHE_TTL_SECONDS;
+    if (!Number.isInteger(configuredTtl) || configuredTtl <= 0) {
+      this.logger.error({
+        message:
+          'Statistics cache TTL is invalid; set STATISTICS_CACHE_TTL_SECONDS to a positive integer',
+        configuredTtl,
+      });
+      throw new InternalServerErrorException(
+        this.i18n.t('messages.STATISTICS.INVALID_CACHE_CONFIGURATION'),
+      );
+    }
+    return configuredTtl;
   }
 
   private getSelectedMonth(query: StatisticsQueryDto): number | null {
@@ -327,8 +335,12 @@ export class StatisticsService {
     key: string,
     response: StatisticsResponseDto,
   ): Promise<void> {
+    // Resolve configuration outside the Redis error boundary. An invalid TTL
+    // is an application configuration error and must not be treated as a
+    // transient Redis write failure.
+    const cacheTtl = this.getCacheTtl();
     try {
-      await this.redis.save(key, JSON.stringify(response), this.getCacheTtl());
+      await this.redis.save(key, JSON.stringify(response), cacheTtl);
     } catch (error: unknown) {
       this.logger.error({
         message:

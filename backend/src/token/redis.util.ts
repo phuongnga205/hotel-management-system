@@ -1,7 +1,10 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
-import { ENVIRONMENT_KEYS } from '../config/environment.constants';
+import {
+  ENVIRONMENT_KEYS,
+  parseNetworkPort,
+} from '../config/environment.constants';
 
 const RELEASE_LOCK_SCRIPT =
   'if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("del", KEYS[1]) else return 0 end';
@@ -18,7 +21,12 @@ export class RedisUtil implements OnModuleInit, OnModuleDestroy {
   onModuleInit() {
     this.client = new Redis({
       host: this.configService.getOrThrow<string>(ENVIRONMENT_KEYS.REDIS_HOST),
-      port: this.configService.getOrThrow<number>(ENVIRONMENT_KEYS.REDIS_PORT),
+      port: parseNetworkPort(
+        this.configService.getOrThrow<string | number>(
+          ENVIRONMENT_KEYS.REDIS_PORT,
+        ),
+        ENVIRONMENT_KEYS.REDIS_PORT,
+      ),
     });
   }
 
@@ -27,9 +35,10 @@ export class RedisUtil implements OnModuleInit, OnModuleDestroy {
   }
 
   async save(key: string, value: string, ttlSeconds: number): Promise<void> {
-    if (ttlSeconds > 0) {
-      await this.client.set(key, value, 'EX', ttlSeconds);
+    if (!Number.isInteger(ttlSeconds) || ttlSeconds <= 0) {
+      throw new RangeError('Redis TTL must be a positive integer');
     }
+    await this.client.set(key, value, 'EX', ttlSeconds);
   }
 
   async findOne(key: string): Promise<string | null> {

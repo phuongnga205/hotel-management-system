@@ -9,7 +9,10 @@ import { StatisticsPeriod } from './enums/statistics-period.enum';
 import { StatisticsLogger } from './statistics.logger';
 import { StatisticsService } from './statistics.service';
 import { I18nService } from 'nestjs-i18n';
-import { ServiceUnavailableException } from '@nestjs/common';
+import {
+  InternalServerErrorException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 
 function createQueryBuilder(rows: Array<{ label: string; value: string }>) {
   return {
@@ -159,6 +162,28 @@ describe('StatisticsService', () => {
 
     expect(result.totalRevenue).toBe('250.00');
     expect(result.totalBookings).toBe(3);
+  });
+
+  it('rejects an invalid cache TTL instead of silently using a default', async () => {
+    redis.findOne.mockResolvedValue(null);
+    paymentRepository.createQueryBuilder = jest
+      .fn()
+      .mockReturnValue(createQueryBuilder([]));
+    bookingRepository.createQueryBuilder = jest
+      .fn()
+      .mockReturnValue(createQueryBuilder([]));
+    const configService = (
+      service as unknown as { configService: ConfigService }
+    ).configService;
+    jest.spyOn(configService, 'get').mockReturnValue('0');
+
+    await expect(
+      service.getRevenueAndBookings({
+        period: StatisticsPeriod.MONTH,
+        year: 2026,
+      }),
+    ).rejects.toBeInstanceOf(InternalServerErrorException);
+    expect(redis.save).not.toHaveBeenCalled();
   });
 
   it('rejects the request when mandatory Redis cache is unavailable', async () => {
