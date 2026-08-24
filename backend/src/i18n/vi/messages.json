@@ -122,5 +122,14 @@
     "AVATAR_UPLOAD_SUCCESS": "Cập nhật ảnh đại diện thành công.",
     "AVATAR_NOT_FOUND": "Tài khoản chưa có ảnh đại diện để xoá.",
     "AVATAR_REMOVE_SUCCESS": "Xoá ảnh đại diện thành công."
+  },
+  "REVIEWS": {
+    "ALREADY_REVIEWED": "Ban đã review một lần rồi.",
+    "BOOKING_NOT_COMPLETED" :"Yêu cầu đặt phòng chưa hoàn thành.",
+    "NOT_FOUND": "Không tìm thấy đánh giá.",
+    "CREATE_SUCCESS": "Tạo đánh giá thành công.",
+    "FIND_ALL_SUCCESS": "Lấy danh sách đánh giá thành công.",
+    "FIND_BY_ROOM_SUCCESS": "Lấy danh sách đánh giá của phòng thành công.",
+    "DELETE_SUCCESS": "Review xóa thành công."
   }
 }

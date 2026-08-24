@@ -39,7 +39,7 @@
 | `/forgot-password` | Quên mật khẩu | Modal/form nhập email ngay trên trang, gửi email chứa **mã OTP** (không phải link). Sau khi gửi → hiện nút chuyển sang `/reset-password?email=<email>`. |
 | `/reset-password` | Đặt lại mật khẩu | Form nhập **email + mã OTP 6 số + mật khẩu mới + xác nhận**. `?email=` chỉ để prefill. Xong → redirect `/login` kèm toast "Đổi mật khẩu thành công, vui lòng đăng nhập". |
 | `/rooms` | Tìm phòng + danh sách phòng | 1 route duy nhất, filter/search qua query param. Không có danh sách mặc định và danh sách sau tìm kiếm là 2 route khác nhau. |
-| `/rooms/:roomId` | Chi tiết phòng | Nút "Đặt phòng": guest bấm → redirect `/login?redirect=/rooms/:roomId`; user đã login → mở flow đặt phòng (modal hoặc route con, xem mục B). |
+| `/rooms/:roomId` | Chi tiết phòng | Nút "Đặt phòng": guest bấm → redirect `/login?redirect=/rooms/:roomId`; user đã login → mở flow đặt phòng (modal hoặc route con, xem mục B). **🆕 TODO**: hiển thị thêm danh sách đánh giá của phòng, gọi `GET /rooms/:roomId/reviews` (đã implement, public — không cần login, xem `backend/docs/DANH_SACH_API.md` mục 5 và `frontend/docs/bridge.md` mục 8) — page hiện **chưa gọi** API này. |
 | `/403` | Không có quyền truy cập | Dùng khi user thường cố vào `/admin/**`. |
 | `/404` | Không tìm thấy trang | Fallback route `*`. |
 
@@ -171,3 +171,9 @@ Tất cả nằm dưới `AdminLayout` + `AdminGuard` (role !== admin → `/403`
       condition — phòng vừa bị người khác đặt): hiện thông báo "chọn phòng
       khác" thay vì toast lỗi chung. Format response/error đã chốt tại
       `backend/docs/DANH_SACH_API.md` (mục "Response envelope").
+- [ ] 🆕 `/rooms/:roomId` — gọi thêm `GET /rooms/:roomId/reviews` để hiển thị
+      danh sách đánh giá của phòng (đã implement ở BE, public, không cần
+      login — `reviewApi.listByRoom()` đã có sẵn ở
+      `frontend/src/api/review.api.ts`, chỉ chưa được dùng ở page nào). Xem
+      `backend/docs/DANH_SACH_API.md` mục 5 và
+      `frontend/docs/DANH_SACH_MAN_HINH.md` mục C.

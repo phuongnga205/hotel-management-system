@@ -33,7 +33,7 @@
 | Page component | Route | API sử dụng | Ghi chú |
 |---|---|---|---|
 | `pages/rooms/RoomListPage.tsx` | `/rooms` | `GET /rooms` (mặc định) **hoặc** `GET /rooms/available` (khi user đã nhập `checkIn`/`checkOut`) | 2 API cho cùng 1 màn — chọn API theo việc query có `checkIn`/`checkOut` hay không. |
-| `pages/rooms/RoomDetailPage.tsx` | `/rooms/:roomId` | `GET /rooms/:id` + `GET /rooms/:id/reviews` 🚧 (optional) | Nút "Đặt phòng" điều hướng sang `BookRoomPage`, không gọi API ở đây. |
+| `pages/rooms/RoomDetailPage.tsx` | `/rooms/:roomId` | `GET /rooms/:id` + `GET /rooms/:roomId/reviews` | Nút "Đặt phòng" điều hướng sang `BookRoomPage`, không gọi API ở đây. **🆕 TODO**: `GET /rooms/:roomId/reviews` đã implement ở BE (public, không cần JWT — xem `backend/docs/DANH_SACH_API.md` mục 5, `frontend/docs/bridge.md` mục 8) nhưng trang này **chưa gọi** — cần thêm phần hiển thị danh sách đánh giá (phân trang) qua `reviewApi.listByRoom(roomId, query)` (đã có sẵn ở `frontend/src/api/review.api.ts`). |
 | `pages/rooms/BookRoomPage.tsx` | `/rooms/:roomId/book` | `POST /bookings` | Bắt riêng lỗi `409 Conflict` (race condition) theo `backend/docs/DANH_SACH_API.md`. |
 
 ## D. Profile (user)
@@ -129,10 +129,11 @@
 ## Đối chiếu nhanh: API chưa dùng ở màn nào
 
 Toàn bộ endpoint trong `backend/docs/DANH_SACH_API.md` đều đã được gán vào
-đúng 1 màn hình ở trên — không có API nào dư/không nơi dùng. Riêng API tuỳ
-chọn `GET /rooms/:id/reviews` (đánh dấu optional ở doc BE) nếu team quyết
-định không làm, thì bỏ luôn dòng review-listing trong `RoomDetailPage`
-(không ảnh hưởng các màn khác).
+đúng 1 màn hình ở trên — không có API nào dư/không nơi dùng.
+
+> 🆕 **TODO**: `GET /rooms/:roomId/reviews` (mục C, `RoomDetailPage`) —
+> không còn là API tuỳ chọn, **đã implement xong ở BE** (public, không cần
+> JWT). Chỉ còn thiếu phần FE gọi API này trong `RoomDetailPage`.
 
 `GET /payments/me` (mục 4a ở doc BE) đã implement ở BE, nhưng FE chưa dựng
 trang gọi tới — TODO duy nhất còn treo, gắn với trang

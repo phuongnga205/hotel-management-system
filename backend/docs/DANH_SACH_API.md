@@ -322,7 +322,26 @@ chung toàn app), không thêm field tuỳ biến:
 | Chức năng | Method | URL | Quyền | Auth |
 |---|---|---|---|---|
 | Tạo đánh giá cho phòng đã đặt | POST | `/api/v1/reviews` | User | JWT |
-| 🚧 (Tuỳ chọn) Xem đánh giá công khai theo phòng | GET | `/api/v1/rooms/:id/reviews` | Guest / User | Không cần — *chưa có trong yêu cầu ban đầu, đề xuất thêm vì trang chi tiết phòng thường cần hiển thị review* |
+| Xem đánh giá công khai theo phòng | GET | `/api/v1/rooms/:roomId/reviews` | Guest / User | Không cần |
+
+> **Đã implement**, tách controller trong `ReviewsModule`:
+> `ReviewsController` (`POST /reviews`, cần JWT),
+> `RoomReviewsController` (`GET /rooms/:roomId/reviews`, public — **không**
+> gắn `JwtAuthGuard`, kể cả khách chưa đăng nhập cũng gọi được),
+> `AdminReviewsController` (mục 10). Dùng chung envelope
+> `{statusCode, message, data}`, pagination `page`/`limit`, list trả
+> `data.items` + `total`/`page`/`limit`/`totalPages` — giống mọi list
+> endpoint khác. URL `GET /rooms/:roomId/reviews` khớp đúng
+> `frontend/src/api/endpoints.ts` (`ROOM_REVIEWS`) — **route nested dưới
+> `/rooms` nhưng sở hữu bởi `ReviewsModule`** (đọc thẳng `Review`
+> repository), không phải `RoomsModule`.
+>
+> **🆕 TODO FE**: endpoint đã sẵn sàng, nhưng chưa có trang nào gọi —
+> `RoomDetailPage` (`/rooms/:roomId`) cần thêm phần hiển thị danh sách đánh
+> giá của phòng (phân trang), gọi `reviewApi.listByRoom(roomId, query)` (đã
+> có sẵn ở `frontend/src/api/review.api.ts`, chỉ chưa được dùng ở page
+> nào). Xem `frontend/docs/DANH_SACH_MAN_HINH.md` mục C và
+> `frontend/docs/CAU_TRUC_ROUTE.md` mục A.
 
 ---
 
@@ -455,12 +474,16 @@ chung toàn app), không thêm field tuỳ biến:
 
 | Chức năng | Method | URL | Quyền | Auth |
 |---|---|---|---|---|
-| 🚧 Xem danh sách đánh giá (toàn hệ thống, hỗ trợ sort) | GET | `/api/v1/admin/reviews` | Admin | JWT + RolesGuard(ADMIN) |
+| Xem danh sách đánh giá (toàn hệ thống) | GET | `/api/v1/admin/reviews` | Admin | JWT + RolesGuard(ADMIN) |
 | Xoá đánh giá | DELETE | `/api/v1/admin/reviews/:id` | Admin | JWT + RolesGuard(ADMIN) |
 
 > **Chốt**: `DELETE /admin/reviews/:id` không nhận body, chỉ cần `id` trên
 > path. Email thông báo cho User (event `ReviewDeleted`, xem mục 14) dùng
 > **1 mẫu (template) cố định**, không có phần lý do tuỳ chỉnh từ Admin.
+>
+> **Đã implement** (`AdminReviewsController`, `/admin/reviews`), chỉ
+> `page`/`limit` — 🚧 **chưa hỗ trợ `sort`** (chưa module admin-list nào
+> trong repo hỗ trợ `sort` thật, không riêng reviews).
 
 ## 11. Admin — Statistics
 
@@ -600,7 +623,11 @@ chung toàn app), không thêm field tuỳ biến:
       `ReviewsController`).
 - [x] Bổ sung các endpoint booking Admin còn 🚧: danh sách, chi tiết,
       accept/reject — đã implement, xem mục 8.
-- [ ] Bổ sung endpoint còn 🚧: danh sách review Admin (`GET /admin/reviews`).
+- [x] Bổ sung endpoint còn 🚧: danh sách review Admin (`GET /admin/reviews`)
+      — đã implement, tách `AdminReviewsController` khỏi `ReviewsController`
+      đúng namespace `/admin/reviews`, xem mục 10. Sort vẫn để 🚧 (chưa
+      module admin list nào trong repo hỗ trợ `sort` thật, không riêng
+      reviews).
 - [x] `GET /rooms`, `GET /rooms/available`, `GET /rooms/:id`, toàn bộ
       `/admin/rooms/**` (kể cả export Excel) đã implement — xem mục 3 và 6.
 - [x] Room images (upload/xoá/đặt thumbnail) đã implement, lưu Cloudinary —

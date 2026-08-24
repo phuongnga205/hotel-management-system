@@ -122,5 +122,14 @@
     "AVATAR_UPLOAD_SUCCESS": "Avatar updated successfully.",
     "AVATAR_NOT_FOUND": "This account has no avatar to remove.",
     "AVATAR_REMOVE_SUCCESS": "Avatar removed successfully."
+  },
+  "REVIEWS":{
+    "ALREADY_REVIEWED":"This booking has already been reviewed.",
+    "BOOKING_NOT_COMPLETED" :"Booking has not been completed.",
+    "NOT_FOUND": "Review not found.",
+    "CREATE_SUCCESS": "Review created successfully.",
+    "FIND_ALL_SUCCESS": "Reviews retrieved successfully.",
+    "FIND_BY_ROOM_SUCCESS": "Room reviews retrieved successfully.",
+    "DELETE_SUCCESS": "Review deleted successfully."
   }
 }
