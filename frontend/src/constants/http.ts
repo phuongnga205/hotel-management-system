@@ -4,6 +4,7 @@
  */
 export const HTTP_STATUS = {
   UNAUTHORIZED: 401,
+  CONFLICT: 409,
 } as const
 
 /**

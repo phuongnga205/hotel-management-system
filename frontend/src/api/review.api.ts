@@ -2,7 +2,7 @@ import { axiosClient } from './axiosClient'
 import { API_ENDPOINTS } from './endpoints'
 import { env } from '../config/env'
 import { reviewMockApi } from './mocks/review.mock'
-import type { DeleteReviewPayload, ListReviewsQuery, MessageResponse, PagedResult, Review } from './types'
+import type { ListReviewsQuery, MessageResponse, PagedResult, Review } from './types'
 
 const reviewRealApi = {
   create: async (bookingId: string, rating: number, comment?: string): Promise<Review> => {
@@ -21,8 +21,12 @@ const reviewRealApi = {
     const res = await axiosClient.get(API_ENDPOINTS.ADMIN_REVIEWS, { params: query })
     return res.data.data
   },
-  adminRemove: async (id: string, data: DeleteReviewPayload): Promise<MessageResponse> => {
-    const res = await axiosClient.delete(API_ENDPOINTS.ADMIN_REVIEW_DETAIL(id), { data })
+  // Khong nhan body/ly do - BE (AdminReviewsController.remove()) chi doc
+  // :id tren path, khong doc @Body() nao ca; email thong bao cho user dung
+  // 1 template co dinh, khong co phan ly do tuy chinh tu Admin (xem
+  // backend/docs/DANH_SACH_API.md muc 10).
+  adminRemove: async (id: string): Promise<MessageResponse> => {
+    const res = await axiosClient.delete(API_ENDPOINTS.ADMIN_REVIEW_DETAIL(id))
     return res.data
   },
 }

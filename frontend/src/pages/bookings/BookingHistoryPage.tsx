@@ -1,210 +1,156 @@
 import { useEffect, useState } from 'react'
-import { Typography, message, Spin, Pagination } from 'antd'
-import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { bookingApi } from '../../api/booking.api'
-import type { Booking } from '../../api/types'
+import { useTranslation } from 'react-i18next'
+import { toast } from 'react-toastify'
+import PageHeader from '../../components/PageHeader'
+import TabBar from '../../components/TabBar'
+import Pagination from '../../components/Pagination'
+import EmptyState from '../../components/EmptyState'
+import { PageLoader } from '../../components/common/PageLoader'
 import { BookingCard } from '../../components/bookings/BookingCard'
 import { EditBookingModal } from '../../components/bookings/EditBookingModal'
 import { CancelBookingModal } from '../../components/bookings/CancelBookingModal'
+import { bookingApi } from '../../api/booking.api'
+import { getErrorMessage, getErrorStatusCode } from '../../api/errorMessage'
+import { HTTP_STATUS } from '../../constants/http'
+import { ROUTES } from '../../router/paths'
+import type { Booking, BookingStatus } from '../../api/types'
 
-const { Title, Paragraph } = Typography
+const PER_PAGE = 5
+
+type TabKey = 'all' | BookingStatus
+
+const STATUS_TABS: BookingStatus[] = ['PENDING', 'ACCEPTED', 'REJECTED', 'CANCELLED', 'EXPIRED']
 
 export function BookingHistoryPage() {
   const { t } = useTranslation('booking')
   const navigate = useNavigate()
-  
-  const [activeTab, setActiveTab] = useState('all')
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalItems, setTotalItems] = useState(0)
-  const [bookings, setBookings] = useState<Booking[]>([])
-  const [loading, setLoading] = useState(true)
 
-  // Modals state
+  const [activeTab, setActiveTab] = useState<TabKey>('all')
+  const [page, setPage] = useState(1)
+  const [bookings, setBookings] = useState<Booking[]>([])
+  const [total, setTotal] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [counts, setCounts] = useState<Partial<Record<TabKey, number>>>({})
+  // Bump sau moi thao tac thay doi du lieu (sua/huy booking) de trigger lai
+  // ca danh sach lan so dem tren tab, thay vi tu goi lai 2 ham fetch thu
+  // cong rai rac o tung handler.
+  const [refreshKey, setRefreshKey] = useState(0)
+
   const [editBooking, setEditBooking] = useState<Booking | null>(null)
-  const [cancelBooking, setCancelBooking] = useState<Booking | null>(null)
+  const [cancelTarget, setCancelTarget] = useState<Booking | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
 
-  const [counts, setCounts] = useState<Record<string, number>>({})
-
-  const fetchCounts = async () => {
-    try {
-      const statuses = ['PENDING', 'ACCEPTED', 'CANCELLED']
-      const results = await Promise.all(
-        statuses.map(s => bookingApi.listMine({ status: (s as any), limit: 1 }))
-      )
-      const newCounts: Record<string, number> = {}
-      let total = 0
-      statuses.forEach((s, idx) => {
-        newCounts[s] = results[idx].total
-        total += results[idx].total
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoading(true)
+    bookingApi
+      .listMine({ status: activeTab === 'all' ? undefined : activeTab, page, limit: PER_PAGE })
+      .then((res) => {
+        setBookings(res.items)
+        setTotal(res.total)
       })
-      newCounts['all'] = total
-      setCounts(newCounts)
-    } catch (error) {
-      console.error('Failed to fetch counts', error)
-    }
-  }
-
-  const fetchBookings = async (status: string, page: number) => {
-    try {
-      setLoading(true)
-      const res = await bookingApi.listMine({ 
-        status: status === 'all' ? undefined : (status as any),
-        page,
-        limit: 5
-      })
-      let fetchedBookings = res.items
-      let total = res.total
-      
-      // If we are on 'all' tab, we ensure it only counts valid statuses (though our mock only generates valid ones now)
-      if (status === 'all') {
-        fetchedBookings = fetchedBookings.filter(b => ['PENDING', 'ACCEPTED', 'CANCELLED'].includes(b.status))
-        // The total is already handled accurately by the mock, but for safety in real app:
-      }
-      setBookings(fetchedBookings)
-      setTotalItems(total)
-    } catch (error) {
-      console.error(error)
-      message.error(t('booking.messages.fetchError', 'Failed to load bookings'))
-    } finally {
-      setLoading(false)
-    }
-  }
+      .catch((err) => toast.error(getErrorMessage(err, t('messages.fetchError'))))
+      .finally(() => setLoading(false))
+  }, [activeTab, page, refreshKey, t])
 
   useEffect(() => {
-    fetchBookings(activeTab, currentPage)
-    fetchCounts()
-  }, [activeTab, currentPage])
+    let cancelled = false
+    Promise.all(STATUS_TABS.map((status) => bookingApi.listMine({ status, page: 1, limit: 1 })))
+      .then((results) => {
+        if (cancelled) return
+        const next: Partial<Record<TabKey, number>> = {}
+        let allTotal = 0
+        STATUS_TABS.forEach((status, i) => {
+          next[status] = results[i].total
+          allTotal += results[i].total
+        })
+        next.all = allTotal
+        setCounts(next)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [refreshKey])
 
-  // Reset page when tab changes
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [activeTab])
+  const handleTabChange = (key: TabKey) => {
+    setActiveTab(key)
+    setPage(1)
+  }
 
   const handleEditConfirm = async (checkIn: string, checkOut: string) => {
     if (!editBooking) return
     try {
       setActionLoading(true)
       await bookingApi.updateBookingDates(editBooking.id, { checkInDate: checkIn, checkOutDate: checkOut })
-      message.success(t('booking.messages.updateSuccess', 'Booking dates updated successfully'))
+      toast.success(t('messages.updateSuccess'))
       setEditBooking(null)
-      fetchBookings(activeTab, currentPage)
-      fetchCounts()
-    } catch (error: any) {
-      if (error.response?.status === 409) {
-        message.error('Room not available for these dates')
-      } else {
-        message.error(t('booking.messages.updateError', 'Failed to update dates'))
-      }
+      setRefreshKey((k) => k + 1)
+    } catch (err) {
+      const isConflict = getErrorStatusCode(err) === HTTP_STATUS.CONFLICT
+      toast.error(isConflict ? t('messages.dateConflict') : getErrorMessage(err, t('messages.updateError')))
     } finally {
       setActionLoading(false)
     }
   }
 
-  const handleCancelConfirm = async (_reason: string) => {
-    if (!cancelBooking) return
+  const handleCancelConfirm = async (reason: string) => {
+    if (!cancelTarget) return
     try {
       setActionLoading(true)
-      await bookingApi.cancel(cancelBooking.id)
-      message.success(t('booking.messages.cancelSuccess', 'Booking cancelled successfully'))
-      setCancelBooking(null)
-      fetchBookings(activeTab, currentPage)
-      fetchCounts()
-    } catch (error) {
-      message.error(t('booking.messages.cancelError', 'Failed to cancel booking'))
+      // cancelReason la optional (CancelBookingDto o BE) - chi gui khi user
+      // co nhap, khong gui object rong.
+      await bookingApi.cancel(cancelTarget.id, reason ? { cancelReason: reason } : undefined)
+      toast.success(t('messages.cancelSuccess'))
+      setCancelTarget(null)
+      setRefreshKey((k) => k + 1)
+    } catch (err) {
+      toast.error(getErrorMessage(err, t('messages.cancelError')))
     } finally {
       setActionLoading(false)
     }
   }
 
+  // /bookings/:id/payment chua duoc dung route (BookingPaymentPage chua
+  // duoc dung) - xem frontend/docs/CAU_TRUC_ROUTE.md muc B, ghi chu
+  // "BookingPaymentPage". Giu dieu huong nay vi day dung thiet ke da chot,
+  // chi con thieu trang dich (gap da duoc ghi nhan rieng).
   const handlePay = (booking: Booking) => {
-    navigate(`/bookings/${booking.id}/payment`)
+    navigate(`${ROUTES.BOOKINGS}/${booking.id}/payment`)
   }
 
-  const tabItems = [
-    { key: 'all', label: t('tabs.all', 'All Bookings') },
-    { key: 'PENDING', label: t('tabs.pending', 'Pending') },
-    { key: 'ACCEPTED', label: t('tabs.accepted', 'Accepted') },
-    { key: 'CANCELLED', label: t('tabs.cancelled', 'Cancelled') },
+  const tabs = [
+    { key: 'all' as const, label: t('tabs.all'), count: counts.all },
+    ...STATUS_TABS.map((status) => ({
+      key: status,
+      label: t(`tabs.${status.toLowerCase()}`),
+      count: counts[status],
+    })),
   ]
 
   return (
     <div className="max-w-5xl mx-auto py-8 px-4 min-h-screen">
-      <div className="mb-8">
-        <div className="text-xs font-bold tracking-widest text-primary/80 uppercase mb-2">
-          {t('booking.myAccount', 'MY ACCOUNT')}
+      <PageHeader eyebrow={t('myAccount')} title={t('title')} subtitle={t('subtitle')} />
+
+      <TabBar tabs={tabs} active={activeTab} onChange={handleTabChange} className="mb-6" />
+
+      {loading && bookings.length === 0 ? (
+        <PageLoader fullPage={false} />
+      ) : bookings.length === 0 ? (
+        <EmptyState icon="🗓️" title={t('messages.noBookings')} desc={t('messages.noBookingsDesc')} />
+      ) : (
+        <div className={`flex flex-col transition-opacity ${loading ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+          {bookings.map((booking) => (
+            <BookingCard key={booking.id} booking={booking} onEditDates={setEditBooking} onCancel={setCancelTarget} onPay={handlePay} />
+          ))}
+          <Pagination page={page} total={total} perPage={PER_PAGE} onChange={setPage} />
         </div>
-        <Title level={2} className="!mb-1 text-secondary">
-          {t('booking.title', 'Booking History')}
-        </Title>
-        <Paragraph className="text-gray-500">
-          {t('booking.subtitle', 'Manage and track all your reservations in one place.')}
-        </Paragraph>
-      </div>
-
-      <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-1 inline-flex overflow-x-auto max-w-full mb-6">
-        {tabItems.map(tab => {
-          const isActive = activeTab === tab.key;
-          return (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 ease-in-out whitespace-nowrap ${
-                isActive 
-                  ? 'bg-[#0f2744] text-white' 
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              {tab.label}
-              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold transition-colors duration-300 ${
-                isActive 
-                  ? 'bg-white/20 text-white' 
-                  : 'bg-gray-100 text-gray-500'
-              }`}>
-                {counts[tab.key] ?? '-'}
-              </span>
-            </button>
-          )
-        })}
-      </div>
-
-      <div className={`transition-opacity duration-300 min-h-[400px] ${loading ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
-        {loading && bookings.length === 0 ? (
-          <div className="py-20 flex justify-center"><Spin size="large" /></div>
-        ) : bookings.length === 0 ? (
-          <div className="text-center p-12 bg-gray-50 rounded-lg text-gray-500">
-            {t('booking.messages.noBookings', 'No bookings found.')}
-          </div>
-        ) : (
-          <div className="flex flex-col">
-            {bookings.map(booking => (
-              <BookingCard 
-                key={booking.id}
-                booking={booking}
-                onEditDates={setEditBooking}
-                onCancel={setCancelBooking}
-                onPay={handlePay}
-              />
-            ))}
-            {totalItems > 5 && (
-              <div className="flex justify-center mt-6 mb-8">
-                <Pagination 
-                  current={currentPage} 
-                  pageSize={5} 
-                  total={totalItems} 
-                  onChange={(page) => setCurrentPage(page)}
-                  showSizeChanger={false}
-                />
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      )}
 
       {editBooking && (
         <EditBookingModal
-          visible={!!editBooking}
+          visible
           currentCheckIn={editBooking.checkInDate}
           currentCheckOut={editBooking.checkOutDate}
           onClose={() => setEditBooking(null)}
@@ -213,13 +159,8 @@ export function BookingHistoryPage() {
         />
       )}
 
-      {cancelBooking && (
-        <CancelBookingModal
-          visible={!!cancelBooking}
-          onClose={() => setCancelBooking(null)}
-          onConfirm={handleCancelConfirm}
-          loading={actionLoading}
-        />
+      {cancelTarget && (
+        <CancelBookingModal visible onClose={() => setCancelTarget(null)} onConfirm={handleCancelConfirm} loading={actionLoading} />
       )}
     </div>
   )

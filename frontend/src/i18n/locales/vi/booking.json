@@ -6,16 +6,21 @@
     "all": "Tất cả",
     "pending": "Chờ xác nhận",
     "accepted": "Đã xác nhận",
-    "cancelled": "Đã huỷ"
+    "rejected": "Đã từ chối",
+    "cancelled": "Đã huỷ",
+    "expired": "Hết hạn"
   },
   "status": {
     "PENDING": "Chờ xác nhận",
     "ACCEPTED": "Đã xác nhận",
     "REJECTED": "Đã từ chối",
     "CANCELLED": "Đã huỷ",
-    "EXPIRED": "Hết hạn",
+    "EXPIRED": "Hết hạn"
+  },
+  "paymentStatus": {
     "UNPAID": "CHƯA THANH TOÁN",
-    "PAID": "Đã thanh toán"
+    "PAID": "Đã thanh toán",
+    "REFUNDED": "Đã hoàn tiền"
   },
   "labels": {
     "bookingId": "Mã đơn #",
@@ -25,7 +30,9 @@
     "nights": "đêm",
     "night": "đêm",
     "total": "Tổng cộng",
-    "pastStay": "Đã qua"
+    "pastStay": "Đã qua",
+    "reason": "Lý do",
+    "unknownRoom": "Phòng"
   },
   "buttons": {
     "payNow": "Thanh toán ngay",
@@ -37,6 +44,7 @@
     "editDatesTitle": "Đổi Ngày Nhận/Trả Phòng",
     "newCheckIn": "NGÀY NHẬN PHÒNG MỚI",
     "newCheckOut": "NGÀY TRẢ PHÒNG MỚI",
+    "datesRequired": "Vui lòng chọn ngày mới",
     "updateDates": "Cập nhật",
     "cancelTitle": "Huỷ Đặt Phòng?",
     "cancelWarning": "Hành động này không thể hoàn tác. Bạn có thể phải chịu phí huỷ theo quy định.",
@@ -45,9 +53,12 @@
   },
   "messages": {
     "noBookings": "Không tìm thấy đặt phòng nào.",
+    "noBookingsDesc": "Bạn chưa có đặt phòng nào trong mục này.",
+    "fetchError": "Không thể tải danh sách đặt phòng. Vui lòng thử lại.",
     "cancelSuccess": "Đã huỷ đặt phòng thành công",
     "updateSuccess": "Đã cập nhật ngày thành công",
     "updateError": "Không thể cập nhật ngày",
-    "cancelError": "Không thể huỷ đặt phòng"
+    "cancelError": "Không thể huỷ đặt phòng",
+    "dateConflict": "Phòng đã được đặt trong khoảng thời gian này. Vui lòng chọn ngày khác."
   }
 }

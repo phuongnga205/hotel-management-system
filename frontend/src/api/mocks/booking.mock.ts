@@ -1,6 +1,7 @@
 import type {
   Booking,
   BookingStatus,
+  CancelBookingPayload,
   CreateBookingPayload,
   ListBookingsQuery,
   MessageResponse,
@@ -153,19 +154,22 @@ export const bookingMockApi = {
     if (!booking) throw new Error('Booking not found (mock).')
     return mockDelay(booking)
   },
-  cancel: async (id: string): Promise<MessageResponse> => {
-    bookings = bookings.map((b) => (b.id === id ? { ...b, status: 'CANCELLED' as BookingStatus } : b))
+  cancel: async (id: string, data?: CancelBookingPayload): Promise<MessageResponse> => {
+    bookings = bookings.map((b) => (b.id === id ? { ...b, status: 'CANCELLED' as BookingStatus, cancelReason: data?.cancelReason ?? null } : b))
     return mockDelay({ message: 'Booking cancelled (mock).' })
   },
   updateBookingDates: async (id: string, data: UpdateBookingPayload): Promise<{ message: string, data: Booking }> => {
     const booking = bookings.find(b => b.id === id)
     if (!booking) throw new Error('Booking not found')
 
-    // Simulate 409 conflict
+    // Gia lap 409 - phai co isAxiosError: true de axios.isAxiosError() nhan
+    // dung (getErrorStatusCode()/getErrorMessage() o api/errorMessage.ts
+    // dua vao ham nay), khop dung shape loi that tra ve tu axios.
     if (data.checkInDate === '2026-12-25') {
-      const error: any = new Error('Room is already booked')
-      error.response = { status: 409, data: { message: 'Room not available for these dates' } }
-      throw error
+      throw Object.assign(new Error('Room is already booked'), {
+        isAxiosError: true,
+        response: { status: 409, data: { message: 'Room not available for these dates' } },
+      })
     }
 
     const updated = { ...booking, checkInDate: data.checkInDate, checkOutDate: data.checkOutDate }

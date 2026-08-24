@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react'
-import { Modal, DatePicker, Button, Typography, Form } from 'antd'
+import { useEffect } from 'react'
+import { Modal, DatePicker, Button, Form } from 'antd'
 import { useTranslation } from 'react-i18next'
-import dayjs from 'dayjs'
+import dayjs, { type Dayjs } from 'dayjs'
 
 interface EditBookingModalProps {
   visible: boolean
@@ -12,9 +12,11 @@ interface EditBookingModalProps {
   loading?: boolean
 }
 
-const { Text } = Typography
+interface EditBookingFormValues {
+  dates: [Dayjs, Dayjs]
+}
 
-export function EditBookingModal({ 
+export function EditBookingModal({
   visible, 
   currentCheckIn, 
   currentCheckOut, 
@@ -22,8 +24,11 @@ export function EditBookingModal({
   onConfirm, 
   loading 
 }: EditBookingModalProps) {
-  const { t } = useTranslation()
-  const [form] = Form.useForm()
+  // Namespace mac dinh 'booking' (khong prefix) + 'common' de lay rieng nut
+  // Huy dung chung (t('common:common.cancel')) - xem HomePage.tsx cho cung
+  // pattern useTranslation(['ns-rieng', 'common']).
+  const { t } = useTranslation(['booking', 'common'])
+  const [form] = Form.useForm<EditBookingFormValues>()
 
   useEffect(() => {
     if (visible) {
@@ -33,7 +38,7 @@ export function EditBookingModal({
     }
   }, [visible, currentCheckIn, currentCheckOut, form])
 
-  const handleFinish = (values: any) => {
+  const handleFinish = (values: EditBookingFormValues) => {
     if (!values.dates || values.dates.length !== 2) return
     const [checkIn, checkOut] = values.dates
     onConfirm(checkIn.format('YYYY-MM-DD'), checkOut.format('YYYY-MM-DD'))
@@ -41,7 +46,7 @@ export function EditBookingModal({
 
   return (
     <Modal
-      title={<div className="text-center w-full text-lg font-semibold">{t('booking.modal.editDatesTitle', 'Edit Stay Dates')}</div>}
+      title={<div className="text-center w-full text-lg font-semibold">{t('modal.editDatesTitle')}</div>}
       open={visible}
       onCancel={onClose}
       footer={null}
@@ -50,35 +55,24 @@ export function EditBookingModal({
       destroyOnClose
     >
       <Form form={form} layout="vertical" onFinish={handleFinish} className="mt-6">
-        <Form.Item 
-          label={<span className="text-xs font-bold text-gray-500 uppercase">{t('booking.modal.newCheckIn', 'NEW CHECK-IN')} & {t('booking.modal.newCheckOut', 'NEW CHECK-OUT')}</span>}
+        <Form.Item
+          label={<span className="text-xs font-bold text-gray-500 uppercase">{t('modal.newCheckIn')} & {t('modal.newCheckOut')}</span>}
           name="dates"
-          rules={[{ required: true, message: 'Please select new dates' }]}
+          rules={[{ required: true, message: t('modal.datesRequired') }]}
         >
-          <DatePicker.RangePicker 
-            className="w-full" 
+          <DatePicker.RangePicker
+            className="w-full"
             size="large"
             disabledDate={(current) => current && current < dayjs().startOf('day')}
           />
         </Form.Item>
 
         <div className="flex w-full gap-4 mt-8">
-          <Button 
-            className="flex-1" 
-            size="large"
-            onClick={onClose}
-            disabled={loading}
-          >
-            {t('common.cancel', 'Cancel')}
+          <Button className="flex-1" size="large" onClick={onClose} disabled={loading}>
+            {t('common:common.cancel')}
           </Button>
-          <Button 
-            className="flex-1 bg-secondary hover:bg-secondary/90" 
-            type="primary" 
-            size="large"
-            htmlType="submit"
-            loading={loading}
-          >
-            {t('booking.modal.updateDates', 'Update Dates')}
+          <Button className="flex-1 !bg-navy hover:!bg-navy-light" type="primary" size="large" htmlType="submit" loading={loading}>
+            {t('modal.updateDates')}
           </Button>
         </div>
       </Form>

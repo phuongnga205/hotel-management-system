@@ -14,43 +14,43 @@
 
 | Page component | Route | API sử dụng | Ghi chú |
 |---|---|---|---|
-| `pages/HomePage.tsx` | `/` | Không bắt buộc | Có thể gọi `GET /rooms` (lấy vài phòng nổi bật) nếu muốn, không phải yêu cầu gốc. |
-| `pages/NotFoundPage.tsx` | `/404` | Không gọi API | Static. |
-| `pages/ForbiddenPage.tsx` | `/403` | Không gọi API | Static. |
+| `pages/HomePage.tsx` | `/` | `GET /rooms` (phòng nổi bật) + `GET /rooms/:roomId/reviews` (carousel đánh giá) | ✅ **Đã vượt mô tả gốc** — không chỉ "có thể gọi", trang đã thật sự gọi `roomApi.listPublic({page:1, limit: FEATURED_ROOM_COUNT})` rồi `reviewApi.listByRoom()` cho từng phòng nổi bật để dựng carousel review. **Nhưng các nút điều hướng trên trang này (thanh search, "View all rooms", card phòng → "Đặt phòng"/"Xem chi tiết") đều trỏ tới `/rooms`, `/rooms/:roomId`, `/rooms/:roomId/book` — cả 3 route này CHƯA tồn tại (mục C bên dưới), nên hiện là dead link khi click.** |
+| `pages/NotFoundPage.tsx` | `/404` | Không gọi API | ✅ Đã dựng, route fallback `path: '*'` đăng ký trong `router/index.tsx`. Text qua i18n (`common.notFound.*`), CTA dùng lại class `.btn-primary` chung. |
+| `pages/ForbiddenPage.tsx` | `/403` | Không gọi API | ✅ Đã dựng, route `ROUTES.FORBIDDEN` đăng ký thật. `AdminGuard` đã sửa redirect đúng `/403` thay vì `/`. Text qua i18n (`common.forbidden.*`), interpolate tên thương hiệu qua `common.app.name` thay vì hardcode "Grandeur". |
 
 ## B. Auth
 
 | Page component | Route | API sử dụng | Ghi chú |
 |---|---|---|---|
-| `pages/auth/LoginPage.tsx` | `/login` | `POST /auth/login` | Thành công → lưu token qua `axiosClient` (`setAccessToken`), redirect theo `?redirect=` hoặc `/`. |
+| `pages/auth/LoginPage.tsx` | `/login` | `POST /auth/login` | Thành công → lưu token qua `axiosClient` (`setAccessToken`), redirect theo `?redirect=` hoặc `/`. ⚠️ Tên file thật là `LoginPage.tsx` export `{ LoginPage }` (named export, không phải default) — khớp cột này, chỉ ghi chú vì các trang admin dùng default export, khác convention. |
 | `pages/auth/RegisterPage.tsx` | `/register` | `POST /auth/register` | Submit xong hiện modal "kiểm tra email kích hoạt" — modal không gọi thêm API. |
-| `pages/auth/ActivateAccountPage.tsx` | `/activate?token=` | `GET /auth/activate?token=` | Gọi ngay khi mount (đọc `token` từ query). Xong → redirect `/login` + toast. |
-| `pages/auth/ForgotPasswordPage.tsx` | `/forgot-password` | `POST /auth/forgot-password` | |
-| `pages/auth/ResetPasswordPage.tsx` | `/reset-password?token=` | `POST /auth/reset-password` | Đọc `token` từ query, gửi kèm trong body. Xong → redirect `/login` + toast. |
+| `pages/auth/ActivatePage.tsx` | `/activate?email=` | `POST /auth/activate` (body `{ email, otp }`) | 🆕⚠️ **Đã lỗi thời — sửa lại theo OTP đã chốt** (dòng cũ ghi `ActivateAccountPage.tsx`, `/activate?token=`, `GET /auth/activate?token=` — kiểu link/token cũ không còn dùng, xem `frontend/docs/CAU_TRUC_ROUTE.md` mục "Quy ước chung"). Tên file thật cũng khác: `ActivatePage.tsx`, không phải `ActivateAccountPage.tsx`. Form nhập **email + mã OTP 6 số** (gửi qua email), `?email=` chỉ để prefill. Xong → redirect `/login` + toast. **BE hiện chưa implement `POST /auth/activate` thật** (chỉ có hợp đồng API, xem `backend/docs/DANH_SACH_API.md` mục 1) — trang gọi API này sẽ nhận lỗi khi tắt mock. |
+| `pages/auth/ForgotPasswordPage.tsx` | `/forgot-password` | `POST /auth/forgot-password` | 🚧 BE hiện chưa implement thật (chỉ có hợp đồng API, mục 1). |
+| `pages/auth/ResetPasswordPage.tsx` | `/reset-password?email=` | `POST /auth/reset-password` (body `{ email, otp, newPassword }`) | 🆕⚠️ **Đã lỗi thời, tương tự dòng trên** — dòng cũ ghi `?token=`, đã đổi sang OTP: đọc `email` từ query (chỉ prefill), user gõ tay `otp` + mật khẩu mới. Xong → redirect `/login` + toast. 🚧 BE hiện chưa implement thật. |
 
 ## C. Rooms (public/user)
 
 | Page component | Route | API sử dụng | Ghi chú |
 |---|---|---|---|
-| `pages/rooms/RoomListPage.tsx` | `/rooms` | `GET /rooms` (mặc định) **hoặc** `GET /rooms/available` (khi user đã nhập `checkIn`/`checkOut`) | 2 API cho cùng 1 màn — chọn API theo việc query có `checkIn`/`checkOut` hay không. |
-| `pages/rooms/RoomDetailPage.tsx` | `/rooms/:roomId` | `GET /rooms/:id` + `GET /rooms/:roomId/reviews` | Nút "Đặt phòng" điều hướng sang `BookRoomPage`, không gọi API ở đây. **🆕 TODO**: `GET /rooms/:roomId/reviews` đã implement ở BE (public, không cần JWT — xem `backend/docs/DANH_SACH_API.md` mục 5, `frontend/docs/bridge.md` mục 8) nhưng trang này **chưa gọi** — cần thêm phần hiển thị danh sách đánh giá (phân trang) qua `reviewApi.listByRoom(roomId, query)` (đã có sẵn ở `frontend/src/api/review.api.ts`). |
-| `pages/rooms/BookRoomPage.tsx` | `/rooms/:roomId/book` | `POST /bookings` | Bắt riêng lỗi `409 Conflict` (race condition) theo `backend/docs/DANH_SACH_API.md`. |
+| `pages/rooms/RoomListPage.tsx` | `/rooms` | `GET /rooms` (mặc định) **hoặc** `GET /rooms/available` (khi user đã nhập `checkIn`/`checkOut`) | 🚧 **CHƯA DỰNG — file/route chưa tồn tại.** 2 API cho cùng 1 màn — chọn API theo việc query có `checkIn`/`checkOut` hay không. `roomApi.listPublic()` đã sẵn sàng gọi thật (đã được `HomePage.tsx` dùng cho phần "phòng nổi bật"), chỉ thiếu đúng trang này. **`HomePage.tsx` đã có link trỏ tới route này — dead link hiện tại.** |
+| `pages/rooms/RoomDetailPage.tsx` | `/rooms/:roomId` | `GET /rooms/:id` + `GET /rooms/:roomId/reviews` | 🚧 **CHƯA DỰNG — file/route chưa tồn tại.** Nút "Đặt phòng" điều hướng sang `BookRoomPage`, không gọi API ở đây. `reviewApi.listByRoom(roomId, query)` đã được chứng minh hoạt động thật (dùng trong `HomePage.tsx` cho carousel đánh giá) — không còn là API "chưa gọi bao giờ", chỉ thiếu trang chi tiết phòng để nối vào. **`HomePage.tsx` đã có nút "Xem chi tiết" trỏ tới route này — dead link hiện tại.** |
+| `pages/rooms/BookRoomPage.tsx` | `/rooms/:roomId/book` | `POST /bookings` | 🚧 **CHƯA DỰNG — file/route chưa tồn tại.** Bắt riêng lỗi `409 Conflict` (race condition) theo `backend/docs/DANH_SACH_API.md`. `bookingApi.create()` đã sẵn sàng gọi thật. **`HomePage.tsx` đã có nút "Đặt phòng" trỏ tới route này — dead link hiện tại.** |
 
 ## D. Profile (user)
 
 | Page component | Route | API sử dụng | Ghi chú |
 |---|---|---|---|
-| `pages/profile/ProfilePage.tsx` | `/profile` | `GET /users/me`, `PATCH /users/me`, `POST /users/me/avatar`, `DELETE /users/me/avatar` 🚧 | Phần avatar (thêm/thay/xoá) nằm chung trang, không tách route. |
-| `pages/profile/ChangePasswordPage.tsx` | `/profile/change-password` | `PATCH /users/me/password` | Khác `ResetPasswordPage` — form này cần nhập mật khẩu cũ. |
+| `pages/profile/ProfilePage.tsx` | `/profile` | `GET /users/me`, `PATCH /users/me` | ✅ Đã dựng, có route thật (`GET`/`PATCH /users/me` cả 2 phía đã hoạt động). 🚧⚠️ **Phần avatar KHÔNG có trong trang này** — dòng cũ ghi avatar "nằm chung trang" nhưng thực tế `ProfilePage.tsx` không có khu vực avatar nào, và `POST`/`DELETE /users/me/avatar` (dù đã implement đầy đủ ở BE, Cloudinary) **chưa có cả method trong `user.api.ts`** — cần viết mới từ API layer, không chỉ thêm UI. |
+| `pages/profile/ChangePasswordPage.tsx` | `/profile/change-password` | `PATCH /users/me/password` | 🚧 **CHƯA DỰNG — file/route/tab đều chưa tồn tại.** Khác `ResetPasswordPage` — form này cần nhập mật khẩu cũ. `userApi.changePassword()` đã sẵn sàng gọi thật ở `user.api.ts`, chỉ thiếu UI — hiện **không có cách nào đổi mật khẩu khi đã đăng nhập** trên FE. |
 
 ## E. Bookings (user)
 
 | Page component | Route | API sử dụng | Ghi chú |
 |---|---|---|---|
-| `pages/bookings/BookingHistoryPage.tsx` | `/bookings` | `GET /bookings/me` | |
-| `pages/bookings/BookingDetailPage.tsx` | `/bookings/:bookingId` | `GET /bookings/:id`, `PATCH /bookings/:id` (sửa), `PATCH /bookings/:id/cancel` (huỷ, qua modal) | Nút "Viết đánh giá" điều hướng sang `BookingReviewPage`, nút "Thanh toán" điều hướng sang `BookingPaymentPage`. |
-| `pages/bookings/BookingPaymentPage.tsx` | `/bookings/:bookingId/payment` | `POST /bookings/:id/pay` | BE đã implement (mock — luôn thành công ngay, không phải cổng thanh toán thật): màn hình chỉ cần cho chọn `method` rồi gọi API 1 lần, không cần polling/callback. `bookingApi.pay()` + mock đã có sẵn ở `frontend/src/api/booking.api.ts`, trang này vẫn **chưa được dựng**. |
-| `pages/bookings/BookingReviewPage.tsx` | `/bookings/:bookingId/review` | `POST /reviews` | Chỉ hiện nút dẫn tới trang này khi booking đã/đang ở (check ở `BookingDetailPage`). |
+| `pages/bookings/BookingHistoryPage.tsx` | `/bookings` | `GET /bookings/me`, `PATCH /bookings/:id` (sửa, qua modal), `PATCH /bookings/:id/cancel` (huỷ, qua modal) | ✅ Đã dựng, có route thật. **Khác thiết kế gốc**: không có trang `BookingDetailPage` riêng — action Sửa/Huỷ đã gộp thẳng vào đây qua `EditBookingModal`/`CancelBookingModal` (`src/components/bookings/`), mở ngay từ card trong list. Nút "Pay" trên mỗi card (`BookingCard`, `onPay` → `handlePay`) **đã wire sẵn**, navigate tới `/bookings/:id/payment` — nhưng route đó chưa tồn tại (xem dòng `BookingPaymentPage` bên dưới) → **dead link đang bấm được thật**. Không có nút "Viết đánh giá" nào ở đây. |
+| `pages/bookings/BookingDetailPage.tsx` | `/bookings/:bookingId` | `GET /bookings/:id`, `PATCH /bookings/:id` (sửa), `PATCH /bookings/:id/cancel` (huỷ, qua modal) | 🚧 **CHƯA DỰNG, và có thể sẽ KHÔNG cần dựng nữa** — thiết kế thực tế hiện tại (`BookingHistoryPage.tsx`) đã gộp toàn bộ action sửa/huỷ vào thẳng list qua modal (xem dòng trên), không drill-down vào trang chi tiết riêng. Cân nhắc xoá hẳn dòng này khỏi tài liệu nếu team chốt giữ pattern hiện tại, thay vì để treo như 1 gap cần làm. |
+| `pages/bookings/BookingPaymentPage.tsx` | `/bookings/:bookingId/payment` | `POST /bookings/:id/pay` | 🚧⚠️ **Ưu tiên cao — dead link đang tồn tại thật trong code.** BE đã implement đầy đủ (mock — luôn `SUCCESS` ngay, xem `backend/docs/DANH_SACH_API.md` mục 4, kể cả case "trả bù" cho booking `ACCEPTED` chưa thanh toán). `bookingApi.pay()` đã sẵn ở `frontend/src/api/booking.api.ts`. Nhưng trang này **vẫn chưa được dựng, route chưa đăng ký** — trong khi nút "Pay" ở `BookingHistoryPage`/`BookingCard` đã navigate thẳng tới đây. Đây là gap cần ưu tiên xử lý trước các gap khác trong mục này vì đã có entry point thật cho user bấm vào. |
+| `pages/bookings/BookingReviewPage.tsx` | `/bookings/:bookingId/review` | `POST /reviews` | 🚧 **CHƯA DỰNG — file/route/cả nút bấm dẫn vào đều chưa tồn tại.** Khác `BookingPaymentPage` (có nút nhưng thiếu đích), ở đây **không có nút "Viết đánh giá" nào cả** trong `BookingCard`/`BookingHistoryPage` — không có nơi nào check điều kiện "booking đã/đang ở" để hiện nút như mô tả gốc. `reviewApi.create()` đã sẵn sàng gọi thật. |
 | 🚧 `pages/payments/PaymentHistoryPage.tsx` | `/payments` | `GET /payments/me` (BE đã implement, xem `backend/docs/DANH_SACH_API.md` mục 4a) | **TODO — FE chưa dựng, để session sau** (API đã sẵn sàng dùng ngay). Trang riêng liệt kê toàn bộ lịch sử thanh toán của user hiện tại (mọi booking gộp lại), nằm trong thư mục `pages/payments/` (ngang hàng `pages/bookings/`), không phải tab/section trong `BookingDetailPage`. Có nút/link dẫn tới đây từ `BookingHistoryPage` hoặc menu tài khoản. |
 
 ## F. Admin — Users
@@ -128,17 +128,38 @@
 
 ## Đối chiếu nhanh: API chưa dùng ở màn nào
 
-Toàn bộ endpoint trong `backend/docs/DANH_SACH_API.md` đều đã được gán vào
-đúng 1 màn hình ở trên — không có API nào dư/không nơi dùng.
+> ⚠️ **Đã cập nhật sau khi đối chiếu lại với code thật** (trước đây ghi
+> "không có API nào dư/không nơi dùng" — không còn đúng, xem danh sách bên
+> dưới).
 
-> 🆕 **TODO**: `GET /rooms/:roomId/reviews` (mục C, `RoomDetailPage`) —
-> không còn là API tuỳ chọn, **đã implement xong ở BE** (public, không cần
-> JWT). Chỉ còn thiếu phần FE gọi API này trong `RoomDetailPage`.
+- `GET /rooms/:roomId/reviews` — không còn TODO nữa theo nghĩa "chưa gọi
+  bao giờ": đã được `HomePage.tsx` gọi thật (carousel đánh giá phòng nổi
+  bật). Vẫn TODO đúng nghĩa ở `RoomDetailPage` vì **trang đó chưa tồn tại**
+  (mục C).
+- `GET /payments/me` — đã implement ở BE (mục 4a), FE chưa dựng trang gọi
+  tới (`PaymentHistoryPage.tsx`), **và cũng chưa có method nào trong
+  `payment.api.ts`** (chỉ có `adminList()`) — TODO còn treo từ trước, để
+  lại cho session sau.
+- `POST`/`DELETE /users/me/avatar` — đã implement ở BE, **chưa có method
+  nào trong `user.api.ts` lẫn UI trong `ProfilePage.tsx`** — API layer
+  cũng phải viết mới, không chỉ thiếu UI (mục D).
+- `POST /bookings/:id/pay` — đã có method thật (`bookingApi.pay()`) và đã
+  có entry point thật (nút "Pay" ở `BookingHistoryPage`) nhưng **trang đích
+  `BookingPaymentPage` chưa tồn tại** → dead link, ưu tiên cao (mục E).
+- `POST /reviews` — có method thật (`reviewApi.create()`) nhưng **không
+  màn nào gọi**, kể cả không có nút dẫn vào (mục E).
+- `POST /mail/test`, `GET /mail/:id` (mục 12a ở doc BE) — route dev/test
+  nội bộ, không guard, **không map vào màn hình FE nào cả theo thiết kế**
+  (không thuộc luồng nghiệp vụ chính thức) — khác các API "thiếu UI" khác ở
+  trên, đây là **cố ý không có UI**.
+- `GET /admin/statistics/bookings`, `GET /admin/statistics/revenue` — mục J
+  (`AdminBookingStatsPage`, `AdminRevenueStatsPage`) đã map đúng API,
+  nhưng **BE chưa có module/controller nào cho 2 endpoint này** (xem
+  `backend/docs/DANH_SACH_API.md` mục 11) — 2 trang FE gọi API không tồn
+  tại (404 thật khi tắt mock), việc implement BE dời sang 1 PR riêng.
 
-`GET /payments/me` (mục 4a ở doc BE) đã implement ở BE, nhưng FE chưa dựng
-trang gọi tới — TODO duy nhất còn treo, gắn với trang
-`PaymentHistoryPage.tsx` (`/payments`) ở mục E, để lại cho session sau.
-
-> 🆕 Mục G/G2 (Rooms/Amenities) mô tả theo thiết kế đã chốt ở 1 nhánh git
-> riêng chưa merge — xem cảnh báo đầu `backend/docs/DANH_SACH_API.md` và
-> `frontend/docs/bridge.md`.
+> ✅ Mục G/G2 (Rooms/Amenities) **đã merge xong** — không còn là thiết kế ở
+> nhánh git riêng như ghi chú cũ. `AdminRoomsController` hiện có đủ cả
+> `PATCH .../price`, `POST`/`DELETE .../amenities` (xem
+> `backend/docs/DANH_SACH_API.md` mục 6), khớp đúng API mà `AdminRoomEditPage`
+> (mục G) đang gọi.

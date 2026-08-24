@@ -12,18 +12,19 @@ interface BookingCardProps {
 }
 
 export function BookingCard({ booking, onEditDates, onCancel, onPay }: BookingCardProps) {
-  const { t } = useTranslation()
-  
+  const { t } = useTranslation('booking')
+
   const checkIn = dayjs(booking.checkInDate)
   const checkOut = dayjs(booking.checkOutDate)
   const nights = checkOut.diff(checkIn, 'day')
 
   const isPast = checkOut.isBefore(dayjs(), 'day')
 
-  // Image fallback
   const thumbnail = booking.room?.thumbnailUrl || '/placeholder-room.jpg'
+  const roomName = booking.room?.name || t('labels.unknownRoom')
 
-  // Determine Tag Color
+  // Determine Tag color - map BookingStatus sang mau semantic AntD Tag co
+  // san, khong hardcode hex rieng o day.
   let statusColor = 'default'
   let isUnpaid = false
 
@@ -42,16 +43,10 @@ export function BookingCard({ booking, onEditDates, onCancel, onPay }: BookingCa
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row overflow-hidden mb-6 relative">
       {/* Image Section */}
       <div className="w-full md:w-64 h-48 md:h-auto relative shrink-0">
-        <img 
-          src={thumbnail} 
-          alt={booking.room?.name || 'Room'} 
-          className="w-full h-full object-cover"
-        />
+        <img src={thumbnail} alt={roomName} className="w-full h-full object-cover" />
         {isPast && (
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-            <span className="bg-black/60 text-white px-3 py-1 rounded text-sm backdrop-blur-sm">
-              {t('booking.labels.pastStay', 'Past Stay')}
-            </span>
+            <span className="bg-black/60 text-white px-3 py-1 rounded text-sm backdrop-blur-sm">{t('labels.pastStay')}</span>
           </div>
         )}
       </div>
@@ -60,24 +55,23 @@ export function BookingCard({ booking, onEditDates, onCancel, onPay }: BookingCa
       <div className="p-6 flex-1 flex flex-col">
         <div className="flex justify-between items-start mb-4">
           <div>
-            <h3 className="text-xl font-bold text-secondary mb-1">
-              {booking.room?.name || 'Unknown Room'}
-            </h3>
+            <h3 className="text-xl font-bold text-navy mb-1">{roomName}</h3>
             <p className="text-sm text-gray-400">
-              {t('booking.labels.bookingId', 'Booking #')}{booking.id}
+              {t('labels.bookingId')}
+              {booking.id}
             </p>
           </div>
-          
+
           <div className="flex flex-col items-end gap-2">
             <Tag color={statusColor} className="m-0 rounded-full px-3 py-1 text-sm font-medium border-none flex items-center gap-1">
               <span className={`w-1.5 h-1.5 rounded-full ${statusColor === 'warning' ? 'bg-orange-500' : statusColor === 'success' ? 'bg-green-500' : 'bg-red-500'}`} />
-              {t(`booking.status.${booking.status}`, booking.status)}
+              {t(`status.${booking.status}`)}
             </Tag>
-            
+
             {/* Payment badge */}
             {isUnpaid && booking.status === 'ACCEPTED' && (
               <Tag color="default" className="m-0 rounded-full px-3 py-1 text-xs font-semibold bg-gray-100 text-gray-500 border-none">
-                {t('booking.paymentStatus.UNPAID', 'UNPAID')}
+                {t('paymentStatus.UNPAID')}
               </Tag>
             )}
             {!isUnpaid && booking.status === 'ACCEPTED' && (
@@ -85,13 +79,13 @@ export function BookingCard({ booking, onEditDates, onCancel, onPay }: BookingCa
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                {t('booking.paymentStatus.PAID', 'Payment Complete')}
+                {t('paymentStatus.PAID')}
               </Tag>
             )}
-            
+
             {booking.payment?.status === 'REFUNDED' && (
               <Tag color="default" className="m-0 rounded-full px-3 py-1 text-xs font-semibold bg-gray-100 text-gray-500 border-none">
-                {t('booking.paymentStatus.REFUNDED', 'REFUNDED')}
+                {t('paymentStatus.REFUNDED')}
               </Tag>
             )}
           </div>
@@ -99,26 +93,28 @@ export function BookingCard({ booking, onEditDates, onCancel, onPay }: BookingCa
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div>
-            <p className="text-xs text-gray-400 mb-1">{t('booking.labels.checkIn', 'Check-in')}</p>
-            <p className="font-semibold text-secondary">{checkIn.format('MMM D, YYYY')}</p>
+            <p className="text-xs text-gray-400 mb-1">{t('labels.checkIn')}</p>
+            <p className="font-semibold text-navy">{checkIn.format('MMM D, YYYY')}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-400 mb-1">{t('booking.labels.checkOut', 'Check-out')}</p>
-            <p className="font-semibold text-secondary">{checkOut.format('MMM D, YYYY')}</p>
+            <p className="text-xs text-gray-400 mb-1">{t('labels.checkOut')}</p>
+            <p className="font-semibold text-navy">{checkOut.format('MMM D, YYYY')}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-400 mb-1">{t('booking.labels.duration', 'Duration')}</p>
-            <p className="font-semibold text-secondary">{nights} {nights > 1 ? t('booking.labels.nights', 'nights') : t('booking.labels.night', 'night')}</p>
+            <p className="text-xs text-gray-400 mb-1">{t('labels.duration')}</p>
+            <p className="font-semibold text-navy">
+              {nights} {nights > 1 ? t('labels.nights') : t('labels.night')}
+            </p>
           </div>
           <div>
-            <p className="text-xs text-gray-400 mb-1">{t('booking.labels.total', 'Total')}</p>
-            <p className="font-bold text-secondary text-lg">{formatCurrency(Number(booking.totalPrice))}</p>
+            <p className="text-xs text-gray-400 mb-1">{t('labels.total')}</p>
+            <p className="font-bold text-navy text-lg">{formatCurrency(Number(booking.totalPrice))}</p>
           </div>
         </div>
-        
+
         {booking.cancelReason && (
           <div className="mb-6 p-3 bg-red-50 text-red-600 rounded-lg text-sm">
-            <span className="font-semibold">{t('booking.labels.reason', 'Reason')}: </span>
+            <span className="font-semibold">{t('labels.reason')}: </span>
             {booking.cancelReason}
           </div>
         )}
@@ -126,22 +122,16 @@ export function BookingCard({ booking, onEditDates, onCancel, onPay }: BookingCa
         {/* Actions */}
         <div className="mt-auto pt-4 border-t border-gray-100 flex gap-3">
           {booking.status === 'ACCEPTED' && isUnpaid && !isPast && (
-            <Button 
-              type="primary" 
-              className="bg-[#D4B254] hover:bg-[#C2A04A] border-none font-semibold px-6"
-              onClick={() => onPay(booking)}
-            >
-              {t('booking.buttons.payNow', 'Pay Now')} — {formatCurrency(Number(booking.totalPrice))}
+            <Button type="primary" className="!bg-gold hover:!bg-gold-dark !border-none font-semibold px-6" onClick={() => onPay(booking)}>
+              {t('buttons.payNow')} — {formatCurrency(Number(booking.totalPrice))}
             </Button>
           )}
 
           {booking.status === 'PENDING' && !isPast && (
             <>
-              <Button onClick={() => onEditDates(booking)}>
-                {t('booking.buttons.editDates', 'Edit Dates')}
-              </Button>
+              <Button onClick={() => onEditDates(booking)}>{t('buttons.editDates')}</Button>
               <Button danger onClick={() => onCancel(booking)}>
-                {t('booking.buttons.cancelBooking', 'Cancel Booking')}
+                {t('buttons.cancelBooking')}
               </Button>
             </>
           )}

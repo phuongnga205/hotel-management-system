@@ -230,6 +230,13 @@ export interface ListBookingsQuery extends ListQuery {
   search?: string
 }
 
+// Khop CancelBookingDto o BE (PATCH /bookings/:id/cancel) - cung ten field
+// "cancelReason" nhu RejectBookingPayload (admin reject) vi ca 2 dung chung
+// 1 cot DB bookings.cancel_reason, xem bridge.md muc 6.
+export interface CancelBookingPayload {
+  cancelReason?: string
+}
+
 export interface RejectBookingPayload {
   cancelReason?: string
 }
@@ -293,10 +300,6 @@ export interface Review {
 
 export interface ListReviewsQuery extends ListQuery {
   roomId?: string
-}
-
-export interface DeleteReviewPayload {
-  deleteReason?: string
 }
 
 // --- email logs (EmailType dung 4 gia tri that o backend - KHONG co
