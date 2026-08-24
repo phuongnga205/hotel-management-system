@@ -25,7 +25,7 @@ async function bootstrap() {
 
   // Cấu hình CORS để Frontend (ReactJS) có thể gọi API mà không bị chặn
   app.enableCors({
-    origin: configService.get<string>('FRONTEND_URL'),
+    origin: configService.getOrThrow<string>('FRONTEND_URL'),
     credentials: true,
   });
 

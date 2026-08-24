@@ -27,7 +27,7 @@ jobs:
         working-directory: ./backend
         
       - name: Run Linter
-        run: npm run lint
+        run: npm run lint:check
         working-directory: ./backend
         
       - name: Build
