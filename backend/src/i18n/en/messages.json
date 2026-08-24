@@ -1,5 +1,9 @@
 {
   "HELLO": "Hello",
+  "SEEDER": {
+    "DISABLED": "Database seeding is disabled. Enable it only for a local or test database.",
+    "PRODUCTION": "Database seeding is forbidden in production."
+  },
   "USER_NOT_FOUND": "User not found in the system.",
   "ROOM": {
     "NOT_FOUND": "Room not found.",
@@ -23,7 +27,11 @@
     "UPDATE_SUCCESS": "Room updated successfully.",
     "UPDATE_PRICE_SUCCESS": "Room price updated successfully.",
     "REMOVE_SUCCESS": "Room removed successfully.",
-    "IMAGE_UPLOAD_SUCCESS": "Room image uploaded successfully."
+    "IMAGE_UPLOAD_SUCCESS": "Room image uploaded successfully.",
+    "AVAILABLE_SUCCESS": "Available rooms retrieved successfully.",
+    "INVALID_DATE_RANGE": "Check-out date must be after check-in date.",
+    "INVALID_PRICE_RANGE": "minPrice must be less than or equal to maxPrice.",
+    "THUMBNAIL_SET_SUCCESS": "Thumbnail image updated successfully."
   },
   "AMENITY": {
     "NOT_FOUND": "Amenity not found.",
@@ -46,17 +54,34 @@
   "MAIL": {
     "LOG_NOT_FOUND": "Email log {id} not found."
   },
+  "PAYMENT": {
+    "FIND_ALL_SUCCESS": "Payment list retrieved successfully."
+  },
   "BOOKING": {
     "NOT_FOUND": "Booking not found.",
+    "CREATE_SUCCESS": "Booking request created successfully.",
+    "FIND_ONE_SUCCESS": "Booking retrieved successfully.",
+    "FIND_ALL_SUCCESS": "Bookings retrieved successfully.",
     "UPDATED_SUCCESS": "Booking request updated successfully.",
     "DELETED_SUCCESS": "Booking request deleted successfully.",
     "CANCEL_SUCCESS": "Booking request cancelled successfully.",
-    "REQUEST_FAIL" : "Booking request failed.",
+    "REQUEST_FAIL": "Booking request failed.",
     "CANNOT_CANCEL": "Booking request cannot be cancelled.",
     "CANNOT_UPDATE": "Booking request cannot be updated.",
     "CHECK_IN_DATE_IN_PAST": "Checkin date in the past.",
-    "INVALID_DATE_RANGE": "Date range invalid."
-
+    "INVALID_DATE_RANGE": "Date range invalid.",
+    "DATES_OVERLAP": "This room is already booked for the selected dates.",
+    "ROOM_UNAVAILABLE": "This room is not available for booking.",
+    "GUESTS_EXCEED_CAPACITY": "Number of guests exceeds the room's capacity.",
+    "CANNOT_ACCEPT": "Booking request cannot be accepted.",
+    "ACCEPT_SUCCESS": "Booking request accepted successfully.",
+    "CANNOT_REJECT": "Booking request cannot be rejected.",
+    "REJECT_SUCCESS": "Booking request rejected successfully.",
+    "CANNOT_PAY": "Booking request cannot be paid.",
+    "ALREADY_PAID": "This booking request has already been paid.",
+    "PAY_SUCCESS": "Payment completed successfully.",
+    "HOLD_EXPIRED": "This booking's hold has expired and can no longer be updated, paid, or approved.",
+    "NO_FIELDS_TO_UPDATE": "At least one field (checkInDate, checkOutDate, or note) must be provided."
   },
   "AUTH": {
     "EMAIL_EXISTED": "This email is already registered.",
@@ -80,13 +105,19 @@
     "IS_ENUM": "{property} is invalid.",
     "MIN": "{property} must not be less than {constraints.0}.",
     "MAX": "{property} must not be greater than {constraints.0}.",
-    "INVALID_PHONE": "Phone number format is invalid."
+    "INVALID_PHONE": "Phone number format is invalid.",
+    "IS_DATE_STRING": "{property} must be a valid date string (YYYY-MM-DD).",
+    "IS_NUMBER": "{property} must be a number.",
+    "IS_BOOLEAN": "{property} must be a boolean value.",
+    "IS_ARRAY": "{property} must be an array.",
+    "ARRAY_NOT_EMPTY": "{property} should not be empty.",
+    "ARRAY_UNIQUE": "{property} must not contain duplicate values."
   },
-  "USERS":{
-    "PHONE_ALREADY_EXISTS":"phone already exists.",
+  "USERS": {
+    "PHONE_ALREADY_EXISTS": "phone already exists.",
     "NOT_FOUND": "User not found.",
     "INVALID_CURRENT_PASSWORD": "Current password invalid.",
-    "EMAIL_ALREADY_EXISTS" : "Email already exist.",
+    "EMAIL_ALREADY_EXISTS": "Email already exist.",
     "USERNAME_ALREADY_EXISTS": "Username already exist.",
     "NEW_PASSWORD_MUST_BE_DIFFERENT": "New password must be different.",
     "CHANGE_PASSWORD_SUCCESS": "Password changed successfully.",
@@ -101,5 +132,14 @@
     "AVATAR_UPLOAD_SUCCESS": "Avatar updated successfully.",
     "AVATAR_NOT_FOUND": "This account has no avatar to remove.",
     "AVATAR_REMOVE_SUCCESS": "Avatar removed successfully."
+  },
+  "REVIEWS":{
+    "ALREADY_REVIEWED":"This booking has already been reviewed.",
+    "BOOKING_NOT_COMPLETED" :"Booking has not been completed.",
+    "NOT_FOUND": "Review not found.",
+    "CREATE_SUCCESS": "Review created successfully.",
+    "FIND_ALL_SUCCESS": "Reviews retrieved successfully.",
+    "FIND_BY_ROOM_SUCCESS": "Room reviews retrieved successfully.",
+    "DELETE_SUCCESS": "Review deleted successfully."
   }
 }

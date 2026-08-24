@@ -1,25 +1,17 @@
-import { Module } from '@nestjs/common';
+import { Module, UnsupportedMediaTypeException } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { MulterModule } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { I18nService } from 'nestjs-i18n';
 import { RoomsService } from './rooms.service';
-import { RoomsController } from './rooms.controller';
 import { RoomsExportService } from './rooms-export.service';
 import { Room } from './entities/room.entity';
 import { AuthModule } from '../auth/auth.module';
 import { RoomsLogger } from './rooms.logger';
 import { RoomPersistenceExceptionFilter } from './filters/room-persistence-exception.filter';
-import { MulterModule } from '@nestjs/platform-express';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { diskStorage } from 'multer';
-import { mkdirSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { randomUUID } from 'node:crypto';
-import { ENVIRONMENT_KEYS } from '../config/environment.constants';
-import {
-  ROOM_IMAGE,
-  ROOM_IMAGE_EXTENSION_BY_MIME_TYPE,
-} from './constants/room-image.constants';
-import { I18nService } from 'nestjs-i18n';
-import { UnsupportedMediaTypeException } from '@nestjs/common';
+import { AdminRoomsController } from './admin-rooms.controller';
+import { PublicRoomsController } from './public-rooms.controller';
+import { ROOM_IMAGE } from './constants/room-image.constants';
 import { RoomImageValidationPipe } from './pipes/room-image-validation.pipe';
 import { RoomImageUploadExceptionFilter } from './filters/room-image-upload-exception.filter';
 
@@ -27,27 +19,15 @@ import { RoomImageUploadExceptionFilter } from './filters/room-image-upload-exce
   imports: [
     TypeOrmModule.forFeature([Room]),
     AuthModule,
+    // Ảnh phòng lưu Cloudinary (CloudinaryService là @Global, không cần
+    // import CloudinaryModule ở đây) — team làm việc nhiều máy nên ảnh phải
+    // ở chung 1 nơi, không lưu đĩa cục bộ nữa. Multer chỉ giữ file tạm
+    // trong RAM (memoryStorage) để RoomsService đọc buffer rồi upload
+    // thẳng lên Cloudinary.
     MulterModule.registerAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService, I18nService],
-      useFactory: (configService: ConfigService, i18n: I18nService) => ({
-        storage: diskStorage({
-          destination: (_request, _file, callback) => {
-            const directory = resolve(
-              configService.get<string>(
-                ENVIRONMENT_KEYS.ROOM_UPLOAD_DIRECTORY,
-                ROOM_IMAGE.DEFAULT_UPLOAD_DIRECTORY,
-              ),
-            );
-            mkdirSync(directory, { recursive: true });
-            callback(null, directory);
-          },
-          filename: (_request, file, callback) => {
-            const extension =
-              ROOM_IMAGE_EXTENSION_BY_MIME_TYPE[file.mimetype] || '.bin';
-            callback(null, `${randomUUID()}${extension}`);
-          },
-        }),
+      inject: [I18nService],
+      useFactory: (i18n: I18nService) => ({
+        storage: memoryStorage(),
         fileFilter: (_request, file, callback) => {
           const isSupported = ROOM_IMAGE.SUPPORTED_MIME_TYPES.some(
             (mimeType) => mimeType === file.mimetype,
@@ -67,7 +47,7 @@ import { RoomImageUploadExceptionFilter } from './filters/room-image-upload-exce
       }),
     }),
   ],
-  controllers: [RoomsController],
+  controllers: [AdminRoomsController, PublicRoomsController],
   providers: [
     RoomsService,
     RoomsExportService,

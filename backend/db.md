@@ -66,13 +66,14 @@ CREATE TABLE images (
 CREATE UNIQUE INDEX uq_images_one_thumbnail_per_room
   ON images(room_id) WHERE is_thumbnail = true AND deleted_at IS NULL;
 
--- NOTE: image_public_id là public_id trên Cloudinary — cột nullable vì
--- logic upload/xoá ảnh phòng thật hiện tại (RoomsController/RoomsService,
--- xem backend/src/rooms/) đang lưu file trên LOCAL DISK
--- (ROOM_UPLOAD_DIRECTORY), không dùng Cloudinary, nên không set cột này.
--- Cột được giữ lại (không xoá) phòng trường hợp team quyết định chuyển ảnh
--- phòng sang Cloudinary sau (đồng bộ cách avatar user đang lưu) — lúc đó
--- mới cần NOT NULL trở lại + set giá trị thật khi upload.
+-- NOTE: image_public_id là public_id trên Cloudinary. RoomsService.addImage()
+-- (xem backend/src/rooms/rooms.service.ts) giờ luôn upload ảnh phòng lên
+-- Cloudinary (đồng bộ cách avatar user đang lưu) và set cột này cho MỌI ảnh
+-- mới — không còn lưu file trên local disk nữa (đã bỏ ROOM_UPLOAD_DIRECTORY).
+-- Cột vẫn để nullable (không đổi lại NOT NULL) vì DB Neon dùng chung có thể
+-- còn sót vài dòng cũ từ giai đoạn lưu local disk (image_public_id = NULL,
+-- image_url trỏ về path cục bộ đã không còn phục vụ) — cần dọn/backfill dữ
+-- liệu cũ đó trước khi siết lại NOT NULL, chưa làm ở migration này.
 
 -- ============================================================
 -- amenities
@@ -105,8 +106,9 @@ CREATE TABLE bookings (
   user_id          BIGINT NOT NULL REFERENCES users(user_id),
   check_in_date    DATE NOT NULL,
   check_out_date   DATE NOT NULL,
+  guests           SMALLINT NOT NULL DEFAULT 1,  -- so khach, bat buoc khi tao (POST /bookings), co dinh sau khi tao - validate <= rooms.capacity o service (migration AddGuestsToBookings)
   price_per_night  DECIMAL(10,2) NOT NULL,  -- snapshot at booking time
-  total_price      DECIMAL(10,2) NOT NULL,
+  total_price      DECIMAL(10,2) NOT NULL,  -- = nights * price_per_night * guests
   status           VARCHAR(20) NOT NULL DEFAULT 'PENDING',
                    -- PENDING, ACCEPTED, REJECTED, CANCELLED, EXPIRED
   hold_expires_at  TIMESTAMPTZ,  -- for pay-later slot holds; NULL once paid/accepted
@@ -116,7 +118,8 @@ CREATE TABLE bookings (
   updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
   deleted_at       TIMESTAMPTZ,
   CONSTRAINT chk_bookings_status CHECK (status IN ('PENDING','ACCEPTED','REJECTED','CANCELLED','EXPIRED')),
-  CONSTRAINT chk_bookings_dates  CHECK (check_out_date > check_in_date)
+  CONSTRAINT chk_bookings_dates  CHECK (check_out_date > check_in_date),
+  CONSTRAINT chk_bookings_guests CHECK (guests > 0)
 );
 CREATE INDEX idx_bookings_room_dates ON bookings(room_id, check_in_date, check_out_date);
 
@@ -126,7 +129,12 @@ ALTER TABLE bookings ADD CONSTRAINT excl_bookings_no_overlap
   EXCLUDE USING gist (
     room_id WITH =,
     daterange(check_in_date, check_out_date) WITH &&
-  ) WHERE (status IN ('PENDING','ACCEPTED'));
+  ) WHERE (status IN ('PENDING','ACCEPTED') AND deleted_at IS NULL);
+-- deleted_at IS NULL thêm ở migration ExcludeBookingsIgnoreSoftDeleted
+-- (sau CreateInitialSchema) — nếu không có điều kiện này, 1 booking
+-- PENDING/ACCEPTED đã bị soft-delete vẫn tiếp tục chặn EXCLUDE constraint,
+-- khiến phòng/ngày đó không thể đặt lại dù ứng dụng coi booking đó không
+-- còn tồn tại.
 
 -- ============================================================
 -- payments  (1 booking : N payments — original charge + refund etc.)

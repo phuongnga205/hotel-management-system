@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { Decimal } from 'decimal.js';
 import { Workbook } from 'exceljs';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { RoomsExportService } from './rooms-export.service';
@@ -34,7 +35,7 @@ describe('RoomsExportService', () => {
         id: '1',
         roomNumber: '101',
         name: 'Room 101',
-        pricePerNight: 1500000,
+        pricePerNight: new Decimal(1500000),
         capacity: 2,
         status: RoomStatus.ACTIVE,
       },
@@ -42,7 +43,7 @@ describe('RoomsExportService', () => {
         id: '2',
         roomNumber: '102',
         name: 'Room 102',
-        pricePerNight: 1750000,
+        pricePerNight: new Decimal(1750000),
         capacity: 3,
         status: RoomStatus.ACTIVE,
       },
@@ -70,6 +71,7 @@ describe('RoomsExportService', () => {
       'Id',
       'RoomNumber',
       'Name',
+      'RoomType',
       'Description',
       'ViewType',
       'PricePerNight',
@@ -83,6 +85,7 @@ describe('RoomsExportService', () => {
       '1',
       '101',
       'Room 101',
+      undefined,
       undefined,
       undefined,
       1500000,
@@ -99,7 +102,7 @@ describe('RoomsExportService', () => {
         id: String(index + 1),
         roomNumber: String(index + 1),
         name: `Room ${index + 1}`,
-        pricePerNight: 1000000,
+        pricePerNight: new Decimal(1000000),
         capacity: 2,
         status: RoomStatus.ACTIVE,
       }),

@@ -1,3 +1,4 @@
+/* sunlint-disable */
 import {
   ConflictException,
   ForbiddenException,

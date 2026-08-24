@@ -1,11 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
-  IsDateString,
+  IsInt,
   IsNumberString,
   IsOptional,
   IsString,
   MaxLength,
+  Min,
 } from 'class-validator';
+import { i18nValidationMessage } from 'nestjs-i18n';
+import { IsDateOnly } from '../../common/validators/is-date-only.validator';
+import { BOOKING_NOTE_MAX_LENGTH } from '../constants/booking.constants';
 
 export class CreateBookingDto {
   @ApiProperty({
@@ -16,18 +21,31 @@ export class CreateBookingDto {
   roomId!: string;
 
   @ApiProperty({
-    description: 'The check-in date',
+    description: 'The check-in date (YYYY-MM-DD, no time/timezone part)',
     example: '2023-10-01',
   })
-  @IsDateString()
+  @IsDateOnly({
+    message: i18nValidationMessage('messages.VALIDATION.IS_DATE_STRING'),
+  })
   checkInDate!: string;
 
   @ApiProperty({
-    description: 'The check-out date',
+    description: 'The check-out date (YYYY-MM-DD, no time/timezone part)',
     example: '2023-10-05',
   })
-  @IsDateString()
+  @IsDateOnly({
+    message: i18nValidationMessage('messages.VALIDATION.IS_DATE_STRING'),
+  })
   checkOutDate!: string;
+
+  @ApiProperty({
+    description: 'Number of guests staying (must not exceed room.capacity)',
+    example: 2,
+  })
+  @Type(() => Number)
+  @IsInt({ message: i18nValidationMessage('messages.VALIDATION.IS_INT') })
+  @Min(1, { message: i18nValidationMessage('messages.VALIDATION.MIN') })
+  guests!: number;
 
   @ApiProperty({
     description: 'A note about the booking',
@@ -35,6 +53,6 @@ export class CreateBookingDto {
   })
   @IsOptional()
   @IsString()
-  @MaxLength(1000)
+  @MaxLength(BOOKING_NOTE_MAX_LENGTH)
   note?: string;
 }

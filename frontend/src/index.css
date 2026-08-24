@@ -2,16 +2,30 @@
 
 @import "tailwindcss";
 
+/*
+ * Các giá trị --color-* dưới đây PHẢI khớp chính xác với
+ * `src/tokens/colors.ts` (nguồn chân lý duy nhất cho bảng màu — xem comment
+ * ở đó). Tailwind không import được file .ts nên 2 nơi buộc phải giữ đồng bộ
+ * thủ công; sửa 1 bên thì luôn sửa bên còn lại theo.
+ */
 @theme {
   --font-sans: "Inter", sans-serif;
   --font-serif: "Playfair Display", serif;
-  
+
   --color-navy: #0B2545;
   --color-navy-light: #1A3A5C;
-  --color-navy-dark: #071B30;
+  --color-navy-dark: #071830;
   --color-gold: #C9A84C;
-  --color-gold-light: #E0C97A;
+  --color-gold-light: #E8C97A;
   --color-gold-dark: #A6832A;
+  --color-surface: #F4F6F9;
+  --color-border: #E2E8F0;
+
+  --color-success: #059669;
+  --color-warning: #D97706;
+  --color-danger: #DC2626;
+  --color-muted: #64748B;
+  --color-accent: #7C3AED;
 }
 
 @layer base {

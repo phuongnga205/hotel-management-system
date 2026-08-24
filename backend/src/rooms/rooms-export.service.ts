@@ -55,6 +55,7 @@ export class RoomsExportService {
       'id',
       'roomNumber',
       'name',
+      'roomType',
       'description',
       'viewType',
       'pricePerNight',
@@ -74,9 +75,14 @@ export class RoomsExportService {
         id: r.id,
         roomNumber: r.roomNumber,
         name: r.name ?? '',
+        roomType: r.roomType ?? '',
         description: r.description ?? '',
         viewType: r.viewType ?? '',
-        pricePerNight: r.pricePerNight ?? null,
+        // Excel cần number để cột hiển thị đúng kiểu số (sort/tổng được) —
+        // pricePerNight ở entity là Decimal (decimal.js) để tránh sai số
+        // floating point lúc tính toán, nhưng ở đây chỉ xuất ra để đọc/in
+        // nên convert 1 chiều sang number là an toàn.
+        pricePerNight: r.pricePerNight ? r.pricePerNight.toNumber() : null,
         capacity: r.capacity ?? null,
         status: r.status,
         createdAt: r.createdAt ?? null,
@@ -106,6 +112,7 @@ export class RoomsExportService {
         id: true,
         roomNumber: true,
         name: true,
+        roomType: true,
         description: true,
         viewType: true,
         pricePerNight: true,

@@ -44,10 +44,11 @@ export class Payment {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   amount!: string;
 
-  @Column({ length: 30 })
+  @Column({ type: 'varchar', length: 30 })
   method!: PaymentMethod;
 
   @Column({
+    type: 'varchar',
     length: 20,
     default: PaymentStatus.PENDING,
   })

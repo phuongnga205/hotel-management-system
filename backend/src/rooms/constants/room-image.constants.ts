@@ -5,10 +5,8 @@ export const ROOM_IMAGE_MIME_TYPE = {
 } as const;
 
 export const ROOM_IMAGE = {
-  DEFAULT_UPLOAD_DIRECTORY: 'uploads/rooms',
   FIELD_NAME: 'file',
   MAX_FILE_SIZE_BYTES: 5 * 1024 * 1024,
-  PUBLIC_PREFIX: '/uploads/rooms',
   SUPPORTED_MIME_TYPES: Object.values(ROOM_IMAGE_MIME_TYPE),
 } as const;
 
@@ -23,11 +21,3 @@ export const ROOM_IMAGE_SIGNATURE = {
   WEBP_FORMAT_OFFSET: 8,
   INSPECTION_BYTES: 12,
 } as const;
-
-export const ROOM_IMAGE_EXTENSION_BY_MIME_TYPE: Readonly<
-  Record<string, string>
-> = {
-  [ROOM_IMAGE_MIME_TYPE.JPEG]: '.jpg',
-  [ROOM_IMAGE_MIME_TYPE.PNG]: '.png',
-  [ROOM_IMAGE_MIME_TYPE.WEBP]: '.webp',
-};

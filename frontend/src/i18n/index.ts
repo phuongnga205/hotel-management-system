@@ -8,12 +8,18 @@ import enAuth from './locales/en/auth.json'
 import viAuth from './locales/vi/auth.json'
 import enProfile from './locales/en/profile.json'
 import viProfile from './locales/vi/profile.json'
+import enAdmin from './locales/en/admin.json'
+import viAdmin from './locales/vi/admin.json'
+import enHome from './locales/en/home.json'
+import viHome from './locales/vi/home.json'
+import enBooking from './locales/en/booking.json'
+import viBooking from './locales/vi/booking.json'
 
 export const defaultNS = 'common'
 
 export const resources = {
-  en: { common: enCommon, auth: enAuth, profile: enProfile },
-  vi: { common: viCommon, auth: viAuth, profile: viProfile },
+  en: { common: enCommon, auth: enAuth, profile: enProfile, admin: enAdmin, home: enHome, booking: enBooking },
+  vi: { common: viCommon, auth: viAuth, profile: viProfile, admin: viAdmin, home: viHome, booking: viBooking },
 } as const
 
 i18n
@@ -23,7 +29,7 @@ i18n
     resources,
     fallbackLng: 'vi',
     defaultNS,
-    ns: ['common', 'auth', 'profile'],
+    ns: ['common', 'auth', 'profile', 'admin', 'home', 'booking'],
     interpolation: {
       escapeValue: false, // React đã tự escape XSS rồi
     },

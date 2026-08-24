@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { BOOKING_REASON_MAX_LENGTH } from '../constants/booking.constants';
 
 export class CancelBookingDto {
   @ApiProperty({
@@ -8,6 +9,6 @@ export class CancelBookingDto {
   })
   @IsOptional()
   @IsString()
-  @MaxLength(500)
+  @MaxLength(BOOKING_REASON_MAX_LENGTH)
   cancelReason?: string;
 }
