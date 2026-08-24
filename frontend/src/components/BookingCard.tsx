@@ -46,7 +46,7 @@ export default function BookingCard({ booking, onView, onCancel, onPay }: Bookin
               { label: t('bookingCard.checkIn'), value: dateFmt(booking.checkInDate) },
               { label: t('bookingCard.checkOut'), value: dateFmt(booking.checkOutDate) },
               { label: t('bookingCard.duration'), value: t('bookingCard.nights', { count: nights }) },
-              { label: t('bookingCard.total'), value: `$${booking.totalPrice.toLocaleString()}` },
+              { label: t('bookingCard.total'), value: `$${Number(booking.totalPrice).toLocaleString()}` },
             ].map(({ label, value }) => (
               <div key={label}>
                 <span className="text-xs text-slate-400">{label}: </span>

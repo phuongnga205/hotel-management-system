@@ -9,9 +9,10 @@ const reviewRealApi = {
     const res = await axiosClient.post(API_ENDPOINTS.REVIEWS, { bookingId, rating, comment })
     return res.data.data
   },
-  // Cong khai, khong can dang nhap - dung cho trang chu/chi tiet phong hien
-  // thi review. Endpoint 🚧 theo backend/docs/DANH_SACH_API.md muc 5 (de
-  // xuat, chua bat buoc trong yeu cau goc).
+  // Cong khai, khong can dang nhap - dung cho trang chi tiet phong hien
+  // thi review. Da implement o BE (backend/docs/DANH_SACH_API.md muc 5),
+  // nhung TODO: chua co page nao goi ham nay - xem
+  // frontend/docs/DANH_SACH_MAN_HINH.md muc C.
   listByRoom: async (roomId: string, query: ListReviewsQuery): Promise<PagedResult<Review>> => {
     const res = await axiosClient.get(API_ENDPOINTS.ROOM_REVIEWS(roomId), { params: query })
     return res.data.data

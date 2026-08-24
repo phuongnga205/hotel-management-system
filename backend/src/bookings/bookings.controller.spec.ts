@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
+import { DataSource } from 'typeorm';
 import { BookingsController } from './bookings.controller';
 import { BookingsService } from './bookings.service';
 import { Booking } from './entities/booking.entity';
@@ -22,10 +24,12 @@ describe('BookingsController', () => {
           provide: getRepositoryToken(Room),
           useValue: {},
         },
+        { provide: DataSource, useValue: {} },
         {
           provide: I18nService,
           useValue: { t: jest.fn((key: string) => key) },
         },
+        { provide: ConfigService, useValue: { get: jest.fn() } },
       ],
     }).compile();
 

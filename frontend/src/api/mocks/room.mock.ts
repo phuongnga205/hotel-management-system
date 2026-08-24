@@ -31,7 +31,7 @@ let rooms: Room[] = [
     description: 'Spacious room with king bed and city skyline view.',
     viewType: 'CITY_VIEW',
     capacity: 2,
-    pricePerNight: 320,
+    pricePerNight: '320.00',
     status: 'ACTIVE',
     amenities: [
       { id: 'a1', name: 'Free Wi-Fi' },
@@ -48,7 +48,7 @@ let rooms: Room[] = [
     description: 'Elegant suite overlooking the ocean with a private balcony.',
     viewType: 'SEA_VIEW',
     capacity: 3,
-    pricePerNight: 480,
+    pricePerNight: '480.00',
     status: 'ACTIVE',
     amenities: [
       { id: 'a1', name: 'Free Wi-Fi' },
@@ -65,7 +65,7 @@ let rooms: Room[] = [
     description: 'Cozy twin room facing the hotel garden.',
     viewType: 'GARDEN_VIEW',
     capacity: 2,
-    pricePerNight: 180,
+    pricePerNight: '180.00',
     status: 'ACTIVE',
     amenities: [{ id: 'a1', name: 'Free Wi-Fi' }, { id: 'a2', name: 'Air Conditioning' }],
     images: [{ id: 'img3', roomId: '3', imageUrl: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800', isThumbnail: true, createdAt: SEED_TIMESTAMP }],
@@ -78,7 +78,7 @@ let rooms: Room[] = [
     description: 'Top-floor penthouse with panoramic city view and lounge area.',
     viewType: 'CITY_VIEW',
     capacity: 4,
-    pricePerNight: 950,
+    pricePerNight: '950.00',
     status: 'MAINTENANCE',
     amenities: [
       { id: 'a1', name: 'Free Wi-Fi' },
@@ -95,7 +95,7 @@ let rooms: Room[] = [
     description: 'Compact and comfortable room for solo travelers.',
     viewType: null,
     capacity: 1,
-    pricePerNight: 120,
+    pricePerNight: '120.00',
     status: 'INACTIVE',
     amenities: [{ id: 'a1', name: 'Free Wi-Fi' }],
     images: [{ id: 'img5', roomId: '5', imageUrl: 'https://images.unsplash.com/photo-1595576508898-0ad5c879a061?w=800', isThumbnail: true, createdAt: SEED_TIMESTAMP }],
@@ -153,7 +153,10 @@ export const roomMockApi = {
       description: data.description ?? null,
       viewType: data.viewType ?? null,
       capacity: data.capacity,
-      pricePerNight: data.pricePerNight,
+      // CreateRoomPayload.pricePerNight van la number (request that gui len
+      // dung shape CreateRoomDto) - Room.pricePerNight (response) la string,
+      // ep .toFixed(2) khop dung shape API that (xem bridge.md).
+      pricePerNight: data.pricePerNight.toFixed(2),
       status: 'ACTIVE',
       amenities: amenityCatalog.filter((a) => amenityIds.includes(a.id)).map(({ id, name }) => ({ id, name })),
       images: [],

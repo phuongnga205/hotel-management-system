@@ -33,7 +33,7 @@
 | Page component | Route | API sử dụng | Ghi chú |
 |---|---|---|---|
 | `pages/rooms/RoomListPage.tsx` | `/rooms` | `GET /rooms` (mặc định) **hoặc** `GET /rooms/available` (khi user đã nhập `checkIn`/`checkOut`) | 2 API cho cùng 1 màn — chọn API theo việc query có `checkIn`/`checkOut` hay không. |
-| `pages/rooms/RoomDetailPage.tsx` | `/rooms/:roomId` | `GET /rooms/:id` + `GET /rooms/:id/reviews` 🚧 (optional) | Nút "Đặt phòng" điều hướng sang `BookRoomPage`, không gọi API ở đây. |
+| `pages/rooms/RoomDetailPage.tsx` | `/rooms/:roomId` | `GET /rooms/:id` + `GET /rooms/:roomId/reviews` | Nút "Đặt phòng" điều hướng sang `BookRoomPage`, không gọi API ở đây. **🆕 TODO**: `GET /rooms/:roomId/reviews` đã implement ở BE (public, không cần JWT — xem `backend/docs/DANH_SACH_API.md` mục 5, `frontend/docs/bridge.md` mục 8) nhưng trang này **chưa gọi** — cần thêm phần hiển thị danh sách đánh giá (phân trang) qua `reviewApi.listByRoom(roomId, query)` (đã có sẵn ở `frontend/src/api/review.api.ts`). |
 | `pages/rooms/BookRoomPage.tsx` | `/rooms/:roomId/book` | `POST /bookings` | Bắt riêng lỗi `409 Conflict` (race condition) theo `backend/docs/DANH_SACH_API.md`. |
 
 ## D. Profile (user)
@@ -49,8 +49,9 @@
 |---|---|---|---|
 | `pages/bookings/BookingHistoryPage.tsx` | `/bookings` | `GET /bookings/me` | |
 | `pages/bookings/BookingDetailPage.tsx` | `/bookings/:bookingId` | `GET /bookings/:id`, `PATCH /bookings/:id` (sửa), `PATCH /bookings/:id/cancel` (huỷ, qua modal) | Nút "Viết đánh giá" điều hướng sang `BookingReviewPage`, nút "Thanh toán" điều hướng sang `BookingPaymentPage`. |
-| `pages/bookings/BookingPaymentPage.tsx` | `/bookings/:bookingId/payment` | `POST /bookings/:id/pay` *(stub — BE chưa làm thật)* | Để UI placeholder/disabled, chưa cần xử lý response thật. |
+| `pages/bookings/BookingPaymentPage.tsx` | `/bookings/:bookingId/payment` | `POST /bookings/:id/pay` | BE đã implement (mock — luôn thành công ngay, không phải cổng thanh toán thật): màn hình chỉ cần cho chọn `method` rồi gọi API 1 lần, không cần polling/callback. `bookingApi.pay()` + mock đã có sẵn ở `frontend/src/api/booking.api.ts`, trang này vẫn **chưa được dựng**. |
 | `pages/bookings/BookingReviewPage.tsx` | `/bookings/:bookingId/review` | `POST /reviews` | Chỉ hiện nút dẫn tới trang này khi booking đã/đang ở (check ở `BookingDetailPage`). |
+| 🚧 `pages/payments/PaymentHistoryPage.tsx` | `/payments` | `GET /payments/me` (BE đã implement, xem `backend/docs/DANH_SACH_API.md` mục 4a) | **TODO — FE chưa dựng, để session sau** (API đã sẵn sàng dùng ngay). Trang riêng liệt kê toàn bộ lịch sử thanh toán của user hiện tại (mọi booking gộp lại), nằm trong thư mục `pages/payments/` (ngang hàng `pages/bookings/`), không phải tab/section trong `BookingDetailPage`. Có nút/link dẫn tới đây từ `BookingHistoryPage` hoặc menu tài khoản. |
 
 ## F. Admin — Users
 
@@ -84,8 +85,8 @@
 
 | Page component | Route | API sử dụng | Ghi chú |
 |---|---|---|---|
-| `pages/admin/bookings/AdminBookingListPage.tsx` | `/admin/bookings` | `GET /admin/bookings` 🚧 | |
-| `pages/admin/bookings/AdminBookingDetailPage.tsx` | `/admin/bookings/:bookingId` | `GET /admin/bookings/:id` 🚧, `PATCH /admin/bookings/:id/accept` 🚧, `PATCH /admin/bookings/:id/reject` 🚧 | 2 nút Chấp nhận/Từ chối cùng nằm trang này, không route riêng. |
+| `pages/admin/bookings/AdminBookingListPage.tsx` | `/admin/bookings` | `GET /admin/bookings` | Đã có cột "Payment" (dùng lại `PaymentBadge`) bên cạnh cột "Status" — hiện cả booking status lẫn payment status. |
+| `pages/admin/bookings/AdminBookingDetailPage.tsx` | `/admin/bookings/:bookingId` | `GET /admin/bookings/:id`, `PATCH /admin/bookings/:id/accept`, `PATCH /admin/bookings/:id/reject` | 2 nút Chấp nhận/Từ chối cùng nằm trang này, không route riêng. Đã hiện cả `StatusBadge` (booking) lẫn `PaymentBadge` (payment). |
 
 ## I. Admin — Reviews
 
@@ -98,7 +99,7 @@
 | Page component | Route | API sử dụng | Ghi chú |
 |---|---|---|---|
 | `pages/admin/statistics/AdminBookingStatsPage.tsx` | `/admin/statistics/bookings` | `GET /admin/statistics/bookings` | Tab con của layout Statistics. |
-| `pages/admin/statistics/AdminRevenueStatsPage.tsx` | `/admin/statistics/revenue` | `GET /admin/statistics/revenue` | Tab con của layout Statistics. |
+| `pages/admin/statistics/AdminRevenueStatsPage.tsx` | `/admin/statistics/revenue` | `GET /admin/statistics/revenue`, `GET /admin/payments` | Tab con của layout Statistics. Ngoài các chart doanh thu, có thêm bảng "Transactions" (`AdminTable`) liệt kê từng giao dịch thanh toán — filter theo `status`/`method` (2 `Dropdown`), phân trang bằng `Pagination` riêng với phần chart phía trên (không share state `page`). Bảng chỉ hiện ít cột (booking, khách, phòng, số tiền, trạng thái) để đỡ chật — bấm vào 1 dòng mở `PaymentDetailModal` (`components/admin/PaymentDetailModal.tsx`) xem đầy đủ thông tin (kèm phương thức, mã giao dịch, thời gian thanh toán/tạo). Không có route/trang riêng cho bảng này — nằm chung `AdminRevenueStatsPage`. |
 
 ## K. Admin — Email Log
 
@@ -128,10 +129,15 @@
 ## Đối chiếu nhanh: API chưa dùng ở màn nào
 
 Toàn bộ endpoint trong `backend/docs/DANH_SACH_API.md` đều đã được gán vào
-đúng 1 màn hình ở trên — không có API nào dư/không nơi dùng. Riêng API tuỳ
-chọn `GET /rooms/:id/reviews` (đánh dấu optional ở doc BE) nếu team quyết
-định không làm, thì bỏ luôn dòng review-listing trong `RoomDetailPage`
-(không ảnh hưởng các màn khác).
+đúng 1 màn hình ở trên — không có API nào dư/không nơi dùng.
+
+> 🆕 **TODO**: `GET /rooms/:roomId/reviews` (mục C, `RoomDetailPage`) —
+> không còn là API tuỳ chọn, **đã implement xong ở BE** (public, không cần
+> JWT). Chỉ còn thiếu phần FE gọi API này trong `RoomDetailPage`.
+
+`GET /payments/me` (mục 4a ở doc BE) đã implement ở BE, nhưng FE chưa dựng
+trang gọi tới — TODO duy nhất còn treo, gắn với trang
+`PaymentHistoryPage.tsx` (`/payments`) ở mục E, để lại cho session sau.
 
 > 🆕 Mục G/G2 (Rooms/Amenities) mô tả theo thiết kế đã chốt ở 1 nhánh git
 > riêng chưa merge — xem cảnh báo đầu `backend/docs/DANH_SACH_API.md` và

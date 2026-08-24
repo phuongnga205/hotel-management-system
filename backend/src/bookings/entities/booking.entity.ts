@@ -11,10 +11,12 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Decimal } from 'decimal.js';
 import { Payment } from '../../payments/entities/payment.entity';
 import { BookingStatus } from '../enums/booking-status.enum';
 import { Room } from '../../rooms/entities/room.entity';
 import { User } from '../../users/entities/user.entity';
+import { decimalTransformer } from '../../common/transformers/decimal.transformer';
 
 @Entity({ name: 'bookings' })
 @Check('chk_bookings_dates', '"check_out_date" > "check_in_date"')
@@ -62,24 +64,18 @@ export class Booking {
     type: 'decimal',
     precision: 10,
     scale: 2,
-    transformer: {
-      to: (value: number) => value,
-      from: (value: string) => Number(value),
-    },
+    transformer: decimalTransformer,
   })
-  pricePerNight!: number;
+  pricePerNight!: Decimal;
 
   @Column({
     name: 'total_price',
     type: 'decimal',
     precision: 10,
     scale: 2,
-    transformer: {
-      to: (value: number) => value,
-      from: (value: string) => Number(value),
-    },
+    transformer: decimalTransformer,
   })
-  totalPrice!: number;
+  totalPrice!: Decimal;
 
   @Column({
     type: 'varchar',

@@ -18,6 +18,8 @@ import {
   ROOM_STATUS_CHECK_CONSTRAINT,
   ROOM_STATUS_CHECK_EXPRESSION,
 } from '../constants/room-status.constants';
+import { Decimal } from 'decimal.js';
+import { decimalTransformer } from '../../common/transformers/decimal.transformer';
 
 @Entity('rooms')
 @Check(ROOM_STATUS_CHECK_CONSTRAINT, ROOM_STATUS_CHECK_EXPRESSION)
@@ -55,12 +57,9 @@ export class Room {
     type: 'decimal',
     precision: 10,
     scale: 2,
-    transformer: {
-      to: (value: number) => value,
-      from: (value: string) => Number(value),
-    },
+    transformer: decimalTransformer,
   })
-  pricePerNight!: number;
+  pricePerNight!: Decimal;
 
   @Column({
     type: 'varchar',

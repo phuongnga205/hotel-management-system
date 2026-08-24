@@ -30,6 +30,7 @@
     "IMAGE_UPLOAD_SUCCESS": "Tải ảnh phòng lên thành công.",
     "AVAILABLE_SUCCESS": "Tìm phòng còn trống thành công.",
     "INVALID_DATE_RANGE": "Ngày check-out phải sau ngày check-in.",
+    "INVALID_PRICE_RANGE": "Giá tối thiểu phải nhỏ hơn hoặc bằng giá tối đa.",
     "THUMBNAIL_SET_SUCCESS": "Cập nhật ảnh đại diện thành công."
   },
   "AMENITY": {
@@ -44,8 +45,14 @@
   "MAIL": {
     "LOG_NOT_FOUND": "Không tìm thấy nhật ký email {id}."
   },
+  "PAYMENT": {
+    "FIND_ALL_SUCCESS": "Lấy danh sách giao dịch thanh toán thành công."
+  },
   "BOOKING": {
     "NOT_FOUND": "Không tìm thấy yêu cầu đặt phòng.",
+    "CREATE_SUCCESS": "Tạo yêu cầu đặt phòng thành công.",
+    "FIND_ONE_SUCCESS": "Lấy thông tin đặt phòng thành công.",
+    "FIND_ALL_SUCCESS": "Lấy danh sách đặt phòng thành công.",
     "UPDATED_SUCCESS": "Đã cập nhật yêu cầu đặt phòng thành công.",
     "DELETED_SUCCESS": "Đã xóa yêu cầu đặt phòng thành công.",
     "CANCEL_SUCCESS": "Đã hủy yêu cầu đặt phòng thành công.",
@@ -53,7 +60,18 @@
     "CANNOT_CANCEL": "Yêu cầu đặt phòng không thể hủy.",
     "CANNOT_UPDATE": "Yêu cầu không thể cập nhật.",
     "CHECK_IN_DATE_IN_PAST": "Ngày checkin ở quá khứ.",
-    "INVALID_DATE_RANGE": "Thời gian không phù hợp."
+    "INVALID_DATE_RANGE": "Thời gian không phù hợp.",
+    "DATES_OVERLAP": "Phòng đã được đặt trong khoảng thời gian này.",
+    "ROOM_UNAVAILABLE": "Phòng hiện không khả dụng để đặt.",
+    "CANNOT_ACCEPT": "Yêu cầu đặt phòng không thể chấp nhận.",
+    "ACCEPT_SUCCESS": "Đã chấp nhận yêu cầu đặt phòng thành công.",
+    "CANNOT_REJECT": "Yêu cầu đặt phòng không thể từ chối.",
+    "REJECT_SUCCESS": "Đã từ chối yêu cầu đặt phòng thành công.",
+    "CANNOT_PAY": "Yêu cầu đặt phòng không thể thanh toán.",
+    "ALREADY_PAID": "Yêu cầu đặt phòng này đã được thanh toán trước đó.",
+    "PAY_SUCCESS": "Thanh toán thành công.",
+    "HOLD_EXPIRED": "Thời gian giữ chỗ của booking này đã hết hạn nên không thể cập nhật, thanh toán hoặc duyệt.",
+    "NO_FIELDS_TO_UPDATE": "Phải cung cấp ít nhất 1 trường (checkInDate, checkOutDate hoặc note) để cập nhật."
   },
   "AUTH": {
     "EMAIL_EXISTED": "Email này đã được đăng ký trong hệ thống.",
@@ -104,5 +122,14 @@
     "AVATAR_UPLOAD_SUCCESS": "Cập nhật ảnh đại diện thành công.",
     "AVATAR_NOT_FOUND": "Tài khoản chưa có ảnh đại diện để xoá.",
     "AVATAR_REMOVE_SUCCESS": "Xoá ảnh đại diện thành công."
+  },
+  "REVIEWS": {
+    "ALREADY_REVIEWED": "Ban đã review một lần rồi.",
+    "BOOKING_NOT_COMPLETED" :"Yêu cầu đặt phòng chưa hoàn thành.",
+    "NOT_FOUND": "Không tìm thấy đánh giá.",
+    "CREATE_SUCCESS": "Tạo đánh giá thành công.",
+    "FIND_ALL_SUCCESS": "Lấy danh sách đánh giá thành công.",
+    "FIND_BY_ROOM_SUCCESS": "Lấy danh sách đánh giá của phòng thành công.",
+    "DELETE_SUCCESS": "Review xóa thành công."
   }
 }

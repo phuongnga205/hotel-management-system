@@ -127,7 +127,12 @@ ALTER TABLE bookings ADD CONSTRAINT excl_bookings_no_overlap
   EXCLUDE USING gist (
     room_id WITH =,
     daterange(check_in_date, check_out_date) WITH &&
-  ) WHERE (status IN ('PENDING','ACCEPTED'));
+  ) WHERE (status IN ('PENDING','ACCEPTED') AND deleted_at IS NULL);
+-- deleted_at IS NULL thêm ở migration ExcludeBookingsIgnoreSoftDeleted
+-- (sau CreateInitialSchema) — nếu không có điều kiện này, 1 booking
+-- PENDING/ACCEPTED đã bị soft-delete vẫn tiếp tục chặn EXCLUDE constraint,
+-- khiến phòng/ngày đó không thể đặt lại dù ứng dụng coi booking đó không
+-- còn tồn tại.
 
 -- ============================================================
 -- payments  (1 booking : N payments — original charge + refund etc.)
