@@ -25,7 +25,7 @@ export default function AdminReviewListPage() {
   }, [t])
 
   const handleDelete = async (id: string) => {
-    await reviewApi.adminRemove(id, {})
+    await reviewApi.adminRemove(id)
     setReviews((prev) => prev.filter((r) => r.id !== id))
     setShowDeleteModal(null)
   }

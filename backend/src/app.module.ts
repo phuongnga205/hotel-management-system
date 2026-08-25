@@ -25,7 +25,11 @@ import {
 import * as path from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ENVIRONMENT_KEYS } from './config/environment.constants';
+import {
+  ENVIRONMENT_KEYS,
+  parseNetworkPort,
+} from './config/environment.constants';
+import { StatisticsModule } from './statistics/statistics.module';
 
 const DEFAULT_REDIS_PORT = 6379;
 
@@ -45,6 +49,10 @@ const DEFAULT_THROTTLE_LIMIT = 10;
         limit: DEFAULT_THROTTLE_LIMIT,
       },
     ]),
+
+    // Cần cho @Cron trong BookingsService (dọn các booking PENDING hết hạn
+    // giữ chỗ) — lần đầu dùng @nestjs/schedule trong dự án.
+    ScheduleModule.forRoot(),
 
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -77,13 +85,20 @@ const DEFAULT_THROTTLE_LIMIT = 10;
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         connection: {
-          host: configService.get<string>('REDIS_HOST', 'localhost'),
-          port: configService.get<number>('REDIS_PORT', DEFAULT_REDIS_PORT),
+          host: configService.get<string>(
+            ENVIRONMENT_KEYS.REDIS_HOST,
+            'localhost',
+          ),
+          port: parseNetworkPort(
+            configService.get<string | number>(
+              ENVIRONMENT_KEYS.REDIS_PORT,
+              DEFAULT_REDIS_PORT,
+            ),
+            ENVIRONMENT_KEYS.REDIS_PORT,
+          ),
         },
       }),
     }),
-
-    ScheduleModule.forRoot(),
 
     I18nModule.forRoot({
       fallbackLanguage: 'vi',
@@ -113,6 +128,7 @@ const DEFAULT_THROTTLE_LIMIT = 10;
 
     MailModule,
     ReportsModule,
+    StatisticsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

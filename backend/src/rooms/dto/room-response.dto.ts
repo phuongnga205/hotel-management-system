@@ -32,8 +32,16 @@ export class RoomResponseDto {
   @Expose()
   viewType!: RoomViewType | null;
 
+  // pricePerNight lưu dưới dạng Decimal (decimal.js) ở entity để tránh sai
+  // số floating point khi tính toán. @Type(() => String) bắt buộc phải có:
+  // không có nó, class-transformer thấy value là 1 object (Decimal instance,
+  // không phải Object thường) và tự đoán targetType = Decimal rồi gọi
+  // `new Decimal()` (không đối số) để dựng lại — throw ngay lập tức. Khai
+  // báo String ép class-transformer chỉ gọi String(value) (dùng
+  // Decimal#toString() có sẵn), không phơi bày kiểu Decimal ra ngoài API.
   @Expose()
-  pricePerNight!: number;
+  @Type(() => String)
+  pricePerNight!: string;
 
   @Expose()
   capacity!: number;

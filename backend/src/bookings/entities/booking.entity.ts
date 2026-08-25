@@ -11,10 +11,12 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Decimal } from 'decimal.js';
 import { Payment } from '../../payments/entities/payment.entity';
 import { BookingStatus } from '../enums/booking-status.enum';
 import { Room } from '../../rooms/entities/room.entity';
 import { User } from '../../users/entities/user.entity';
+import { decimalTransformer } from '../../common/transformers/decimal.transformer';
 
 @Entity({ name: 'bookings' })
 @Check('chk_bookings_dates', '"check_out_date" > "check_in_date"')
@@ -22,6 +24,7 @@ import { User } from '../../users/entities/user.entity';
   'chk_bookings_status',
   `"status" IN ('PENDING','ACCEPTED','REJECTED','CANCELLED','EXPIRED')`,
 )
+@Check('chk_bookings_guests', '"guests" > 0')
 @Index('idx_bookings_user_id', ['userId'])
 @Index('idx_bookings_room_id', ['roomId'])
 @Index('idx_bookings_status', ['status'])
@@ -55,6 +58,12 @@ export class Booking {
   @Column({ name: 'check_out_date', type: 'date' })
   checkOutDate!: string;
 
+  // Số khách đặt cùng booking này — bắt buộc khi tạo (validate <=
+  // room.capacity ở service, xem BookingsService.findBookableRoom()), cố
+  // định sau khi tạo (UpdateBookingDto không nhận field này).
+  @Column({ type: 'smallint' })
+  guests!: number;
+
   // Snapshot of the room's price at booking time — protects the booking
   // from later changes to rooms.price_per_night.
   @Column({
@@ -62,24 +71,18 @@ export class Booking {
     type: 'decimal',
     precision: 10,
     scale: 2,
-    transformer: {
-      to: (value: number) => value,
-      from: (value: string) => Number(value),
-    },
+    transformer: decimalTransformer,
   })
-  pricePerNight!: number;
+  pricePerNight!: Decimal;
 
   @Column({
     name: 'total_price',
     type: 'decimal',
     precision: 10,
     scale: 2,
-    transformer: {
-      to: (value: number) => value,
-      from: (value: string) => Number(value),
-    },
+    transformer: decimalTransformer,
   })
-  totalPrice!: number;
+  totalPrice!: Decimal;
 
   @Column({
     type: 'varchar',

@@ -125,7 +125,11 @@ export interface Room {
   description: string | null
   viewType: RoomViewType | null
   capacity: number
-  pricePerNight: number
+  // Cot decimal khong co transformer o BE (RoomResponseDto ep .toString())
+  // -> LUON la string, phai tu Number() khi hien thi/tinh toan, khong duoc
+  // coi la number (khac CreateRoomPayload/UpdateRoomPayload - request van
+  // gui number).
+  pricePerNight: string
   status: RoomStatus
   amenities?: RoomAmenitySummary[]
   images?: RoomImage[]
@@ -154,6 +158,23 @@ export interface UpdateRoomPayload {
 export interface ListRoomsQuery extends ListQuery {
   search?: string
   status?: RoomStatus
+  // Chi ap dung khi goi roomApi.listPublic() (GET /rooms cong khai) - loc
+  // theo room.capacity >= guests. BE khong nhan field nay o GET /admin/rooms
+  // (admin khong can tim theo suc chua), du type nay dang dung chung cho ca
+  // 2 (xem room.api.ts).
+  guests?: number
+}
+
+// Khop FindAvailableRoomsDto o BE (GET /rooms/available) - truoc day chua
+// co type nao khop shape nay o FE, endpoint constant ROOMS_AVAILABLE ton
+// tai san nhung chua method nao goi (xem room.api.ts listAvailable()).
+export interface ListAvailableRoomsQuery extends ListQuery {
+  checkIn: string
+  checkOut: string
+  minPrice?: number
+  maxPrice?: number
+  amenities?: string[]
+  guests?: number
 }
 
 // --- amenities ---
@@ -197,8 +218,15 @@ export interface Booking {
   status: BookingStatus
   checkInDate: string
   checkOutDate: string
-  pricePerNight: number
-  totalPrice: number
+  // Bat buoc khi tao (CreateBookingPayload), co dinh sau khi tao - KHONG co
+  // trong UpdateBookingPayload (PATCH /bookings/:id khong cho sua guests).
+  // Duoc validate <= room.capacity o BE, va nhan vao cong thuc totalPrice.
+  guests: number
+  // Cung ly do voi Room.pricePerNight - BE ep .toString() truoc khi tra ve,
+  // LUON la string, phai tu Number() khi hien thi/tinh toan.
+  pricePerNight: string
+  // = nights * pricePerNight * guests (BE tu tinh, FE khong gui).
+  totalPrice: string
   note: string | null
   cancelReason: string | null
   createdAt: string
@@ -211,7 +239,15 @@ export interface CreateBookingPayload {
   roomId: string
   checkInDate: string
   checkOutDate: string
+  // Bat buoc, validate <= room.capacity o BE (400 GUESTS_EXCEED_CAPACITY
+  // neu vuot) - anh huong truc tiep totalPrice tra ve.
+  guests: number
   note?: string
+}
+
+export interface UpdateBookingPayload {
+  checkInDate: string
+  checkOutDate: string
 }
 
 export interface ListBookingsQuery extends ListQuery {
@@ -219,8 +255,21 @@ export interface ListBookingsQuery extends ListQuery {
   search?: string
 }
 
+// Khop CancelBookingDto o BE (PATCH /bookings/:id/cancel) - cung ten field
+// "cancelReason" nhu RejectBookingPayload (admin reject) vi ca 2 dung chung
+// 1 cot DB bookings.cancel_reason, xem bridge.md muc 6.
+export interface CancelBookingPayload {
+  cancelReason?: string
+}
+
 export interface RejectBookingPayload {
   cancelReason?: string
+}
+
+// amount KHONG co o day - server luon tu tinh tu booking.totalPrice, khong
+// nhan so tien tu FE (xem backend/src/bookings/dto/pay-booking.dto.ts).
+export interface PayBookingPayload {
+  method: PaymentMethod
 }
 
 // --- payments ---
@@ -240,6 +289,25 @@ export interface Payment {
   createdAt: string
 }
 
+// --- admin payments (GET /admin/payments, dung o man Statistics > Revenue -
+// xem backend/docs/DANH_SACH_API.md muc 11) ---
+export interface AdminPaymentBookingSummary {
+  id: string
+  guestName: string | null
+  guestEmail: string
+  roomName: string
+  roomNumber: string
+}
+
+export interface AdminPayment extends Payment {
+  booking?: AdminPaymentBookingSummary
+}
+
+export interface ListAdminPaymentsQuery extends ListQuery {
+  status?: PaymentStatus
+  method?: PaymentMethod
+}
+
 // --- reviews (khong co field "status" that o backend - review chi ton tai
 // hoac bi soft-delete; `deletedAt` la nguon duy nhat de suy ra trang thai
 // hien thi, khong phai 1 enum rieng) ---
@@ -257,10 +325,6 @@ export interface Review {
 
 export interface ListReviewsQuery extends ListQuery {
   roomId?: string
-}
-
-export interface DeleteReviewPayload {
-  deleteReason?: string
 }
 
 // --- email logs (EmailType dung 4 gia tri that o backend - KHONG co

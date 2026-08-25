@@ -44,7 +44,7 @@ export const AdminGuard = () => {
   }
 
   if (!isAdmin) {
-    return <Navigate to={ROUTES.HOME} replace />
+    return <Navigate to={ROUTES.FORBIDDEN} replace />
   }
 
   return <Outlet />

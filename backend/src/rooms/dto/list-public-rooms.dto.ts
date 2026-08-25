@@ -30,4 +30,14 @@ export class ListPublicRoomsDto {
     message: i18nValidationMessage('messages.VALIDATION.MAX'),
   })
   limit: number = ROOM_PAGINATION.DEFAULT_LIMIT;
+
+  @ApiPropertyOptional({
+    example: 2,
+    description: 'Số khách tối thiểu phòng phải chứa được (lọc theo capacity)',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: i18nValidationMessage('messages.VALIDATION.IS_INT') })
+  @Min(1, { message: i18nValidationMessage('messages.VALIDATION.MIN') })
+  guests?: number;
 }

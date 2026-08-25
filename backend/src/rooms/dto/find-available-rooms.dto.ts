@@ -6,6 +6,8 @@ import {
   IsDateString,
   IsNumber,
   IsString,
+  IsNotEmpty,
+  ArrayUnique,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
@@ -82,6 +84,16 @@ export class FindAvailableRoomsDto {
   maxPrice?: number;
 
   @ApiPropertyOptional({
+    example: 2,
+    description: 'Số khách tối thiểu phòng phải chứa được (lọc theo capacity)',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: i18nValidationMessage('messages.VALIDATION.IS_INT') })
+  @Min(1, { message: i18nValidationMessage('messages.VALIDATION.MIN') })
+  guests?: number;
+
+  @ApiPropertyOptional({
     example: 'wifi,pool',
     description: 'Danh sách tên tiện nghi, phân tách bởi dấu phẩy',
   })
@@ -95,6 +107,15 @@ export class FindAvailableRoomsDto {
   @IsString({
     each: true,
     message: i18nValidationMessage('messages.VALIDATION.IS_STRING'),
+  })
+  // `?amenities=wifi,,` tách ra ['wifi', '', ''] — '' vẫn là string nên
+  // @IsString không bắt được, phải chặn riêng bằng @IsNotEmpty each.
+  @IsNotEmpty({
+    each: true,
+    message: i18nValidationMessage('messages.VALIDATION.NOT_EMPTY'),
+  })
+  @ArrayUnique({
+    message: i18nValidationMessage('messages.VALIDATION.ARRAY_UNIQUE'),
   })
   amenities?: string[];
 }

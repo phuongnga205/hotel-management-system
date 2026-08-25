@@ -7,7 +7,13 @@ import {
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { plainToInstance } from 'class-transformer';
-import { DataSource, EntityManager, In, Repository } from 'typeorm';
+import {
+  DataSource,
+  EntityManager,
+  In,
+  MoreThanOrEqual,
+  Repository,
+} from 'typeorm';
 import { I18nService } from 'nestjs-i18n';
 import { Amenity } from '../amenities/entities/amenity.entity';
 import { RoomAmenity } from '../amenities/entities/room-amenity.entity';
@@ -96,8 +102,8 @@ export class RoomsService {
   // GET /rooms — public/user CHỈ được thấy phòng ACTIVE. Ép cứng ở đây,
   // không nhận status từ client (ListPublicRoomsDto không có field đó).
   async findPublicList(query: ListPublicRoomsDto) {
-    const { page, limit } = query;
-    const data = await this.listRooms(page, limit, RoomStatus.ACTIVE);
+    const { page, limit, guests } = query;
+    const data = await this.listRooms(page, limit, RoomStatus.ACTIVE, guests);
 
     return {
       statusCode: 200,
@@ -110,6 +116,7 @@ export class RoomsService {
     page: number,
     limit: number,
     status?: RoomStatus,
+    guests?: number,
   ): Promise<PaginatedRooms> {
     const repository = this.dataSource.getRepository(Room);
 
@@ -119,7 +126,10 @@ export class RoomsService {
     // bằng QueryBuilder, tuân Luật 4 (danh sách có Relations bắt buộc
     // QueryBuilder).
     const [ids, total] = await repository.findAndCount({
-      where: status ? { status } : {},
+      where: {
+        ...(status ? { status } : {}),
+        ...(guests !== undefined ? { capacity: MoreThanOrEqual(guests) } : {}),
+      },
       select: { id: true },
       order: { id: 'ASC' },
       take: limit,
@@ -129,12 +139,12 @@ export class RoomsService {
     const data = ids.length
       ? await repository
           .createQueryBuilder('room')
+          .leftJoinAndSelect('room.roomAmenities', 'roomAmenity')
           .leftJoinAndSelect(
-            'room.roomAmenities',
-            'roomAmenity',
+            'roomAmenity.amenity',
+            'amenity',
             'amenity.deletedAt IS NULL',
           )
-          .leftJoinAndSelect('roomAmenity.amenity', 'amenity')
           .leftJoinAndSelect('room.images', 'image', 'image.deletedAt IS NULL')
           .whereInIds(ids.map((room) => room.id))
           .orderBy('room.id', 'ASC')
@@ -154,8 +164,16 @@ export class RoomsService {
   // luôn chỉ xét phòng ACTIVE + không trùng ngày với booking
   // ACCEPTED/PENDING nào (xem note ở docs/DANH_SACH_API.md mục Rooms).
   async findAvailableRooms(queryDto: FindAvailableRoomsDto) {
-    const { page, limit, checkIn, checkOut, minPrice, maxPrice, amenities } =
-      queryDto;
+    const {
+      page,
+      limit,
+      checkIn,
+      checkOut,
+      minPrice,
+      maxPrice,
+      guests,
+      amenities,
+    } = queryDto;
 
     if (checkOut <= checkIn) {
       throw new BadRequestException(
@@ -163,17 +181,28 @@ export class RoomsService {
       );
     }
 
+    if (
+      minPrice !== undefined &&
+      maxPrice !== undefined &&
+      minPrice > maxPrice
+    ) {
+      throw new BadRequestException(
+        this.i18n.t('messages.ROOM.INVALID_PRICE_RANGE'),
+      );
+    }
+
     const repository = this.dataSource.getRepository(Room);
 
-    // roomAmenity/amenity chỉ join để LỌC (không SELECT) ở bước này — join
-    // quan hệ 1-N kết hợp skip/take/getManyAndCount() sẽ làm COUNT và trang
-    // kết quả sai (1 phòng khớp N tiện nghi filter bị nhân bản dòng), vi
-    // phạm Luật 4. Lấy `id` DISTINCT theo trang trước, rồi mới hydrate đầy
-    // đủ quan hệ (roomAmenities+amenity+images) cho đúng các id đó.
+    // Không JOIN roomAmenities/amenity ở đây (khác các query list khác) —
+    // filter theo tiện nghi cần ngữ nghĩa ALL (phòng phải có ĐỦ mọi tiện
+    // nghi được chọn, xem subquery bên dưới), 1 LEFT JOIN phẳng chỉ cho ra
+    // ANY. Kết hợp skip/take/getManyAndCount() với JOIN quan hệ 1-N cũng
+    // làm COUNT và trang kết quả sai (1 phòng khớp N tiện nghi bị nhân bản
+    // dòng), vi phạm Luật 4. Lấy `id` DISTINCT theo trang trước, rồi mới
+    // hydrate đầy đủ quan hệ (roomAmenities+amenity+images) cho đúng các id
+    // đó.
     const filterQuery = repository
       .createQueryBuilder('room')
-      .leftJoin('room.roomAmenities', 'roomAmenity')
-      .leftJoin('roomAmenity.amenity', 'amenity')
       .where('room.status = :status', { status: RoomStatus.ACTIVE });
 
     if (minPrice !== undefined) {
@@ -184,8 +213,32 @@ export class RoomsService {
       filterQuery.andWhere('room.pricePerNight <= :maxPrice', { maxPrice });
     }
 
+    if (guests !== undefined) {
+      filterQuery.andWhere('room.capacity >= :guests', { guests });
+    }
+
     if (amenities && amenities.length > 0) {
-      filterQuery.andWhere('amenity.name IN (:...amenities)', { amenities });
+      // Phòng phải có ĐỦ TẤT CẢ tiện nghi được chọn (ALL), không phải chỉ
+      // cần khớp 1 trong số đó (ANY — hành vi cũ của `amenity.name IN (...)`
+      // ghép thẳng vào JOIN trên câu chính, lọt cả phòng chỉ có 1/N tiện
+      // nghi được yêu cầu). Subquery GROUP BY room_id + HAVING COUNT DISTINCT
+      // tên tiện nghi khớp đúng bằng số tiện nghi yêu cầu mới coi là đạt.
+      filterQuery
+        .andWhere((qb) => {
+          const subQuery = qb
+            .subQuery()
+            .select('roomAmenity.roomId', 'roomId')
+            .from(RoomAmenity, 'roomAmenity')
+            .innerJoin('roomAmenity.amenity', 'amenity')
+            .where('amenity.name IN (:...amenities)')
+            .andWhere('amenity.deletedAt IS NULL')
+            .groupBy('roomAmenity.roomId')
+            .having('COUNT(DISTINCT amenity.name) = :amenityCount')
+            .getQuery();
+          return 'room.id IN ' + subQuery;
+        })
+        .setParameter('amenities', amenities)
+        .setParameter('amenityCount', amenities.length);
     }
 
     filterQuery
@@ -229,12 +282,12 @@ export class RoomsService {
     const data = ids.length
       ? await repository
           .createQueryBuilder('room')
+          .leftJoinAndSelect('room.roomAmenities', 'roomAmenity')
           .leftJoinAndSelect(
-            'room.roomAmenities',
-            'roomAmenity',
+            'roomAmenity.amenity',
+            'amenity',
             'amenity.deletedAt IS NULL',
           )
-          .leftJoinAndSelect('roomAmenity.amenity', 'amenity')
           .leftJoinAndSelect('room.images', 'image', 'image.deletedAt IS NULL')
           .whereInIds(ids)
           .orderBy('room.id', 'ASC')

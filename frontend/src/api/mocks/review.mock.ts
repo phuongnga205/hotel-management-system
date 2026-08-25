@@ -1,4 +1,4 @@
-import type { DeleteReviewPayload, ListReviewsQuery, MessageResponse, PagedResult, Review } from '../types'
+import type { ListReviewsQuery, MessageResponse, PagedResult, Review } from '../types'
 
 const MOCK_DELAY_MS = 350
 
@@ -58,8 +58,10 @@ export const reviewMockApi = {
     const filtered = query.roomId ? reviews.filter((r) => r.room?.id === query.roomId) : reviews
     return mockDelay(paginate(filtered, query.page, query.limit))
   },
-  adminRemove: async (id: string, data: DeleteReviewPayload): Promise<MessageResponse> => {
-    reviews = reviews.map((r) => (r.id === id ? { ...r, deletedAt: new Date().toISOString(), deleteReason: data.deleteReason ?? null } : r))
+  // Khong nhan ly do tu client - khop dung nghiep vu that: BE tu gan 1
+  // template co dinh, khong doc body nao ca (xem review.api.ts).
+  adminRemove: async (id: string): Promise<MessageResponse> => {
+    reviews = reviews.map((r) => (r.id === id ? { ...r, deletedAt: new Date().toISOString(), deleteReason: 'Removed by admin (mock).' } : r))
     return mockDelay({ message: 'Review deleted (mock).' })
   },
 }

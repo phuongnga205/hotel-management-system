@@ -67,6 +67,18 @@
     "guestCount": "{{count}} khách",
     "search": "Tìm phòng"
   },
+  "notFound": {
+    "eyebrow": "404 — Không tìm thấy trang",
+    "title": "Lạc lối trong hành lang",
+    "desc": "Trang bạn đang tìm đã trả phòng rồi. Hãy để chúng tôi dẫn bạn quay lại nơi quen thuộc.",
+    "cta": "Về trang chủ"
+  },
+  "forbidden": {
+    "eyebrow": "403 — Không có quyền truy cập",
+    "title": "Chỉ dành cho nhân viên",
+    "desc": "Khu vực này chỉ dành cho nhân viên {{brand}}. Nếu bạn cho rằng đây là nhầm lẫn, vui lòng liên hệ lễ tân.",
+    "cta": "Về trang chủ"
+  },
   "footer": {
     "tagline": "Khách sạn hạng sang từng đoạt giải thưởng ngay trung tâm thành phố. Kiến tạo những trải nghiệm khó quên từ năm 2010.",
     "quickLinks": "Liên kết nhanh",

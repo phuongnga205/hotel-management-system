@@ -91,7 +91,7 @@ export default function AdminRoomListPage() {
                 header: t('rooms.list.columnPrice'),
                 render: (room) => (
                   <>
-                    <span className="font-semibold text-navy">${room.pricePerNight}</span>
+                    <span className="font-semibold text-navy">${Number(room.pricePerNight).toLocaleString()}</span>
                     <span className="text-xs text-slate-400 font-normal">/night</span>
                   </>
                 ),
