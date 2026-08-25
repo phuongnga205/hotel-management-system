@@ -325,7 +325,8 @@ export class AdminRoomsController {
 
   @Delete(':id')
   @ApiOperation({
-    summary: '[Admin] Xoá mềm phòng (cascade ảnh + liên kết tiện nghi)',
+    summary:
+      '[Admin] Xoá mềm phòng (cascade ảnh + liên kết tiện nghi, chặn nếu còn booking PENDING/ACCEPTED)',
   })
   @ApiParam({ name: 'id', type: String, description: 'ID phòng', example: '1' })
   @ApiResponse({ status: 200, description: 'Xoá thành công' })
@@ -333,6 +334,10 @@ export class AdminRoomsController {
   @ApiResponse({ status: 401, description: 'Chưa xác thực' })
   @ApiResponse({ status: 403, description: 'Không có quyền' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy phòng' })
+  @ApiResponse({
+    status: 409,
+    description: 'Phòng còn booking đang PENDING hoặc ACCEPTED',
+  })
   remove(@Param() params: EntityIdParamDto) {
     return this.roomsService.remove(params.id);
   }

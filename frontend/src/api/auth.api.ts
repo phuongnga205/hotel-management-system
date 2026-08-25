@@ -8,6 +8,7 @@ import type {
   ForgotPasswordPayload,
   LoginPayload,
   LoginResponse,
+  MessageResponse,
   RegisterPayload,
   RegisterResponse,
   ResetPasswordPayload,

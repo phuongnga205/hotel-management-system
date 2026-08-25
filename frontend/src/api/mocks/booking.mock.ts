@@ -172,12 +172,14 @@ export const bookingMockApi = {
     if (query.status) {
       filtered = filtered.filter(b => b.status === query.status)
     }
-    // Khop hanh vi BE (BookingsService.fetchReviewedBookingIds()) - moi
+    // Khop hanh vi BE (BookingsService.fetchReviewedBookingIds(), da fix de
+    // tinh CA review bi xoa mem vi Review.bookingId la unique constraint
+    // khong loc theo deletedAt - review xoa mem van chan tao lai) - moi
     // booking chi duoc review dung 1 lan, FE dua vao co nay de an nut
     // "Write Review" thay vi de user bam lai va an loi 409 mock.
     const withReviewFlag = filtered.map((b) => ({
       ...b,
-      hasReview: reviews.some((r) => r.bookingId === b.id && !r.deletedAt),
+      hasReviewed: reviews.some((r) => r.bookingId === b.id),
     }))
     return mockDelay(paginate(withReviewFlag, query.page, query.limit))
   },

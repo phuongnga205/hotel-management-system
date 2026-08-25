@@ -9,6 +9,7 @@ import { DataSource } from 'typeorm';
 import { Amenity } from '../amenities/entities/amenity.entity';
 import { RoomAmenity } from '../amenities/entities/room-amenity.entity';
 import { Image } from '../images/entities/image.entity';
+import { Booking } from '../bookings/entities/booking.entity';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { Room } from './entities/room.entity';
@@ -70,12 +71,14 @@ describe('RoomsService', () => {
     softDelete: jest.fn(),
     createQueryBuilder: jest.fn(),
   };
+  const bookingRepository = { countBy: jest.fn() };
   const manager = {
     getRepository: jest.fn((entity: unknown) => {
       if (entity === Room) return roomRepository;
       if (entity === Amenity) return amenityRepository;
       if (entity === RoomAmenity) return roomAmenityRepository;
       if (entity === Image) return imageRepository;
+      if (entity === Booking) return bookingRepository;
       throw new TypeError('Unexpected entity');
     }),
   };
@@ -187,6 +190,7 @@ describe('RoomsService', () => {
 
   it('soft deletes a room and best-effort cleans up its Cloudinary images', async () => {
     roomRepository.existsBy.mockResolvedValue(true);
+    bookingRepository.countBy.mockResolvedValue(0);
     roomRepository.softDelete.mockResolvedValue({ affected: 1 });
     imageRepository.find.mockResolvedValue([
       { imagePublicId: 'rooms/room-1/a' },
@@ -211,6 +215,27 @@ describe('RoomsService', () => {
     expect(cloudinaryService.destroy).toHaveBeenCalledTimes(2);
     expect(cloudinaryService.destroy).toHaveBeenCalledWith('rooms/room-1/a');
     expect(cloudinaryService.destroy).toHaveBeenCalledWith('rooms/room-1/b');
+  });
+
+  // Room.remove() la soft-delete, khong phai DELETE FROM rooms that su, nen
+  // FK `bookings.room_id` (onDelete: RESTRICT) khong bao gio duoc kich hoat
+  // de bao ve - service phai tu kiem tra. Thieu guard nay se lam
+  // accept()/reject() cua booking do vo sau khi phong bi xoa (xem comment
+  // trong RoomsService.remove()).
+  it('refuses to delete a room that still has a PENDING/ACCEPTED booking', async () => {
+    roomRepository.existsBy.mockResolvedValue(true);
+    bookingRepository.countBy.mockResolvedValue(1);
+
+    await expect(service.remove(room.id)).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+    expect(bookingRepository.countBy).toHaveBeenCalledWith({
+      roomId: room.id,
+      status: expect.anything(),
+    });
+    expect(roomRepository.softDelete).not.toHaveBeenCalled();
+    expect(imageRepository.softDelete).not.toHaveBeenCalled();
+    expect(roomAmenityRepository.delete).not.toHaveBeenCalled();
   });
 
   it('soft deletes an image that belongs to the room and destroys its Cloudinary asset', async () => {

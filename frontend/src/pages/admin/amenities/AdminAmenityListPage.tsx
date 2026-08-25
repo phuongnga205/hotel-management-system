@@ -71,9 +71,15 @@ export default function AdminAmenityListPage() {
   }
 
   const handleDelete = async (id: string) => {
-    await amenityApi.remove(id)
-    setShowDeleteModal(null)
-    load()
+    try {
+      await amenityApi.remove(id)
+      setShowDeleteModal(null)
+      load()
+    } catch (err) {
+      // Truoc day khong catch - loi tu BE nem thang ra ngoai, modal dung im
+      // khong dong, khong co toast nao bao loi ca.
+      toast.error(getErrorMessage(err, t('common.notFoundGeneric')))
+    }
   }
 
   return (

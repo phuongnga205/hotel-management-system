@@ -89,6 +89,12 @@ export const LoginPage = () => {
               {t('auth:dontHaveAccount')}
             </Link>
           </div>
+
+          <div className="auth-footer">
+            <Link to={ROUTES.HOME} className="link-standard">
+              {t('auth:backToHome')}
+            </Link>
+          </div>
         </Form>
       </div>
     </div>

@@ -2,7 +2,7 @@ import { axiosClient } from './axiosClient'
 import { API_ENDPOINTS } from './endpoints'
 import { env } from '../config/env'
 import { reviewMockApi } from './mocks/review.mock'
-import type { ListReviewsQuery, MessageResponse, PagedResult, Review } from './types'
+import type { ListReviewsQuery, MessageResponse, PagedResult, PublicReview, Review } from './types'
 
 const reviewRealApi = {
   create: async (bookingId: string, rating: number, comment?: string): Promise<Review> => {
@@ -16,16 +16,18 @@ const reviewRealApi = {
     return res.data.data
   },
   // Cong khai, khong can dang nhap - dung cho trang chi tiet phong hien
-  // thi review (RoomDetailPage.tsx).
-  listByRoom: async (roomId: string, query: ListReviewsQuery): Promise<PagedResult<Review>> => {
+  // thi review (RoomDetailPage.tsx). BE anh xa qua PublicReviewResponseDto
+  // (khong phai ReviewResponseDto) - khong co bookingId/roomId/userId, chi
+  // co author{fullName,avatarUrl} thay vi user{id,fullName,email,phone}.
+  listByRoom: async (roomId: string, query: ListReviewsQuery): Promise<PagedResult<PublicReview>> => {
     const res = await axiosClient.get(API_ENDPOINTS.ROOM_REVIEWS(roomId), { params: query })
     return res.data.data
   },
   // Cong khai, khong can dang nhap - toan bo review he thong (khong gioi
   // han theo 1 phong nhu listByRoom()), dung cho carousel "Guest Stories"
   // o HomePage thay vi phai fan-out goi listByRoom() cho tung phong mau
-  // roi tu gop lai.
-  listAll: async (query: ListReviewsQuery): Promise<PagedResult<Review>> => {
+  // roi tu gop lai. Cung anh xa qua PublicReviewResponseDto nhu listByRoom().
+  listAll: async (query: ListReviewsQuery): Promise<PagedResult<PublicReview>> => {
     const res = await axiosClient.get(API_ENDPOINTS.REVIEWS, { params: query })
     return res.data.data
   },

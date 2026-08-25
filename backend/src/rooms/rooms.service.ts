@@ -549,6 +549,30 @@ export class RoomsService {
     const imagePublicIds = await this.dataSource.transaction(
       async (manager) => {
         await this.assertRoomExists(manager.getRepository(Room), id);
+
+        // Chan xoa neu phong con booking PENDING/ACCEPTED (chua ket thuc
+        // vong doi). Day la mot "guard" bat buoc: Room.remove() la soft-delete
+        // (UPDATE deleted_at), khong phai DELETE FROM rooms that su, nen FK
+        // `bookings.room_id` (onDelete: RESTRICT) khong bao gio duoc kich
+        // hoat de bao ve o day - phai tu kiem tra thu cong. Thieu guard nay,
+        // xoa 1 phong dang co booking PENDING se lam accept()/reject() cua
+        // booking do vo sau nay: createStatusChangedOutbox() goi
+        // Room repository.findOneByOrFail() (loc deletedAt IS NULL mac dinh
+        // tren root entity) se nem EntityNotFoundError khong duoc bat, roi
+        // toan bo transaction accept()/reject() bi rollback - booking ket
+        // ket dinh PENDING vinh vien, khong ai xu ly duoc nua.
+        const activeBookingCount = await manager
+          .getRepository(Booking)
+          .countBy({
+            roomId: id,
+            status: In([BookingStatus.PENDING, BookingStatus.ACCEPTED]),
+          });
+        if (activeBookingCount > 0) {
+          throw new ConflictException(
+            this.i18n.t('messages.ROOM.HAS_ACTIVE_BOOKINGS'),
+          );
+        }
+
         const imageRepository = manager.getRepository(Image);
         const images = await imageRepository.find({
           where: { roomId: id },

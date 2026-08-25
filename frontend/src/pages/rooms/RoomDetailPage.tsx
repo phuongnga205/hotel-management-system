@@ -13,7 +13,7 @@ import { reviewApi } from '../../api/review.api'
 import { getErrorMessage } from '../../api/errorMessage'
 import { getAccessToken } from '../../api/axiosClient'
 import { ROUTES } from '../../router/paths'
-import type { Review, Room } from '../../api/types'
+import type { PublicReview, Room } from '../../api/types'
 
 const REVIEWS_PER_PAGE = 10
 
@@ -27,7 +27,7 @@ export default function RoomDetailPage() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
 
-  const [reviews, setReviews] = useState<Review[]>([])
+  const [reviews, setReviews] = useState<PublicReview[]>([])
   const [reviewsLoading, setReviewsLoading] = useState(true)
 
   const [activeImage, setActiveImage] = useState<string | null>(null)
@@ -164,7 +164,7 @@ export default function RoomDetailPage() {
                 {reviews.map((review) => (
                   <div key={review.id} className="bg-white rounded-xl p-5 border border-slate-100">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-semibold text-navy text-sm">{review.user?.fullName ?? '—'}</span>
+                      <span className="font-semibold text-navy text-sm">{review.author?.fullName ?? '—'}</span>
                       <StarRating rating={review.rating} />
                     </div>
                     {review.comment && <p className="text-slate-600 text-sm leading-relaxed">{review.comment}</p>}

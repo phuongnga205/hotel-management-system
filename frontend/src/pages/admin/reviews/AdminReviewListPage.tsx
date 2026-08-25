@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'react-toastify'
 import PageHeader from '../../../components/PageHeader'
 import Card from '../../../components/Card'
 import Pagination from '../../../components/Pagination'
@@ -41,9 +42,15 @@ export default function AdminReviewListPage() {
   ]
 
   const handleDelete = async (id: string) => {
-    await reviewApi.adminRemove(id)
-    setShowDeleteModal(null)
-    load()
+    try {
+      await reviewApi.adminRemove(id)
+      setShowDeleteModal(null)
+      load()
+    } catch (err) {
+      // Truoc day khong catch - loi tu BE (vd 404) nem thang ra ngoai,
+      // modal dung im khong dong, khong co toast nao bao loi ca.
+      toast.error(getErrorMessage(err, t('common.notFoundGeneric')))
+    }
   }
 
   return (

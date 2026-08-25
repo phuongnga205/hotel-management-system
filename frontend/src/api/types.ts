@@ -251,11 +251,12 @@ export interface Booking {
   room?: BookingRoomSummary
   user?: BookingUserSummary
   payment?: Payment
-  // true khi booking nay da co 1 review (con hieu luc) - moi booking chi
-  // duoc review dung 1 lan (xem backend/src/reviews/entities/review.entity.ts),
-  // dung de FE an nut "Write Review" thay vi de user bam lai va an loi 409
-  // ALREADY_REVIEWED. Chi GET /bookings/me (findHistory) tra ve field nay.
-  hasReview?: boolean
+  // true khi booking nay da TUNG co 1 review, ke ca review do sau bi admin
+  // xoa mem (Review.bookingId la unique constraint khong loc theo deletedAt,
+  // xem backend/src/reviews/entities/review.entity.ts) - dung de FE an nut
+  // "Write Review" thay vi de user bam lai va an loi 409 ALREADY_REVIEWED.
+  // Chi GET /bookings/me (findHistory) tra ve field nay.
+  hasReviewed?: boolean
 }
 
 export interface CreateBookingPayload {
@@ -367,10 +368,24 @@ export interface Review {
   user?: BookingUserSummary
 }
 
+export interface PublicReviewAuthor {
+  fullName: string | null
+  avatarUrl: string | null
+}
+
+export interface PublicReview {
+  id: string
+  rating: number
+  comment: string | null
+  createdAt: string
+  author?: PublicReviewAuthor
+}
+
 export interface ListReviewsQuery extends ListQuery {
   roomId?: string
-  // Chi endpoint admin (GET /admin/reviews) ap dung - findAllForUser()/
-  // findByRoom() o BE van hardcode moi nhat truoc, khong doc field nay.
+  // Admin (GET /admin/reviews) va findAllForUser() (GET /reviews/me) deu
+  // doc field nay - findByRoom() (GET /rooms/:roomId/reviews, cong khai)
+  // van hardcode moi nhat truoc.
   sortOrder?: SortOrder
 }
 

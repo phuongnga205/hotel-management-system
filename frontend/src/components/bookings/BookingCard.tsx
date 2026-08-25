@@ -67,11 +67,11 @@ export function BookingCard({ booking, onEditDates, onCancel, onPay, onReview }:
   // qua checkOutDate (khop dung logic ReviewsService.create() o BE, xem
   // backend/src/reviews/reviews.service.ts) - FE an nut neu chua du dieu
   // kien de tranh submit roi bi 400, BE van tu kiem tra lai lan cuoi.
-  // + !booking.hasReview - moi booking chi duoc review dung 1 lan (unique
-  // booking_id o bang reviews), truoc day thieu dieu kien nay nen nut
-  // "Write Review" van hien lai sau khi da review xong, bam vao chi an loi
-  // 409 ALREADY_REVIEWED kho hieu.
-  const canReview = booking.status === 'ACCEPTED' && hasSuccessPayment && isPast && !booking.hasReview
+  // + !booking.hasReviewed - moi booking chi duoc review dung 1 lan (unique
+  // booking_id o bang reviews, ke ca review da bi xoa mem), truoc day thieu
+  // dieu kien nay nen nut "Write Review" van hien lai sau khi da review
+  // xong, bam vao chi an loi 409 ALREADY_REVIEWED kho hieu.
+  const canReview = booking.status === 'ACCEPTED' && hasSuccessPayment && isPast && !booking.hasReviewed
 
   return (
     <div
@@ -180,10 +180,10 @@ export function BookingCard({ booking, onEditDates, onCancel, onPay, onReview }:
             <Button onClick={() => onReview(booking)}>{t('buttons.writeReview')}</Button>
           )}
 
-          {/* Da review roi (booking.hasReview) - hien trang thai thay vi lai
+          {/* Da review roi (booking.hasReviewed) - hien trang thai thay vi lai
               cho bam "Write Review" lan nua (BE chan 409 ALREADY_REVIEWED,
               moi booking chi duoc review dung 1 lan). */}
-          {booking.status === 'ACCEPTED' && hasSuccessPayment && isPast && booking.hasReview && (
+          {booking.status === 'ACCEPTED' && hasSuccessPayment && isPast && booking.hasReviewed && (
             <Tag color="default" className="m-0 rounded-full px-3 py-1.5 text-sm font-medium bg-gray-100 text-gray-500 border-none flex items-center gap-1">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

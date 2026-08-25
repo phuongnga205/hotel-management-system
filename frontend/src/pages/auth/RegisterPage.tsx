@@ -60,6 +60,9 @@ export const RegisterPage = () => {
             >
               {t('auth:activate')}
             </Button>
+            <Button type="link" onClick={() => navigate(ROUTES.HOME)} className="mt-2">
+              {t('auth:backToHome')}
+            </Button>
           </div>
         ) : (
         <Form<RegisterFormValues> layout="vertical" onFinish={onFinish} size="large">
@@ -123,6 +126,12 @@ export const RegisterPage = () => {
           <div className="auth-footer">
             <Link to={ROUTES.LOGIN} className="link-standard">
               {t('auth:alreadyHaveAccount')}
+            </Link>
+          </div>
+
+          <div className="auth-footer">
+            <Link to={ROUTES.HOME} className="link-standard">
+              {t('auth:backToHome')}
             </Link>
           </div>
         </Form>

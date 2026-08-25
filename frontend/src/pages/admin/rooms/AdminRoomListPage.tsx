@@ -112,9 +112,17 @@ export default function AdminRoomListPage() {
   }
 
   const handleDelete = async (id: string) => {
-    await roomApi.remove(id)
-    setShowDeleteModal(null)
-    load()
+    try {
+      await roomApi.remove(id)
+      setShowDeleteModal(null)
+      load()
+    } catch (err) {
+      // Truoc day khong catch - BE tra 409 (phong con booking PENDING/
+      // ACCEPTED) roi nem thang ra ngoai, modal dung im khong dong, khong
+      // co toast nao bao loi ca. ConfirmModal.onConfirm la `() => void`,
+      // khong tu bat loi tu promise no goi.
+      toast.error(getErrorMessage(err, t('common.notFoundGeneric')))
+    }
   }
 
   // Nut nay truoc day khong co onClick, khong tai duoc gi ca. BE tra ve file

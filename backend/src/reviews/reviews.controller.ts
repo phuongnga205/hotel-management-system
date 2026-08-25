@@ -21,9 +21,10 @@ export class ReviewsController {
   // trang chủ (toàn hệ thống, không giới hạn theo 1 phòng như
   // RoomReviewsController). Trước đây không có endpoint nào liệt kê hết
   // review nên HomePage phải fan-out gọi GET /rooms/:id/reviews cho từng
-  // phòng mẫu rồi tự gộp lại — dùng chung đúng logic ReviewsService.findAll()
-  // đã có sẵn cho GET /admin/reviews (ReviewResponseDto vốn đã không lộ
-  // email/deleteReason nên an toàn public hoá).
+  // phòng mẫu rồi tự gộp lại — dùng cùng truy vấn với ReviewsService.findAll()
+  // (admin) nhưng qua findAllPublic(), ánh xạ bằng PublicReviewResponseDto
+  // riêng (không phải ReviewResponseDto) vì bản gốc lộ bookingId/roomId/
+  // userId/user.id — không cần thiết cho carousel công khai (Luật 5).
   @Get()
   @ApiOperation({ summary: 'Xem đánh giá công khai (toàn hệ thống)' })
   @ApiQuery({
@@ -46,7 +47,7 @@ export class ReviewsController {
   })
   @ApiResponse({ status: 400, description: 'Tham số page/limit không hợp lệ' })
   findAll(@Query() query: ReviewQueryDto) {
-    return this.reviewsService.findAll(query);
+    return this.reviewsService.findAllPublic(query);
   }
 
   // Self-service cho chính khách hàng đã đăng nhập — luôn scope theo userId

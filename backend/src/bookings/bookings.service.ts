@@ -184,7 +184,7 @@ export class BookingsService {
           (booking) =>
             new BookingResponseDto(booking, {
               payment: latestPayments.get(booking.id) ?? null,
-              hasReview: reviewedBookingIds.has(booking.id),
+              hasReviewed: reviewedBookingIds.has(booking.id),
             }),
         ),
         page,
@@ -604,10 +604,14 @@ export class BookingsService {
 
   // Moi booking chi duoc review dung 1 lan (Review.bookingId unique - xem
   // reviews/entities/review.entity.ts), va review khong the sua/tao lai sau
-  // khi bi xoa (constraint khong phai partial index theo deletedAt). FE
+  // khi bi xoa (constraint khong phai partial index theo deletedAt - 1
+  // review da soft-delete van chiem "cho" unique, insert lai se 409). FE
   // (BookingHistoryPage/BookingCard) can biet dieu nay de an nut "Write
   // Review" + hien trang thai "Da danh gia" thay vi de user bam lai va an
-  // 1 loi 409 ALREADY_REVIEWED kho hieu.
+  // 1 loi 409 ALREADY_REVIEWED kho hieu - nen phai tinh CA review da xoa
+  // mem (.withDeleted()), khong duoc de QueryBuilder tu loc deletedAt IS
+  // NULL o root entity nhu mac dinh, neu khong hasReviewed se bao false
+  // trong khi thuc te insert lai van bi chan.
   private async fetchReviewedBookingIds(
     bookingIds: string[],
   ): Promise<Set<string>> {
@@ -616,6 +620,7 @@ export class BookingsService {
     const rows = await this.dataSource
       .getRepository(Review)
       .createQueryBuilder('review')
+      .withDeleted()
       .select('review.booking_id', 'bookingId')
       .where('review.booking_id IN (:...bookingIds)', { bookingIds })
       .getRawMany<{ bookingId: string }>();

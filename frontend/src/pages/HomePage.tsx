@@ -12,7 +12,7 @@ import { roomApi } from '../api/room.api'
 import { reviewApi } from '../api/review.api'
 import { colors } from '../tokens/colors'
 import { useAuth } from '../hooks/useAuth'
-import type { Review, Room } from '../api/types'
+import type { PublicReview, Room } from '../api/types'
 
 const FEATURED_ROOM_COUNT = 6
 // So review lay cho carousel "Guest Stories" - GET /reviews (cong khai,
@@ -38,7 +38,7 @@ export default function HomePage() {
   const [roomsTotal, setRoomsTotal] = useState(0)
   const [roomsLoading, setRoomsLoading] = useState(true)
 
-  const [reviews, setReviews] = useState<Review[]>([])
+  const [reviews, setReviews] = useState<PublicReview[]>([])
   const [reviewsLoading, setReviewsLoading] = useState(true)
   const [reviewIdx, setReviewIdx] = useState(0)
 
@@ -226,13 +226,14 @@ export default function HomePage() {
             {visibleReviews.map((review) => (
               <div key={review.id} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-11 h-11 rounded-full bg-navy text-white flex items-center justify-center font-semibold shrink-0">
-                    {initials(review.user?.fullName ?? null)}
-                  </div>
-                  <div>
-                    <div className="font-semibold text-navy text-sm">{review.user?.fullName ?? '—'}</div>
-                    <div className="text-xs text-slate-400">{review.room?.name}</div>
-                  </div>
+                  {review.author?.avatarUrl ? (
+                    <img src={review.author.avatarUrl} alt="" className="w-11 h-11 rounded-full object-cover shrink-0" />
+                  ) : (
+                    <div className="w-11 h-11 rounded-full bg-navy text-white flex items-center justify-center font-semibold shrink-0">
+                      {initials(review.author?.fullName ?? null)}
+                    </div>
+                  )}
+                  <div className="font-semibold text-navy text-sm">{review.author?.fullName ?? '—'}</div>
                 </div>
                 <StarRating rating={review.rating} />
                 {review.comment && <p className="text-slate-600 text-sm leading-relaxed mt-3 flex-1">"{review.comment}"</p>}

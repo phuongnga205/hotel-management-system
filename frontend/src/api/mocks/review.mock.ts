@@ -1,4 +1,4 @@
-import type { ListReviewsQuery, MessageResponse, PagedResult, Review } from '../types'
+import type { ListReviewsQuery, MessageResponse, PagedResult, PublicReview, Review } from '../types'
 import { bookings } from './booking.mock'
 
 const MOCK_DELAY_MS = 350
@@ -18,7 +18,22 @@ function paginate<T>(items: T[], page = 1, limit = 10): PagedResult<T> {
   return { items: items.slice(start, start + limit), total: items.length, page, limit, totalPages: Math.max(1, Math.ceil(items.length / limit)) }
 }
 
-// Export de booking.mock.ts's listMine() tinh booking.hasReview (khop dung
+// Khop PublicReviewResponseDto o BE - listAll()/listByRoom() (2 endpoint
+// cong khai) khong tra bookingId/roomId/userId, chi author{fullName,
+// avatarUrl} thay vi user{id,fullName,email,phone}. Fixture `reviews` ben
+// duoi khong co avatarUrl (BookingUserSummary khong khai bao field do) nen
+// luon mac dinh null o day - chi anh huong FE mock, khong phai BE that.
+function toPublicReview(review: Review): PublicReview {
+  return {
+    id: review.id,
+    rating: review.rating,
+    comment: review.comment,
+    createdAt: review.createdAt,
+    author: review.user ? { fullName: review.user.fullName, avatarUrl: null } : undefined,
+  }
+}
+
+// Export de booking.mock.ts's listMine() tinh booking.hasReviewed (khop dung
 // hanh vi BE - BookingsService.fetchReviewedBookingIds()), dung chung 1
 // nguon fixture giong cach booking.mock.ts export `bookings`.
 export let reviews: Review[] = [
@@ -47,8 +62,8 @@ export let reviews: Review[] = [
 ]
 
 export const reviewMockApi = {
-  listByRoom: async (roomId: string, query: ListReviewsQuery): Promise<PagedResult<Review>> => {
-    const filtered = reviews.filter((r) => r.room?.id === roomId && !r.deletedAt)
+  listByRoom: async (roomId: string, query: ListReviewsQuery): Promise<PagedResult<PublicReview>> => {
+    const filtered = reviews.filter((r) => r.room?.id === roomId && !r.deletedAt).map(toPublicReview)
     return mockDelay(paginate(filtered, query.page, query.limit))
   },
   // Mock khong mo phong scope theo userId that (giong bookingMockApi.listMine()
@@ -60,10 +75,11 @@ export const reviewMockApi = {
   },
   // Cong khai, toan he thong - khop GET /reviews that (dung cho carousel
   // "Guest Stories" o HomePage), moi nhat truoc.
-  listAll: async (query: ListReviewsQuery): Promise<PagedResult<Review>> => {
+  listAll: async (query: ListReviewsQuery): Promise<PagedResult<PublicReview>> => {
     const filtered = reviews
       .filter((r) => !r.deletedAt)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .map(toPublicReview)
     return mockDelay(paginate(filtered, query.page, query.limit))
   },
   // Khop dung logic that o ReviewsService.create() (backend/src/reviews/reviews.service.ts):
