@@ -1,0 +1,23 @@
+{
+  "eyebrow": "TÀI KHOẢN CỦA TÔI",
+  "title": "Lịch Sử Thanh Toán",
+  "subtitle": "Toàn bộ giao dịch thanh toán của bạn trên mọi đặt phòng.",
+  "filters": {
+    "status": "Trạng thái",
+    "allStatuses": "Tất cả trạng thái",
+    "method": "Phương thức",
+    "allMethods": "Tất cả phương thức"
+  },
+  "labels": {
+    "unknownRoom": "Phòng",
+    "stayDates": "Ngày lưu trú",
+    "amount": "Số tiền",
+    "method": "Phương thức",
+    "transactionId": "Mã giao dịch",
+    "paidAt": "Ngày thanh toán",
+    "notPaidYet": "Chưa thanh toán"
+  },
+  "empty": "Không tìm thấy giao dịch nào.",
+  "emptyDesc": "Các giao dịch bạn thực hiện sẽ hiển thị ở đây.",
+  "fetchError": "Không thể tải lịch sử thanh toán. Vui lòng thử lại."
+}

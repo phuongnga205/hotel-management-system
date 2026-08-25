@@ -9,12 +9,12 @@ import inputBase from '../../../components/inputBase'
 import Dropdown from '../../../components/Dropdown'
 import { PageLoader } from '../../../components/common/PageLoader'
 import ImageLightbox from '../../../components/ImageLightbox'
-import { Breadcrumb, AmenityCheckboxGroup, RoomImagePanel } from '../../../components/admin'
+import { Breadcrumb, AmenityCheckboxGroup, RoomImagePanel, ROOM_STATUS_CONFIG } from '../../../components/admin'
 import { ROUTES } from '../../../router/paths'
 import { roomApi } from '../../../api/room.api'
 import { amenityApi } from '../../../api/amenity.api'
 import { getErrorMessage } from '../../../api/errorMessage'
-import type { Amenity, Room, RoomViewType } from '../../../api/types'
+import type { Amenity, Room, RoomStatus, RoomViewType } from '../../../api/types'
 
 const VIEW_TYPES: RoomViewType[] = ['CITY_VIEW', 'GARDEN_VIEW', 'SEA_VIEW']
 
@@ -30,8 +30,10 @@ export default function AdminRoomEditPage() {
 
   const [name, setName] = useState('')
   const [roomType, setRoomType] = useState('')
+  const [price, setPrice] = useState('')
   const [capacity, setCapacity] = useState('2')
   const [viewType, setViewType] = useState('')
+  const [status, setStatus] = useState<RoomStatus>('ACTIVE')
   const [description, setDescription] = useState('')
   const [amenities, setAmenities] = useState<Amenity[]>([])
   const [amenityIds, setAmenityIds] = useState<string[]>([])
@@ -45,8 +47,10 @@ export default function AdminRoomEditPage() {
         setRoom(r)
         setName(r.name)
         setRoomType(r.roomType)
+        setPrice(r.pricePerNight)
         setCapacity(String(r.capacity))
         setViewType(r.viewType ?? '')
+        setStatus(r.status)
         setDescription(r.description ?? '')
         setAmenityIds((r.amenities ?? []).map((a) => a.id))
       })
@@ -79,6 +83,9 @@ export default function AdminRoomEditPage() {
     ...VIEW_TYPES.map((v) => ({ value: v, label: t(`rooms.viewType.${v}`) })),
   ]
 
+  const statusOptions = Object.keys(ROOM_STATUS_CONFIG).map((key) => ({ value: key, label: t(ROOM_STATUS_CONFIG[key].labelKey) }))
+  const statusDots = Object.fromEntries(Object.entries(ROOM_STATUS_CONFIG).map(([key, cfg]) => [key, cfg.dot]))
+
   const toggleAmenity = (id: string) => {
     setAmenityIds((prev) => (prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]))
   }
@@ -87,13 +94,21 @@ export default function AdminRoomEditPage() {
     e.preventDefault()
     setSaving(true)
     try {
-      await roomApi.update(room.id, {
-        name,
-        roomType,
-        capacity: Number(capacity),
-        viewType: (viewType || undefined) as RoomViewType | undefined,
-        description: description || undefined,
-      })
+      const priceChanged = Number(price) !== Number(room.pricePerNight)
+
+      await Promise.all([
+        roomApi.update(room.id, {
+          name,
+          roomType,
+          capacity: Number(capacity),
+          viewType: (viewType || undefined) as RoomViewType | undefined,
+          status,
+          description: description || undefined,
+        }),
+        // Gia/dem doi qua endpoint rieng (PATCH /admin/rooms/:id/price),
+        // khong gop vao update() o tren - khop dung thiet ke BE (xem room.api.ts).
+        priceChanged ? roomApi.updatePrice(room.id, Number(price)) : Promise.resolve(),
+      ])
 
       // Dong bo tien nghi: so sanh voi tap ban dau, chi goi API cho phan
       // thay doi (them moi / go bo) thay vi gui lai toan bo moi lan.
@@ -152,7 +167,7 @@ export default function AdminRoomEditPage() {
     <div className="space-y-5">
       <Breadcrumb items={[{ label: t('rooms.list.title'), to: ROUTES.ADMIN.ROOMS }, { label: room.name, to: ROUTES.ADMIN.ROOM_DETAIL(room.id) }, { label: t('rooms.form.editBreadcrumb') }]} />
 
-      <PageHeader eyebrow={t('rooms.list.eyebrow')} title={t('rooms.form.editTitle')} />
+      <PageHeader eyebrow={t('rooms.list.eyebrow')} title={t('rooms.form.editTitle')} showBack />
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5 items-start">
         <div className="space-y-5">
@@ -176,8 +191,19 @@ export default function AdminRoomEditPage() {
             </div>
 
             <div>
-              <FieldLabel>{t('rooms.form.fieldView')}</FieldLabel>
-              <Dropdown value={viewType} onChange={setViewType} options={viewOptions} />
+              <FieldLabel>{t('rooms.form.fieldPrice')}</FieldLabel>
+              <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} className={`${inputBase} border-slate-200`} placeholder="320" required min="1" step="0.01" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <FieldLabel>{t('rooms.form.fieldView')}</FieldLabel>
+                <Dropdown value={viewType} onChange={setViewType} options={viewOptions} />
+              </div>
+              <div>
+                <FieldLabel>{t('common.status')}</FieldLabel>
+                <Dropdown value={status} onChange={(v) => setStatus(v as RoomStatus)} options={statusOptions} statusDots={statusDots} />
+              </div>
             </div>
 
             <div>

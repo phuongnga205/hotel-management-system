@@ -53,10 +53,16 @@ export class BookingResponseDto {
   room?: BookingRoomSummaryDto;
   user?: BookingUserSummaryDto;
   payment?: BookingPaymentSummaryDto;
+  // true khi booking nay da co 1 review (con hieu luc, chua bi xoa) - FE
+  // dua vao day de an nut "Write Review" thay vi de user bam lai va an loi
+  // 409 ALREADY_REVIEWED (moi booking chi duoc review dung 1 lan, xem
+  // reviews/entities/review.entity.ts). Mac dinh false khi khong truyen
+  // extra.hasReview (cac cho goi DTO nay chua can thong tin nay).
+  hasReview: boolean = false;
 
   constructor(
     booking: Booking,
-    extra?: { room?: Room; payment?: Payment | null },
+    extra?: { room?: Room; payment?: Payment | null; hasReview?: boolean },
   ) {
     this.id = booking.id;
     this.status = booking.status;
@@ -68,6 +74,7 @@ export class BookingResponseDto {
     this.note = booking.note ?? null;
     this.cancelReason = booking.cancelReason ?? null;
     this.createdAt = booking.createdAt;
+    this.hasReview = extra?.hasReview ?? false;
 
     const room = booking.room ?? extra?.room;
     if (room) {

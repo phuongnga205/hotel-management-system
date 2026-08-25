@@ -24,6 +24,7 @@ import { EntityIdParamDto } from '../common/dto/entity-id-param.dto';
 import { AdminBookingQueryDto } from './dto/admin-booking-query.dto';
 import { RejectBookingDto } from './dto/reject-booking.dto';
 import { BookingStatus } from './enums/booking-status.enum';
+import { SortOrder } from '../common/enums/sort-order.enum';
 
 // Quản lý booking cho Admin — tách controller riêng khỏi BookingsController
 // (self-service của khách) nhưng dùng chung 1 BookingsService, đúng pattern
@@ -63,7 +64,13 @@ export class AdminBookingsController {
     name: 'search',
     required: false,
     type: String,
-    description: 'Tìm theo tên/email khách hoặc mã booking',
+    description: 'Tìm theo tên/email khách, tên/số phòng, hoặc mã booking',
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    enum: SortOrder,
+    description: 'Sắp xếp theo thời gian tạo (mặc định DESC - mới nhất trước)',
   })
   @ApiResponse({
     status: 200,

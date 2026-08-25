@@ -160,6 +160,15 @@ export const roomMockApi = {
       const q = query.search.toLowerCase()
       filtered = filtered.filter((r) => r.name.toLowerCase().includes(q) || r.roomType.toLowerCase().includes(q) || r.roomNumber.includes(q))
     }
+    if (query.roomType) {
+      const q = query.roomType.toLowerCase()
+      filtered = filtered.filter((r) => r.roomType.toLowerCase().includes(q))
+    }
+    if (query.sortOrder) {
+      const dir = query.sortOrder === 'ASC' ? 1 : -1
+      const key = query.sortBy === 'price' ? 'pricePerNight' : query.sortBy === 'capacity' ? 'capacity' : 'id'
+      filtered = [...filtered].sort((a, b) => (Number(a[key]) - Number(b[key])) * dir)
+    }
     return mockDelay(paginate(filtered, query))
   },
   adminGetById: async (id: string): Promise<Room> => {
@@ -190,6 +199,13 @@ export const roomMockApi = {
   },
   update: async (id: string, data: UpdateRoomPayload): Promise<Room> => {
     rooms = rooms.map((r) => (r.id === id ? { ...r, ...data } : r))
+    const updated = rooms.find((r) => r.id === id)!
+    return mockDelay(updated)
+  },
+  // Room.pricePerNight luon la string (BE ep .toString(), xem api/types.ts) -
+  // khop dung shape do o mock thay vi luu thang number.
+  updatePrice: async (id: string, pricePerNight: number): Promise<Room> => {
+    rooms = rooms.map((r) => (r.id === id ? { ...r, pricePerNight: pricePerNight.toFixed(2) } : r))
     const updated = rooms.find((r) => r.id === id)!
     return mockDelay(updated)
   },
@@ -230,5 +246,9 @@ export const roomMockApi = {
   removeAmenity: async (roomId: string, amenityId: string): Promise<MessageResponse> => {
     rooms = rooms.map((r) => (r.id === roomId ? { ...r, amenities: (r.amenities ?? []).filter((a) => a.id !== amenityId) } : r))
     return mockDelay({ message: 'Amenity removed (mock).' })
+  },
+  exportToExcel: async (): Promise<Blob> => {
+    const rows = ['Room Number,Name,Type,Price,Capacity,Status', ...rooms.map((r) => `${r.roomNumber},${r.name},${r.roomType},${r.pricePerNight},${r.capacity},${r.status}`)]
+    return mockDelay(new Blob([rows.join('\n')], { type: 'text/csv' }))
   },
 }

@@ -9,12 +9,24 @@ const reviewRealApi = {
     const res = await axiosClient.post(API_ENDPOINTS.REVIEWS, { bookingId, rating, comment })
     return res.data.data
   },
+  // Self-service - gop danh gia cua chinh user hien tai tu moi phong da o
+  // (GET /reviews/me), khac listByRoom() (cong khai, scope theo 1 phong).
+  listMine: async (query: ListReviewsQuery): Promise<PagedResult<Review>> => {
+    const res = await axiosClient.get(API_ENDPOINTS.REVIEWS_ME, { params: query })
+    return res.data.data
+  },
   // Cong khai, khong can dang nhap - dung cho trang chi tiet phong hien
-  // thi review. Da implement o BE (backend/docs/DANH_SACH_API.md muc 5),
-  // nhung TODO: chua co page nao goi ham nay - xem
-  // frontend/docs/DANH_SACH_MAN_HINH.md muc C.
+  // thi review (RoomDetailPage.tsx).
   listByRoom: async (roomId: string, query: ListReviewsQuery): Promise<PagedResult<Review>> => {
     const res = await axiosClient.get(API_ENDPOINTS.ROOM_REVIEWS(roomId), { params: query })
+    return res.data.data
+  },
+  // Cong khai, khong can dang nhap - toan bo review he thong (khong gioi
+  // han theo 1 phong nhu listByRoom()), dung cho carousel "Guest Stories"
+  // o HomePage thay vi phai fan-out goi listByRoom() cho tung phong mau
+  // roi tu gop lai.
+  listAll: async (query: ListReviewsQuery): Promise<PagedResult<Review>> => {
+    const res = await axiosClient.get(API_ENDPOINTS.REVIEWS, { params: query })
     return res.data.data
   },
   adminList: async (query: ListReviewsQuery): Promise<PagedResult<Review>> => {

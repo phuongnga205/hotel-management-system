@@ -11,7 +11,7 @@ import PaymentBadge from '../../../components/PaymentBadge'
 import { ROUTES } from '../../../router/paths'
 import { bookingApi } from '../../../api/booking.api'
 import { getErrorMessage } from '../../../api/errorMessage'
-import type { Booking, BookingStatus } from '../../../api/types'
+import type { Booking, BookingStatus, SortOrder } from '../../../api/types'
 
 const STATUS_DOTS: Record<string, string> = { ALL: 'bg-slate-300', PENDING: 'bg-amber-400', ACCEPTED: 'bg-emerald-400', REJECTED: 'bg-red-400', CANCELLED: 'bg-slate-400', EXPIRED: 'bg-slate-400' }
 
@@ -20,6 +20,7 @@ export default function AdminBookingListPage() {
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('ALL')
+  const [sortOrder, setSortOrder] = useState<SortOrder>('DESC')
   const [page, setPage] = useState(1)
   const [bookings, setBookings] = useState<Booking[]>([])
   const [total, setTotal] = useState(0)
@@ -34,15 +35,19 @@ export default function AdminBookingListPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true)
     bookingApi
-      .adminList({ page, limit: PER_PAGE, search: search || undefined, status: statusFilter === 'ALL' ? undefined : (statusFilter as BookingStatus) })
+      .adminList({ page, limit: PER_PAGE, search: search || undefined, status: statusFilter === 'ALL' ? undefined : (statusFilter as BookingStatus), sortOrder })
       .then((res) => { setBookings(res.items); setTotal(res.total) })
       .catch((err) => setError(getErrorMessage(err, t('common.notFoundGeneric'))))
       .finally(() => setLoading(false))
-  }, [page, search, statusFilter, t])
+  }, [page, search, statusFilter, sortOrder, t])
 
   const statusOptions = [
     { value: 'ALL', label: t('bookings.list.statusAll') },
     ...(['PENDING', 'ACCEPTED', 'REJECTED', 'CANCELLED', 'EXPIRED'] as BookingStatus[]).map((s) => ({ value: s, label: t(`status.booking.${s}`) })),
+  ]
+  const sortOptions = [
+    { value: 'DESC', label: t('common.sortNewest') },
+    { value: 'ASC', label: t('common.sortOldest') },
   ]
 
   return (
@@ -53,6 +58,7 @@ export default function AdminBookingListPage() {
         <div className="flex items-center gap-3 p-4 border-b border-slate-100">
           <SearchInput value={search} onChange={(v) => { setSearch(v); setPage(1) }} placeholder={t('bookings.list.searchPlaceholder')} className="flex-1 max-w-xs" />
           <Dropdown value={statusFilter} onChange={(v) => { setStatusFilter(v); setPage(1) }} options={statusOptions} statusDots={STATUS_DOTS} size="sm" className="w-40" />
+          <Dropdown value={sortOrder} onChange={(v) => { setSortOrder(v as SortOrder); setPage(1) }} options={sortOptions} size="sm" className="w-40" />
         </div>
 
         {loading ? (

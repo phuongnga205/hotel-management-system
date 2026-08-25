@@ -29,7 +29,7 @@ import { RoomsExportService } from './rooms-export.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { ROOM_EXPORT } from './constants/room-export.constants';
-import { ListRoomsDto } from './dto/list-rooms.dto';
+import { ListRoomsDto, ROOM_SORT_BY_VALUES } from './dto/list-rooms.dto';
 import { RoomStatus } from './enums/room-status.enum';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -47,6 +47,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ROOM_IMAGE } from './constants/room-image.constants';
 import { RoomImageValidationPipe } from './pipes/room-image-validation.pipe';
 import { RoomImageUploadExceptionFilter } from './filters/room-image-upload-exception.filter';
+import { SortOrder } from '../common/enums/sort-order.enum';
 
 @ApiTags('Admin - Rooms')
 @ApiBearerAuth('access-token')
@@ -100,6 +101,30 @@ export class AdminRoomsController {
     required: false,
     enum: RoomStatus,
     description: 'Lọc theo trạng thái phòng',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Tìm theo số phòng / tên phòng / loại phòng (khớp gần đúng)',
+  })
+  @ApiQuery({
+    name: 'roomType',
+    required: false,
+    type: String,
+    description: 'Lọc riêng theo loại phòng (khớp gần đúng)',
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    enum: SortOrder,
+    description: 'Chiều sắp xếp (mặc định giá trị lớn nhất/mới nhất trước)',
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    enum: ROOM_SORT_BY_VALUES,
+    description: 'Cột dùng để sắp xếp (mặc định createdAt)',
   })
   @ApiResponse({
     status: 200,

@@ -22,7 +22,9 @@
     "status": "Trạng thái",
     "notFoundGeneric": "Không tìm thấy dữ liệu.",
     "wip": "API đang được xây dựng",
-    "logout": "Đăng xuất"
+    "logout": "Đăng xuất",
+    "sortNewest": "Mới nhất trước",
+    "sortOldest": "Cũ nhất trước"
   },
   "dashboard": {
     "eyebrow": "Tổng quan",
@@ -34,6 +36,7 @@
     "pendingReviews": "Đánh giá chờ duyệt",
     "monthlyRevenue": "Doanh thu theo tháng",
     "bookingsByRoomType": "Đặt phòng theo loại phòng",
+    "bookingsTrend": "Xu hướng đặt phòng",
     "recentBookings": "Đặt phòng gần đây",
     "viewAll": "Xem tất cả →"
   },
@@ -73,7 +76,9 @@
       "title": "Phòng",
       "subtitle": "{{count}} phòng trong hệ thống",
       "searchPlaceholder": "Tìm kiếm phòng...",
-      "exportCsv": "Xuất CSV",
+      "exportCsv": "Xuất Excel",
+      "typeFilterPlaceholder": "Lọc theo loại phòng...",
+      "sortByColumn": "Sắp xếp theo thời gian",
       "addRoom": "+ Thêm phòng",
       "columnRoom": "Phòng",
       "columnType": "Loại",
@@ -138,6 +143,7 @@
       "eyebrow": "Danh mục",
       "title": "Tiện nghi",
       "subtitle": "{{count}} tiện nghi",
+      "searchPlaceholder": "Tìm kiếm tiện nghi...",
       "addAmenity": "+ Thêm tiện nghi",
       "columnName": "Tên",
       "columnDescription": "Mô tả",
@@ -240,7 +246,20 @@
       "tabAll": "Tất cả",
       "tabActive": "Đang hoạt động",
       "tabInactive": "Ngừng hoạt động",
-      "showingSummary": "Hiển thị {{shown}} / {{total}} người dùng"
+      "showingSummary": "Hiển thị {{shown}} / {{total}} người dùng",
+      "addUser": "+ Thêm người dùng"
+    },
+    "form": {
+      "createTitle": "Thêm người dùng mới",
+      "fieldEmail": "Email",
+      "fieldUsername": "Tên đăng nhập",
+      "fieldPassword": "Mật khẩu",
+      "fieldPasswordHint": "Tối thiểu 6 ký tự.",
+      "fieldPhone": "Điện thoại",
+      "submitCreate": "Tạo người dùng",
+      "submitCreating": "Đang tạo…",
+      "createSuccess": "Tạo người dùng thành công.",
+      "createError": "Tạo người dùng thất bại."
     },
     "detail": {
       "fieldPhone": "Điện thoại",
@@ -251,33 +270,43 @@
       "deactivate": "Vô hiệu hoá",
       "bookingHistoryTitle": "Lịch sử đặt phòng",
       "bookingCount": "{{count}} lượt đặt",
-      "noBookings": "Người dùng này chưa có lượt đặt phòng nào."
+      "noBookings": "Người dùng này chưa có lượt đặt phòng nào.",
+      "changeRole": "Đổi vai trò",
+      "roleChangeTitle": "Đổi vai trò?",
+      "roleChangeDesc": "Thao tác này thay đổi quyền truy cập của {{name}} trong hệ thống.",
+      "roleChangeConfirm": "Xác nhận",
+      "roleUpdateSuccess": "Cập nhật vai trò thành công.",
+      "roleUpdateError": "Cập nhật vai trò thất bại."
     }
   },
   "statistics": {
+    "controls": {
+      "period": "Kỳ",
+      "periodDay": "Ngày",
+      "periodMonth": "Tháng",
+      "periodQuarter": "Quý",
+      "year": "Năm",
+      "month": "Tháng"
+    },
     "bookings": {
       "eyebrow": "Phân tích",
       "title": "Thống kê đặt phòng",
       "goToRevenue": "Thống kê doanh thu →",
       "tileTotal": "Tổng đặt phòng",
-      "tileAccepted": "Đã chấp nhận",
-      "tilePending": "Chờ duyệt",
-      "tileAvgStay": "Số đêm lưu trú TB",
-      "monthlyChartTitle": "Đặt phòng theo tháng",
-      "byRoomTypeChartTitle": "Đặt phòng theo loại phòng",
-      "statusBreakdownTitle": "Phân bổ trạng thái"
+      "tileBestPeriod": "Kỳ cao nhất",
+      "tileAvgPerPeriod": "Trung bình/kỳ",
+      "chartTitle": "Đặt phòng theo thời gian"
     },
     "revenue": {
       "eyebrow": "Phân tích",
       "title": "Thống kê doanh thu",
       "goToBookings": "Thống kê đặt phòng →",
-      "tileTotal": "Tổng doanh thu (năm nay)",
-      "tileAvgMonthly": "Trung bình/tháng",
-      "tileBestMonth": "Tháng cao nhất",
+      "tileTotal": "Tổng doanh thu",
+      "tileAvgPerPeriod": "Trung bình/kỳ",
+      "tileBestPeriod": "Kỳ cao nhất",
       "tileTotalBookings": "Tổng đặt phòng",
       "trendChartTitle": "Xu hướng doanh thu",
-      "byRoomTypeChartTitle": "Doanh thu theo loại phòng",
-      "monthlyBreakdownTitle": "Chi tiết theo tháng",
+      "breakdownTitle": "Chi tiết",
       "transactionsTitle": "Giao dịch thanh toán",
       "statusAll": "Tất cả trạng thái",
       "methodAll": "Tất cả phương thức",

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'react-toastify'
 import { RoomGridCard, RoomCardSkeleton } from '../components/RoomCard'
 import StarRating from '../components/StarRating'
 import DateRangeBar from '../components/DateRangeBar'
@@ -10,13 +11,14 @@ import { ROUTES } from '../router/paths'
 import { roomApi } from '../api/room.api'
 import { reviewApi } from '../api/review.api'
 import { colors } from '../tokens/colors'
+import { useAuth } from '../hooks/useAuth'
 import type { Review, Room } from '../api/types'
 
 const FEATURED_ROOM_COUNT = 6
-// So phong lay review de gop lai lam carousel "Guest Stories" - khong co
-// endpoint public liet ke review toan he thong (xem backend/docs), nen gop
-// tu vai phong noi bat thay vi bia dat 1 API chua duoc tai lieu hoa.
-const REVIEW_SOURCE_ROOM_COUNT = 3
+// So review lay cho carousel "Guest Stories" - GET /reviews (cong khai,
+// toan he thong, moi nhat truoc) thay vi truoc day phai fan-out goi
+// GET /rooms/:id/reviews cho vai phong mau roi tu gop lai.
+const REVIEWS_TO_SHOW = 9
 const REVIEWS_PER_SLIDE = 3
 
 function initials(name: string | null): string {
@@ -27,6 +29,7 @@ function initials(name: string | null): string {
 export default function HomePage() {
   const { t } = useTranslation(['home', 'common'])
   const navigate = useNavigate()
+  const { isAdmin } = useAuth()
   const [checkIn, setCheckIn] = useState('')
   const [checkOut, setCheckOut] = useState('')
   const [guests, setGuests] = useState('2')
@@ -47,24 +50,16 @@ export default function HomePage() {
       .then((res) => {
         setRooms(res.items)
         setRoomsTotal(res.total)
-
-        setReviewsLoading(true)
-        const sourceRooms = res.items.slice(0, REVIEW_SOURCE_ROOM_COUNT)
-        Promise.all(sourceRooms.map((r) => reviewApi.listByRoom(r.id, { page: 1, limit: REVIEWS_PER_SLIDE }).catch(() => ({ items: [] as Review[], total: 0, page: 1, limit: 0, totalPages: 0 }))))
-          .then((results) => {
-            const merged = results
-              .flatMap((r) => r.items)
-              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-            setReviews(merged)
-          })
-          .finally(() => setReviewsLoading(false))
       })
-      .catch(() => {
-        setRooms([])
-        setReviews([])
-        setReviewsLoading(false)
-      })
+      .catch(() => setRooms([]))
       .finally(() => setRoomsLoading(false))
+
+    setReviewsLoading(true)
+    reviewApi
+      .listAll({ page: 1, limit: REVIEWS_TO_SHOW })
+      .then((res) => setReviews(res.items))
+      .catch(() => setReviews([]))
+      .finally(() => setReviewsLoading(false))
   }, [])
 
   const visibleReviews = reviews.slice(reviewIdx, reviewIdx + REVIEWS_PER_SLIDE)
@@ -72,12 +67,25 @@ export default function HomePage() {
   const canNext = reviewIdx + REVIEWS_PER_SLIDE < reviews.length
   const avgRating = reviews.length > 0 ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1) : null
 
+  // Admin dang "Back to site" xem lai giao dien khach - cho xem het (khong
+  // che HomePage), nhung moi hanh dong dan toi luong dat phong deu vo hieu +
+  // bao cho biet ly do, thay vi lam nhu binh thuong roi lai bi AdminGuard/
+  // roomApi chan giua chung khong ro rang.
+  const notifyAdminPreview = () => toast.info(t('common:adminPreview.bookingDisabled'))
+
   const handleSearch = () => {
+    if (isAdmin) { notifyAdminPreview(); return }
     const q = new URLSearchParams()
     if (checkIn) q.set('checkIn', checkIn)
     if (checkOut) q.set('checkOut', checkOut)
     if (guests) q.set('guests', guests)
     navigate(`${ROUTES.ROOMS}?${q.toString()}`)
+  }
+
+  const handleRoomsLinkClick = (e: React.MouseEvent) => {
+    if (!isAdmin) return
+    e.preventDefault()
+    notifyAdminPreview()
   }
 
   return (
@@ -135,7 +143,11 @@ export default function HomePage() {
             eyebrow={t('home:featuredRooms.eyebrow')}
             title={t('home:featuredRooms.title')}
             action={
-              <Link to={ROUTES.ROOMS} className="text-navy text-sm font-semibold border-b border-navy pb-0.5 hover:text-gold hover:border-gold transition-colors">
+              <Link
+                to={ROUTES.ROOMS}
+                onClick={handleRoomsLinkClick}
+                className={`text-navy text-sm font-semibold border-b border-navy pb-0.5 hover:text-gold hover:border-gold transition-colors ${isAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
                 {t('home:featuredRooms.viewAll')}
               </Link>
             }
@@ -154,8 +166,8 @@ export default function HomePage() {
               <RoomGridCard
                 key={room.id}
                 room={room}
-                onView={() => navigate(ROUTES.ROOM_DETAIL(room.id))}
-                onBook={() => navigate(ROUTES.BOOK_ROOM(room.id))}
+                onView={() => (isAdmin ? notifyAdminPreview() : navigate(ROUTES.ROOM_DETAIL(room.id)))}
+                onBook={() => (isAdmin ? notifyAdminPreview() : navigate(ROUTES.BOOK_ROOM(room.id)))}
               />
             ))}
           </div>
@@ -240,7 +252,11 @@ export default function HomePage() {
           <p className="text-gold text-xs font-semibold uppercase tracking-widest mb-2">{t('home:cta.eyebrow')}</p>
           <h2 className="text-3xl font-bold text-white mb-4" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>{t('home:cta.title')}</h2>
           <p className="text-white/70 mb-8 text-base max-w-md mx-auto">{t('home:cta.subtitle')}</p>
-          <Link to={ROUTES.ROOMS} className="inline-block px-8 py-3 rounded-xl font-semibold text-navy text-sm bg-gold transition-all hover:opacity-90">
+          <Link
+            to={ROUTES.ROOMS}
+            onClick={handleRoomsLinkClick}
+            className={`inline-block px-8 py-3 rounded-xl font-semibold text-navy text-sm bg-gold transition-all hover:opacity-90 ${isAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
             {t('home:cta.action')}
           </Link>
         </div>

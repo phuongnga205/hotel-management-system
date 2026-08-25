@@ -31,14 +31,17 @@
     "night": "night",
     "total": "Total",
     "pastStay": "Past Stay",
+    "reviewed": "Reviewed",
     "reason": "Reason",
-    "unknownRoom": "Room"
+    "unknownRoom": "Room",
+    "holdCountdown": "{{time}} left to pay"
   },
   "buttons": {
     "payNow": "Pay Now",
     "editDates": "Edit Dates",
     "cancelBooking": "Cancel Booking",
-    "keepBooking": "Keep Booking"
+    "keepBooking": "Keep Booking",
+    "writeReview": "Write a Review"
   },
   "modal": {
     "editDatesTitle": "Edit Stay Dates",
@@ -60,5 +63,47 @@
     "updateError": "Failed to update dates",
     "cancelError": "Failed to cancel booking",
     "dateConflict": "This room is already booked for the selected dates. Please choose different dates."
+  },
+  "payment": {
+    "eyebrow": "Complete Payment",
+    "title": "Pay for Your Booking",
+    "methodLabel": "Select Payment Method",
+    "method": {
+      "CASH": "Cash at Hotel",
+      "BANK_TRANSFER": "Bank Transfer",
+      "CREDIT_CARD": "Credit Card",
+      "VNPAY": "VNPay"
+    },
+    "summaryGuests": "Guests",
+    "summaryDates": "Stay Dates",
+    "submit": "Pay Now",
+    "processing": "Processing…",
+    "notFound": "Booking not found.",
+    "fetchError": "Failed to load booking details.",
+    "conflictError": "This booking can no longer be paid — it may already be paid, cancelled, rejected, or its hold has expired.",
+    "payError": "Payment failed. Please try again.",
+    "paySuccess": "Payment completed successfully!"
+  },
+  "review": {
+    "eyebrow": "Share Your Experience",
+    "title": "Write a Review",
+    "ratingLabel": "Your Rating",
+    "commentLabel": "Your Comment",
+    "commentPlaceholder": "Tell us about your stay (optional).",
+    "submit": "Submit Review",
+    "processing": "Submitting…",
+    "notFound": "Booking not found.",
+    "fetchError": "Failed to load booking details.",
+    "notEligible": "This booking isn't eligible for a review — it must be accepted, paid, and past its checkout date.",
+    "alreadyReviewed": "You've already reviewed this stay.",
+    "createError": "Failed to submit your review. Please try again.",
+    "createSuccess": "Thank you for your review!"
+  },
+  "myReviews": {
+    "title": "My Reviews",
+    "subtitle": "Everything you've reviewed from your past stays.",
+    "empty": "No reviews yet.",
+    "emptyDesc": "Reviews you write after a completed stay will show up here.",
+    "fetchError": "Failed to load your reviews. Please try again."
   }
 }

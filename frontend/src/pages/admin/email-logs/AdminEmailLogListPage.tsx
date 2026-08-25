@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import Dropdown from '../../../components/Dropdown'
 import PageHeader from '../../../components/PageHeader'
 import Card from '../../../components/Card'
+import Pagination from '../../../components/Pagination'
 import { PageLoader } from '../../../components/common/PageLoader'
 import { AdminTable, StatusBadge, EMAIL_LOG_STATUS_CONFIG } from '../../../components/admin'
 import { ROUTES } from '../../../router/paths'
@@ -12,12 +13,15 @@ import { getErrorMessage } from '../../../api/errorMessage'
 import type { EmailLog, EmailStatus } from '../../../api/types'
 
 const STATUS_DOTS: Record<string, string> = { ALL: 'bg-slate-300', PENDING: 'bg-amber-400', SENT: 'bg-emerald-400', FAILED: 'bg-red-400' }
+const PER_PAGE = 10
 
 export default function AdminEmailLogListPage() {
   const { t, i18n } = useTranslation('admin')
   const navigate = useNavigate()
   const [statusFilter, setStatusFilter] = useState('ALL')
+  const [page, setPage] = useState(1)
   const [logs, setLogs] = useState<EmailLog[]>([])
+  const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -25,11 +29,11 @@ export default function AdminEmailLogListPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-with-loading-flag pattern, xem AdminBookingListPage.tsx
     setLoading(true)
     emailLogApi
-      .list({ page: 1, limit: 100, status: statusFilter === 'ALL' ? undefined : (statusFilter as EmailStatus) })
-      .then((res) => setLogs(res.items))
+      .list({ page, limit: PER_PAGE, status: statusFilter === 'ALL' ? undefined : (statusFilter as EmailStatus) })
+      .then((res) => { setLogs(res.items); setTotal(res.total) })
       .catch((err) => setError(getErrorMessage(err, t('common.notFoundGeneric'))))
       .finally(() => setLoading(false))
-  }, [statusFilter, t])
+  }, [page, statusFilter, t])
 
   const statusOptions = [
     { value: 'ALL', label: t('emailLogs.list.statusAll') },
@@ -38,12 +42,12 @@ export default function AdminEmailLogListPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader eyebrow={t('emailLogs.list.eyebrow')} title={t('emailLogs.list.title')} subtitle={t('emailLogs.list.subtitle', { count: logs.length })} />
+      <PageHeader eyebrow={t('emailLogs.list.eyebrow')} title={t('emailLogs.list.title')} subtitle={t('emailLogs.list.subtitle', { count: total })} />
 
       <Card>
         <div className="flex items-center gap-3 p-4 border-b border-slate-100">
-          <Dropdown value={statusFilter} onChange={setStatusFilter} options={statusOptions} statusDots={STATUS_DOTS} size="sm" className="w-40" />
-          <span className="text-xs text-slate-400 ml-auto">{t('emailLogs.list.resultsCount', { count: logs.length })}</span>
+          <Dropdown value={statusFilter} onChange={(v) => { setStatusFilter(v); setPage(1) }} options={statusOptions} statusDots={STATUS_DOTS} size="sm" className="w-40" />
+          <span className="text-xs text-slate-400 ml-auto">{t('emailLogs.list.resultsCount', { count: total })}</span>
         </div>
 
         {loading ? (
@@ -51,6 +55,7 @@ export default function AdminEmailLogListPage() {
         ) : error ? (
           <p className="p-6 text-danger text-sm">{error}</p>
         ) : (
+          <>
           <AdminTable
             rowKey={(l: EmailLog) => l.id}
             rows={logs}
@@ -76,6 +81,8 @@ export default function AdminEmailLogListPage() {
               },
             ]}
           />
+          <Pagination page={page} total={total} perPage={PER_PAGE} onChange={setPage} />
+          </>
         )}
       </Card>
     </div>

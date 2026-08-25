@@ -72,6 +72,27 @@ function isAuthEndpoint(url?: string): boolean {
 axiosClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Request da gui di nhung KHONG nhan duoc response nao ca (mat mang,
+    // backend sap/crash, CORS chan...) - khac loi 4xx/5xx binh thuong (co
+    // response, tung trang tu xu ly rieng qua getErrorMessage). Dieu huong
+    // sang 1 trang loi chung thay vi de moi trang tu hien toast/spinner treo
+    // vo han. axios.isCancel loai truong hop request bi huy chu dong (app
+    // nay chua dung AbortController/CancelToken o dau, nhung phong truoc).
+    if (!error.response && error.request && !axios.isCancel(error)) {
+      const currentLocation = router.state.location
+      // Chi ghi lai "from" khi CHUA dang o /server-down - tranh truong hop 1
+      // request khac (VD AuthProvider.refreshUser()) cung fail ngay tren
+      // chinh trang /server-down, ghi de "from" thanh chinh no -> nut
+      // "Thu lai" (ServerDownPage.tsx) se quay lai vong lap, khong bao gio
+      // thoat duoc du server da song lai.
+      if (currentLocation.pathname !== ROUTES.SERVER_DOWN) {
+        void router.navigate(ROUTES.SERVER_DOWN, {
+          state: { from: currentLocation.pathname + currentLocation.search },
+        })
+      }
+      return Promise.reject(error)
+    }
+
     if (
       error.response?.status === HTTP_STATUS.UNAUTHORIZED &&
       !isAuthEndpoint(error.config?.url)

@@ -1,0 +1,60 @@
+{
+  "list": {
+    "eyebrow": "Rooms & Suites",
+    "title": "Find Your Room",
+    "subtitleSearch": "Showing rooms available for your selected dates.",
+    "subtitleAll": "Browse our full collection of rooms and suites.",
+    "viewGrid": "Grid",
+    "viewList": "List",
+    "empty": "No rooms found.",
+    "emptyDesc": "Try adjusting your dates or filters.",
+    "fetchError": "Failed to load rooms. Please try again.",
+    "filters": {
+      "title": "Filters",
+      "priceRange": "Price Range",
+      "minPrice": "Min",
+      "maxPrice": "Max",
+      "amenities": "Amenities",
+      "amenitiesHint": "Only available when searching by dates.",
+      "roomType": "Room Type",
+      "viewType": "View",
+      "reset": "Reset Filters"
+    },
+    "viewTypeLabel": {
+      "CITY_VIEW": "City View",
+      "GARDEN_VIEW": "Garden View",
+      "SEA_VIEW": "Sea View"
+    }
+  },
+  "detail": {
+    "eyebrow": "Room Details",
+    "capacity": "Capacity",
+    "amenities": "Amenities",
+    "description": "About This Room",
+    "reviews": "Guest Reviews",
+    "noReviews": "No reviews yet for this room.",
+    "noReviewsDesc": "Be the first to share your experience after your stay.",
+    "bookThisRoom": "Book This Room",
+    "loginToBook": "Log In to Book",
+    "notFound": "Room not found.",
+    "loadError": "Failed to load room details."
+  },
+  "book": {
+    "eyebrow": "Reserve Your Stay",
+    "title": "Book This Room",
+    "checkInDate": "Check-in Date",
+    "checkOutDate": "Check-out Date",
+    "guests": "Number of Guests",
+    "guestOption": "{{count}} Guest(s)",
+    "note": "Special Requests",
+    "notePlaceholder": "Let us know if you have any special requests (optional).",
+    "guestsExceedCapacity": "This room holds up to {{capacity}} guests.",
+    "datesRequired": "Please select check-in and check-out dates.",
+    "summaryGuests": "Guests",
+    "submit": "Confirm Booking",
+    "conflictError": "This room is already booked for the selected dates. Please choose different dates or another room.",
+    "createError": "Failed to create booking. Please try again.",
+    "createSuccess": "Booking request submitted successfully!",
+    "backToRooms": "Back to Rooms"
+  }
+}

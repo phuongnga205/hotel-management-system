@@ -9,7 +9,9 @@ import type { ReactNode } from 'react'
 
 export interface AdminTableColumn<T> {
   key: string
-  header: string
+  // ReactNode (khong chi string) de cac trang co the nhet nut sap xep tang/
+  // giam vao canh ten cot (vd Price/Capacity o AdminRoomListPage).
+  header: ReactNode
   render: (row: T) => ReactNode
   className?: string
 }

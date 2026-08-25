@@ -18,6 +18,7 @@ import { UserQueryDto } from './dto/user-query.dto';
 import * as bcrypt from 'bcrypt';
 import { BCRYPT_SALT_ROUNDS } from '../auth/auth.service';
 import { PostgresErrorCode } from '../common/enums/postgres-error-code.enum';
+import { SortOrder } from '../common/enums/sort-order.enum';
 import { UserResponseDto } from './dto/user-response.dto';
 import { TokenUtil } from '../token/token.util';
 import { buildAvatarPublicId } from '../config/environment.constants';
@@ -135,7 +136,14 @@ export class UsersService {
   }
 
   async findAll(query: UserQueryDto) {
-    const { page = 1, limit = 10, search, status, role } = query;
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      status,
+      role,
+      sortOrder = SortOrder.DESC,
+    } = query;
 
     const skip = (page - 1) * limit;
 
@@ -189,7 +197,7 @@ export class UsersService {
     queryBuilder.skip(skip).take(limit);
 
     // Sort
-    queryBuilder.orderBy('user.createdAt', 'DESC');
+    queryBuilder.orderBy('user.createdAt', sortOrder);
 
     const [users, total] = await queryBuilder.getManyAndCount();
 
@@ -251,7 +259,22 @@ export class UsersService {
 
     await this.ensureNoDuplicates(dto, user);
 
-    Object.assign(user, dto);
+    // KHONG duoc Object.assign(user, dto) truc tiep: du field khong duoc gui
+    // len (vd chi gui {role: 'ADMIN'}), DTO van la 1 class instance that voi
+    // MOI field khai bao (username/email/fullName/phone/status) da la OWN
+    // property = undefined (class field khong co initializer, ES2022+/
+    // useDefineForClassFields luon "define" property nay ngay khi khoi tao,
+    // du gia tri chua duoc gan). Object.assign COPY CA cac key gia tri
+    // undefined do, ghi de mat du lieu that (username/email/status...) cua
+    // user hien tai thanh undefined - lam JSON response thieu han cac field
+    // nay (JSON.stringify tu bo qua key undefined), gay crash FE khi doc
+    // user.username (vd AdminUserDetailPage.tsx). Chi ap dung field nao THAT
+    // SU duoc gui len (!== undefined).
+    for (const [key, value] of Object.entries(dto)) {
+      if (value !== undefined) {
+        (user as unknown as Record<string, unknown>)[key] = value;
+      }
+    }
 
     // Admin đổi status sang ACTIVE mà tài khoản chưa từng active thì set
     // luôn activatedAt, tránh mãi null giống lúc create().

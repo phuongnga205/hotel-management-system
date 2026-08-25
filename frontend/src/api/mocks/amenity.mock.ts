@@ -1,4 +1,4 @@
-import type { Amenity, CreateAmenityPayload, MessageResponse, UpdateAmenityPayload } from '../types'
+import type { Amenity, CreateAmenityPayload, ListAmenitiesQuery, MessageResponse, PagedResult, UpdateAmenityPayload } from '../types'
 
 const MOCK_DELAY_MS = 300
 
@@ -22,6 +22,20 @@ export let amenityCatalog: Amenity[] = [
 
 export const amenityMockApi = {
   list: async (): Promise<Amenity[]> => mockDelay(amenityCatalog),
+  adminList: async (query: ListAmenitiesQuery): Promise<PagedResult<Amenity>> => {
+    const page = query.page ?? 1
+    const limit = query.limit ?? 10
+    const search = query.search?.trim().toLowerCase()
+    const filtered = search ? amenityCatalog.filter((a) => a.name.toLowerCase().includes(search)) : amenityCatalog
+    const start = (page - 1) * limit
+    return mockDelay({
+      items: filtered.slice(start, start + limit),
+      total: filtered.length,
+      page,
+      limit,
+      totalPages: Math.ceil(filtered.length / limit),
+    })
+  },
   create: async (data: CreateAmenityPayload): Promise<Amenity> => {
     const now = new Date().toISOString()
     const amenity: Amenity = { id: String(Date.now()), name: data.name, description: data.description ?? null, createdAt: now, updatedAt: now }

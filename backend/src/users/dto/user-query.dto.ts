@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
 import { UserRole, UserStatus } from '../entities/user.entity';
+import { SortOrder } from '../../common/enums/sort-order.enum';
 
 export class UserQueryDto {
   @ApiPropertyOptional({
@@ -55,4 +56,16 @@ export class UserQueryDto {
     message: i18nValidationMessage('messages.VALIDATION.IS_ENUM'),
   })
   role?: UserRole;
+
+  @ApiPropertyOptional({
+    enum: SortOrder,
+    default: SortOrder.DESC,
+    description:
+      'Sắp xếp theo thời gian tạo tài khoản (mặc định mới nhất trước)',
+  })
+  @IsOptional()
+  @IsEnum(SortOrder, {
+    message: i18nValidationMessage('messages.VALIDATION.IS_ENUM'),
+  })
+  sortOrder?: SortOrder = SortOrder.DESC;
 }

@@ -1,8 +1,9 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsEnum, IsInt, IsOptional, Max, Min } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
 import { REVIEW_PAGINATION } from '../reviews.constants';
+import { SortOrder } from '../../common/enums/sort-order.enum';
 
 export class ReviewQueryDto {
   @ApiPropertyOptional({
@@ -29,4 +30,18 @@ export class ReviewQueryDto {
     message: i18nValidationMessage('messages.VALIDATION.MAX'),
   })
   limit: number = REVIEW_PAGINATION.DEFAULT_LIMIT;
+
+  // Chi ap dung o findAll() (GET /admin/reviews) - findAllForUser()/
+  // findByRoom() van hardcode DESC nhu cu, khong doi hanh vi 2 endpoint do.
+  @ApiPropertyOptional({
+    enum: SortOrder,
+    default: SortOrder.DESC,
+    description:
+      'Sắp xếp theo thời gian tạo đánh giá (mặc định mới nhất trước)',
+  })
+  @IsOptional()
+  @IsEnum(SortOrder, {
+    message: i18nValidationMessage('messages.VALIDATION.IS_ENUM'),
+  })
+  sortOrder?: SortOrder = SortOrder.DESC;
 }

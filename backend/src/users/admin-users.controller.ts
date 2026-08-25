@@ -28,6 +28,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole, UserStatus } from './entities/user.entity';
+import { SortOrder } from '../common/enums/sort-order.enum';
 
 @ApiTags('Admin - Users')
 @ApiBearerAuth('access-token')
@@ -92,6 +93,12 @@ export class AdminUsersController {
     required: false,
     enum: UserRole,
     description: 'Lọc theo vai trò',
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    enum: SortOrder,
+    description: 'Sắp xếp theo thời gian tạo (mặc định DESC - mới nhất trước)',
   })
   @ApiResponse({
     status: 200,

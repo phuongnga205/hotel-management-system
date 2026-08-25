@@ -6,6 +6,11 @@ interface PriceSummaryCardProps {
   // - xem frontend/docs/bridge.md) - khong phai number.
   pricePerNight: string
   nights: number
+  // Nhan them vao subtotal - khop dung cong thuc BE
+  // (pricePerNight * nights * guests, xem bookings.service.ts calculateTotalPrice).
+  // Mac dinh 1 de khong doi hanh vi cac cho da dung component nay truoc khi
+  // co field nay (vd RoomDetailPage chi hien gia mau, chua chon guests).
+  guests?: number
   taxRate?: number
   onBook?: () => void
   bookLabel?: string
@@ -18,6 +23,7 @@ interface PriceSummaryCardProps {
 export default function PriceSummaryCard({
   pricePerNight,
   nights,
+  guests = 1,
   taxRate = 0.12,
   onBook,
   bookLabel,
@@ -28,7 +34,7 @@ export default function PriceSummaryCard({
 }: PriceSummaryCardProps) {
   const { t } = useTranslation('common')
   const pricePerNightNumber = Number(pricePerNight)
-  const subtotal = nights * pricePerNightNumber
+  const subtotal = nights * pricePerNightNumber * guests
   const taxes = Math.round(subtotal * taxRate)
   const total = subtotal + taxes
 
@@ -53,7 +59,10 @@ export default function PriceSummaryCard({
       {nights > 0 && (
         <div className="space-y-2 text-sm mb-5">
           <div className="flex justify-between">
-            <span className="text-slate-500">${pricePerNightNumber.toLocaleString()} × {nights} night{nights !== 1 ? 's' : ''}</span>
+            <span className="text-slate-500">
+              ${pricePerNightNumber.toLocaleString()} × {nights} night{nights !== 1 ? 's' : ''}
+              {guests > 1 ? ` × ${guests} guests` : ''}
+            </span>
             <span className="font-semibold text-navy">${subtotal.toLocaleString()}</span>
           </div>
           <div className="flex justify-between">

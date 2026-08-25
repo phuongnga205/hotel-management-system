@@ -15,6 +15,7 @@ import { I18nService } from 'nestjs-i18n';
 import { BookingStatus } from '../bookings/enums/booking-status.enum';
 import { PaymentStatus } from '../payments/enums/payment-status.enum';
 import { PostgresErrorCode } from '../common/enums/postgres-error-code.enum';
+import { SortOrder } from '../common/enums/sort-order.enum';
 import { ReviewQueryDto } from './dto/review-query.dto';
 import { ReviewResponseDto } from './dto/review-response.dto';
 import { REVIEW_ADMIN_DELETE_REASON } from './reviews.constants';
@@ -106,12 +107,17 @@ export class ReviewsService {
   }
 
   async findAll(query: ReviewQueryDto) {
-    const { page, limit } = query;
+    const { page, limit, sortOrder = SortOrder.DESC } = query;
 
     const [reviews, total] = await this.reviewRepository
       .createQueryBuilder('review')
       .leftJoinAndSelect('review.user', 'user')
-      .orderBy('review.createdAt', 'DESC')
+      // Thieu join nay truoc day khien review.room luon undefined -
+      // AdminReviewListPage.tsx doc review.room?.name nhung khong bao gio
+      // co du lieu (khong phai bug fallback anh, nhung cung dang bug "thieu
+      // relation" - phat hien khi ra soat cac cho join room/room.images).
+      .leftJoinAndSelect('review.room', 'room')
+      .orderBy('review.createdAt', sortOrder)
       .offset((page - 1) * limit)
       .limit(limit)
       .getManyAndCount();
@@ -119,6 +125,46 @@ export class ReviewsService {
     return {
       statusCode: 200,
       message: this.i18n.t('messages.REVIEWS.FIND_ALL_SUCCESS'),
+      data: {
+        items: reviews.map((review) => new ReviewResponseDto(review)),
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  // GET /reviews/me — self-service, gộp đánh giá của chính user hiện tại
+  // từ mọi phòng (khác findByRoom() ở trên: công khai + scope theo 1
+  // phòng cụ thể qua URL param). Join kèm room + room.images để FE hiện
+  // được tên/ảnh phòng ngay trong danh sách, không phải gọi thêm request
+  // nào khác (tránh N+1 — Luật 4, cùng pattern PaymentsService.findAllForUser()).
+  async findAllForUser(userId: string, query: ReviewQueryDto) {
+    const { page, limit } = query;
+
+    const [reviews, total] = await this.reviewRepository
+      .createQueryBuilder('review')
+      .leftJoinAndSelect('review.room', 'room')
+      // 'roomImage.deletedAt IS NULL' - Image la soft-delete (@DeleteDateColumn),
+      // JOIN khong tu loai anh da xoa; thieu dieu kien nay 1 anh thumbnail cu
+      // da bi xoa van lot vao room.images va ReviewResponseDto co the chon
+      // nham no (URL hong) hoac khong tim thay anh isThumbnail nao con ->
+      // FE lai roi ve fallback, dung pattern loi da gap o BookingsService.
+      .leftJoinAndSelect(
+        'room.images',
+        'roomImage',
+        'roomImage.deletedAt IS NULL',
+      )
+      .where('review.userId = :userId', { userId })
+      .orderBy('review.createdAt', 'DESC')
+      .offset((page - 1) * limit)
+      .limit(limit)
+      .getManyAndCount();
+
+    return {
+      statusCode: 200,
+      message: this.i18n.t('messages.REVIEWS.FIND_MINE_SUCCESS'),
       data: {
         items: reviews.map((review) => new ReviewResponseDto(review)),
         total,

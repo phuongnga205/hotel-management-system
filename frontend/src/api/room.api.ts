@@ -48,6 +48,13 @@ const roomRealApi = {
     const res = await axiosClient.patch(API_ENDPOINTS.ADMIN_ROOM_DETAIL(id), data)
     return res.data.data
   },
+  // Doi gia/dem rieng qua 1 endpoint tach biet (PATCH /admin/rooms/:id/price)
+  // thay vi gop vao update() o tren - khop dung thiet ke BE (co DTO/message
+  // rieng UpdateRoomPriceDto/UPDATE_PRICE_SUCCESS, xem backend/src/rooms/admin-rooms.controller.ts).
+  updatePrice: async (id: string, pricePerNight: number): Promise<Room> => {
+    const res = await axiosClient.patch(API_ENDPOINTS.ADMIN_ROOM_PRICE(id), { pricePerNight })
+    return res.data.data
+  },
   remove: async (id: string): Promise<MessageResponse> => {
     const res = await axiosClient.delete(API_ENDPOINTS.ADMIN_ROOM_DETAIL(id))
     return res.data
@@ -73,6 +80,13 @@ const roomRealApi = {
   },
   removeAmenity: async (roomId: string, amenityId: string): Promise<MessageResponse> => {
     const res = await axiosClient.delete(API_ENDPOINTS.ADMIN_ROOM_AMENITY_DETAIL(roomId, amenityId))
+    return res.data
+  },
+  // BE tra ve file .xlsx dang StreamableFile (khong boc {statusCode,message,data}
+  // nhu cac endpoint JSON khac) - phai xin responseType 'blob' de axios khong
+  // co parse no thanh JSON, tra thang Blob cho component tu tao link tai ve.
+  exportToExcel: async (): Promise<Blob> => {
+    const res = await axiosClient.get(API_ENDPOINTS.ADMIN_ROOMS_EXPORT, { responseType: 'blob' })
     return res.data
   },
 }

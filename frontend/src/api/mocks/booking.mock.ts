@@ -11,6 +11,7 @@ import type {
   UpdateBookingPayload
 } from '../types'
 import { rooms } from './room.mock'
+import { reviews } from './review.mock'
 
 const MOCK_DELAY_MS = 100
 
@@ -23,7 +24,10 @@ function paginate<T>(items: T[], page = 1, limit = 10): PagedResult<T> {
   return { items: items.slice(start, start + limit), total: items.length, page, limit, totalPages: Math.max(1, Math.ceil(items.length / limit)) }
 }
 
-let bookings: Booking[] = [
+// Export de review.mock.ts doi chieu dieu kien duoc review (ACCEPTED + da
+// tra tien + qua checkOutDate) va booking.mock.ts's own pay()/create() -
+// dung chung 1 nguon fixture, giong cach room.mock.ts export `rooms`.
+export let bookings: Booking[] = [
   {
     id: '1001',
     status: 'PENDING',
@@ -168,7 +172,14 @@ export const bookingMockApi = {
     if (query.status) {
       filtered = filtered.filter(b => b.status === query.status)
     }
-    return mockDelay(paginate(filtered, query.page, query.limit))
+    // Khop hanh vi BE (BookingsService.fetchReviewedBookingIds()) - moi
+    // booking chi duoc review dung 1 lan, FE dua vao co nay de an nut
+    // "Write Review" thay vi de user bam lai va an loi 409 mock.
+    const withReviewFlag = filtered.map((b) => ({
+      ...b,
+      hasReview: reviews.some((r) => r.bookingId === b.id && !r.deletedAt),
+    }))
+    return mockDelay(paginate(withReviewFlag, query.page, query.limit))
   },
   getById: async (id: string): Promise<Booking> => {
     const booking = bookings.find((b) => b.id === id)

@@ -1,0 +1,23 @@
+{
+  "eyebrow": "MY ACCOUNT",
+  "title": "Payment History",
+  "subtitle": "Every payment you've made across all your bookings.",
+  "filters": {
+    "status": "Status",
+    "allStatuses": "All Statuses",
+    "method": "Method",
+    "allMethods": "All Methods"
+  },
+  "labels": {
+    "unknownRoom": "Room",
+    "stayDates": "Stay Dates",
+    "amount": "Amount",
+    "method": "Method",
+    "transactionId": "Transaction ID",
+    "paidAt": "Paid At",
+    "notPaidYet": "Not paid yet"
+  },
+  "empty": "No payments found.",
+  "emptyDesc": "Transactions you make will show up here.",
+  "fetchError": "Failed to load your payment history. Please try again."
+}

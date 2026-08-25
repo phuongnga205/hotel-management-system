@@ -140,6 +140,7 @@
     "CREATE_SUCCESS": "Review created successfully.",
     "FIND_ALL_SUCCESS": "Reviews retrieved successfully.",
     "FIND_BY_ROOM_SUCCESS": "Room reviews retrieved successfully.",
+    "FIND_MINE_SUCCESS": "Your reviews retrieved successfully.",
     "DELETE_SUCCESS": "Review deleted successfully."
   }
 }

@@ -72,4 +72,7 @@ export const authMockApi = {
   resetPassword: async (_data: ResetPasswordPayload): Promise<MessageResponse> => {
     return mockDelay({ message: 'Đổi mật khẩu thành công (mock).' })
   },
+  logout: async (): Promise<MessageResponse> => {
+    return mockDelay({ message: 'Đăng xuất thành công (mock).' })
+  },
 }

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import type { ChangeEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Form, Input, Button, Avatar, Tabs, Select } from 'antd'
 import {
@@ -13,6 +14,8 @@ import { getErrorMessage } from '../../api/errorMessage'
 import type { UpdateProfilePayload } from '../../api/types'
 import { COUNTRIES } from '../../utils/countries'
 import { PageLoader } from '../../components/common/PageLoader'
+import { useAuth } from '../../hooks/useAuth'
+import { AVATAR_ALLOWED_MIME_TYPES, AVATAR_MAX_FILE_SIZE_BYTES } from '../../constants/avatar'
 
 
 const { TabPane } = Tabs
@@ -36,6 +39,9 @@ export const ProfilePage = () => {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
+  const [avatarSaving, setAvatarSaving] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { refreshUser } = useAuth()
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -66,6 +72,55 @@ export const ProfilePage = () => {
       toast.error(getErrorMessage(error, t('profile:updateError')))
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleAvatarButtonClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleAvatarFileSelected = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    // Reset ngay de chon lai cung 1 file van bam duoc onChange lan nua.
+    e.target.value = ''
+    if (!file) return
+
+    if (!AVATAR_ALLOWED_MIME_TYPES.includes(file.type)) {
+      toast.error(t('profile:avatarInvalidType'))
+      return
+    }
+    if (file.size > AVATAR_MAX_FILE_SIZE_BYTES) {
+      toast.error(t('profile:avatarTooLarge', { maxMb: AVATAR_MAX_FILE_SIZE_BYTES / (1024 * 1024) }))
+      return
+    }
+
+    try {
+      setAvatarSaving(true)
+      const updated = await userApi.uploadAvatar(file)
+      setUserProfile(updated)
+      // Header doc avatar tu AuthContext, khong phai props/state cua trang
+      // nay - phai refresh o day de avatar tren Header cap nhat ngay, khong
+      // doi F5 (giong cach LoginPage.tsx lam sau khi dang nhap).
+      await refreshUser()
+      toast.success(t('profile:avatarUploadSuccess'))
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, t('profile:avatarUploadError')))
+    } finally {
+      setAvatarSaving(false)
+    }
+  }
+
+  const handleRemoveAvatar = async () => {
+    try {
+      setAvatarSaving(true)
+      await userApi.removeAvatar()
+      setUserProfile((prev) => (prev ? { ...prev, avatarUrl: null } : prev))
+      await refreshUser()
+      toast.success(t('profile:avatarRemoveSuccess'))
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, t('profile:avatarRemoveError')))
+    } finally {
+      setAvatarSaving(false)
     }
   }
 
@@ -117,9 +172,32 @@ export const ProfilePage = () => {
               </div>
             </div>
             
-            <Button className="mt-8 w-full border-navy text-navy hover:text-navy-light hover:border-navy-light rounded-lg h-10" type="dashed">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={AVATAR_ALLOWED_MIME_TYPES.join(',')}
+              onChange={handleAvatarFileSelected}
+              className="hidden"
+            />
+            <Button
+              className="mt-8 w-full border-navy text-navy hover:text-navy-light hover:border-navy-light rounded-lg h-10"
+              type="dashed"
+              loading={avatarSaving}
+              onClick={handleAvatarButtonClick}
+            >
               {t('profile:changeAvatar')}
             </Button>
+            {userProfile?.avatarUrl && (
+              <Button
+                className="mt-2 w-full rounded-lg h-10"
+                type="text"
+                danger
+                disabled={avatarSaving}
+                onClick={handleRemoveAvatar}
+              >
+                {t('profile:removeAvatar')}
+              </Button>
+            )}
           </div>
         </div>
 

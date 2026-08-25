@@ -68,10 +68,14 @@ export default function Dropdown({
     }
   }, [open, measure])
 
-  const padY = size === 'sm' ? 'py-1.5' : 'py-2.5'
-  const padX = size === 'sm' ? 'px-2.5' : 'px-3'
-  const textSize = size === 'sm' ? 'text-xs' : 'text-sm'
-  const itemPad = size === 'sm' ? 'px-2.5 py-2' : 'px-3 py-2.5'
+  // size="sm" phai khop chieu cao voi SearchInput (border + rounded-lg + py-2
+  // + text-sm) - truoc day dung py-1.5/text-xs nen dropdown thap hon SearchInput
+  // dat ben canh (vd AdminBookingListPage), nhin lech hang ro rang. Ca 2 size
+  // gio dung chung text-sm/px-3, chi con khac o padding doc (py).
+  const padY = size === 'sm' ? 'py-2' : 'py-2.5'
+  const padX = 'px-3'
+  const textSize = 'text-sm'
+  const itemPad = size === 'sm' ? 'px-3 py-2' : 'px-3 py-2.5'
 
   return (
     <div data-dropdown="" className={`relative ${className}`}>

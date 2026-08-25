@@ -28,6 +28,41 @@
   **không** có route riêng — là UI state trong component của route cha, trừ khi
   ghi chú khác.
 
+### ✅ Auth/role state — `AuthContext` (`src/contexts/`)
+
+Nguồn chân lý duy nhất cho "đã đăng nhập chưa" + "role gì" trong toàn app,
+thay cho việc mỗi nơi tự `getAccessToken()`/tự gọi `userApi.getProfile()`
+riêng như trước:
+
+- `contexts/AuthContext.ts` — chỉ định nghĩa `AuthContext`
+  (`createContext`) + type `AuthContextValue`, không có JSX.
+- `contexts/AuthProvider.tsx` — component `<AuthProvider>` bọc toàn app
+  (`main.tsx`, ngoài `<RouterProvider>`). Lúc mount: nếu có access token thì
+  gọi `userApi.getProfile()` 1 lần để biết `user`/`role` — API này có cặp
+  real+mock như mọi API khác nên hoạt động giống nhau dù `VITE_USE_MOCK` là
+  gì. Expose `{ user, isAuthenticated, isAdmin, loading, refreshUser, logout }`.
+- `hooks/useAuth.ts` — hook đọc lại context (`const { isAdmin } = useAuth()`).
+- 2 file tách riêng khỏi component (`AuthContext.ts`, `useAuth.ts`) vì 1 file
+  vừa export component vừa export value/hook khác sẽ làm hỏng React Fast
+  Refresh (`react-refresh/only-export-components`) — cùng lý do
+  `statusConfigs.ts` tách khỏi `StatusBadge.tsx`.
+- `LoginPage.tsx` gọi `refreshUser()` ngay sau khi `setAccessToken()` (trước
+  khi `navigate()`) để `Header`/`AdminGuard` thấy đúng role mới ngay, không
+  cần đợi F5. `AdminGuard.tsx` giờ chỉ đọc `useAuth()` thay vì tự fetch
+  profile riêng mỗi lần vào `/admin/**` (tránh gọi API trùng lặp).
+- **`Header.tsx` hiện nav/dropdown khác nhau theo role** (đọc `isAdmin` từ
+  `useAuth()`, hoạt động giống nhau dù mock hay real BE):
+  - **Admin đăng nhập**: thanh nav chỉ còn đúng 1 tab "Admin Console" (dẫn
+    `ROUTES.ADMIN.DASHBOARD`, thay cho Home/Rooms/My Bookings/My Reviews).
+    Dropdown profile chỉ còn Profile + Logout — không còn mục "Admin" (đã
+    chuyển thành tab riêng, không cần lặp lại trong dropdown nữa).
+  - **User thường đăng nhập**: nav giữ nguyên Home/Rooms/My Bookings/My
+    Reviews. Dropdown profile có thêm "Payment History" (`/payments`) ở
+    đúng vị trí mục "Admin" cũ từng nằm, cộng Profile + Logout.
+  - Trước đây dropdown luôn hiện mục "Admin" bất kể role (dựa vào
+    `AdminGuard` tự chặn/redirect khi bấm vào) — giờ ẩn hẳn theo role thật,
+    không chỉ dựa vào guard chặn sau khi điều hướng.
+
 ## A. Route công khai (Guest + User đều vào được)
 
 | Path | Mô tả | Ghi chú |
@@ -38,8 +73,8 @@
 | `/activate` | Kích hoạt tài khoản | Form nhập **email + mã OTP 6 số** (gửi qua email, user tự gõ tay). `?email=` chỉ để prefill, không bắt buộc. Kích hoạt xong → tự chuyển `/login` kèm toast thành công. |
 | `/forgot-password` | Quên mật khẩu | Modal/form nhập email ngay trên trang, gửi email chứa **mã OTP** (không phải link). Sau khi gửi → hiện nút chuyển sang `/reset-password?email=<email>`. |
 | `/reset-password` | Đặt lại mật khẩu | Form nhập **email + mã OTP 6 số + mật khẩu mới + xác nhận**. `?email=` chỉ để prefill. Xong → redirect `/login` kèm toast "Đổi mật khẩu thành công, vui lòng đăng nhập". |
-| `/rooms` | Tìm phòng + danh sách phòng | 1 route duy nhất, filter/search qua query param. Không có danh sách mặc định và danh sách sau tìm kiếm là 2 route khác nhau. 🚧 **Route CHƯA đăng ký trong `router/index.tsx`, `pages/rooms/` không tồn tại** — `RoomListPage` chưa được dựng dù `room.api.ts` (`listPublic`/`getPublicById`) đã sẵn sàng gọi BE thật. `ROUTES.ROOMS` có khai trong `router/paths.ts` (kèm comment "chưa có trang đích") nhưng chưa nối route. **`HomePage.tsx` đã có link "View all rooms" + thanh search điều hướng tới route này** — hiện là **dead link thật khi click**, không chỉ là gap lý thuyết. 🆕 **Khi dựng trang này**: `HomePage.tsx` đã build sẵn `guests` vào query string (`/rooms?checkIn=&checkOut=&guests=`) — `RoomListPage` cần đọc lại `?guests=` (và `?checkIn=`/`?checkOut=` để quyết định gọi `roomApi.listPublic()` hay `listAvailable()`, xem `DANH_SACH_MAN_HINH.md` mục C) và truyền vào đúng field `guests` của `ListRoomsQuery`/`ListAvailableRoomsQuery` (`api/types.ts`) để lọc theo `room.capacity`. |
-| `/rooms/:roomId` | Chi tiết phòng | Nút "Đặt phòng": guest bấm → redirect `/login?redirect=/rooms/:roomId`; user đã login → mở flow đặt phòng (modal hoặc route con, xem mục B). **🆕 TODO**: hiển thị thêm danh sách đánh giá của phòng, gọi `GET /rooms/:roomId/reviews` (đã implement, public — không cần login, xem `backend/docs/DANH_SACH_API.md` mục 5 và `frontend/docs/bridge.md` mục 8) — page hiện **chưa gọi** API này. 🚧 **Route + page (`RoomDetailPage`) đều CHƯA tồn tại**, chưa đăng ký trong router. Card phòng nổi bật trên `HomePage.tsx` (`onView`) đã navigate tới route này — **dead link thật**. |
+| `/rooms` | Tìm phòng + danh sách phòng | 1 route duy nhất, filter/search qua query param. Không có danh sách mặc định và danh sách sau tìm kiếm là 2 route khác nhau. ✅ **Đã dựng** (`RoomListPage.tsx`), đăng ký trong `PublicLayout` (không cần login). Đọc `?checkIn=`/`?checkOut=`/`?guests=` để quyết định gọi `roomApi.listPublic()` hay `listAvailable()`. Có thêm filter giá/tiện nghi (chỉ gửi lên server khi ở chế độ `listAvailable`, vì `ListRoomsQuery` không nhận 2 field này) và filter `roomType`/`viewType` — 2 field này **chưa có param lọc phía server**, đang lọc client-side trên tập dữ liệu của trang hiện tại (giới hạn tạm thời, ghi rõ trong code). |
+| `/rooms/:roomId` | Chi tiết phòng | Nút "Đặt phòng": guest bấm → redirect `/login?redirect=/rooms/:roomId`; user đã login → điều hướng `/rooms/:roomId/book`, giữ nguyên `checkIn/checkOut/guests` trên query nếu có. ✅ **Đã dựng** (`RoomDetailPage.tsx`), gọi `GET /rooms/:roomId/reviews` (`reviewApi.listByRoom()`) hiển thị danh sách đánh giá + điểm trung bình. |
 | `/403` | Không có quyền truy cập | Dùng khi user thường cố vào `/admin/**`. ✅ **Đã dựng** (`pages/ForbiddenPage.tsx`), route đăng ký trong `PublicLayout`. `AdminGuard` đã sửa để redirect đúng `ROUTES.FORBIDDEN` thay vì `ROUTES.HOME` như trước. |
 | `/404` | Không tìm thấy trang | Fallback route `*`. ✅ **Đã dựng** (`pages/NotFoundPage.tsx`), route fallback `path: '*'` đặt cuối cùng trong `PublicLayout` (giữ header/footer chung) — không ảnh hưởng match của `/admin/**` vì react-router chấm điểm theo độ cụ thể của path, không theo thứ tự khai báo. |
 
@@ -49,17 +84,18 @@ Tất cả nằm dưới `AuthGuard`; chưa login → redirect `/login?redirect=
 
 | Path | Mô tả | Ghi chú |
 |---|---|---|
-| `/rooms/:roomId/book` | Đặt phòng | Gửi request tới admin (trạng thái `pending`). Cần xử lý lỗi race condition (phòng vừa bị người khác đặt) bằng thông báo rõ + gợi ý quay lại `/rooms`. 🚧 **Route + page (`BookRoomPage`) đều CHƯA tồn tại**, chưa đăng ký trong router dù `bookingApi.create()` đã sẵn sàng gọi `POST /bookings` thật. Nút "Book" trên card phòng nổi bật ở `HomePage.tsx` đã navigate tới route này — **dead link thật**. 🆕 **Khi dựng trang này**: form bắt buộc phải có input chọn số khách (`guests`, `CreateBookingPayload.guests` giờ là field bắt buộc) — validate client-side `guests <= room.capacity` (lấy từ `RoomDetailPage`) trước khi submit để UX nhanh hơn, dù BE vẫn validate lại lần cuối (400 nếu vượt). Nên hiển thị `totalPrice` ước tính = `nights × pricePerNight × guests` ngay trên form trước khi bấm đặt, khớp đúng công thức BE sẽ trả về (xem `bridge.md` mục 6) — tránh lệch số giữa giá hiển thị và giá thật. |
+| `/rooms/:roomId/book` | Đặt phòng | Gửi request tới admin (trạng thái `pending`). Xử lý riêng lỗi 409 Conflict (phòng vừa bị người khác đặt) bằng thông báo rõ + gợi ý quay lại `/rooms`. ✅ **Đã dựng** (`BookRoomPage.tsx`), đăng ký trong nhánh `AuthGuard`. Có input chọn số khách (`guests`, bắt buộc, validate client-side `<= room.capacity`), hiển thị `totalPrice` ước tính = `nights × pricePerNight × guests` trước khi submit. |
 | `/profile` | Trang cá nhân | Xem + **chỉnh sửa thông tin** (tên, sđt, ...) + lưu. ✅ Đã dựng đủ (`ProfilePage.tsx`), có route thật trong `router/index.tsx`. |
-| `/profile/change-password` | Đổi mật khẩu | Form old + new + confirm, khác với `/reset-password` (không cần old). Có thể làm tab trong `/profile` thay vì route riêng — tuỳ team quyết, nhưng nên có path riêng để deep-link được. 🚧 **Route + page (`ChangePasswordPage`) đều CHƯA tồn tại**, không có tab/route nào trong `/profile` hiện tại cho việc này — dù `userApi.changePassword()` (gọi `PATCH /users/me/password`) đã implement sẵn ở `user.api.ts`, chưa UI nào gọi tới. Hiện **không có cách nào đổi mật khẩu khi đã đăng nhập** trên FE. |
-| `/profile` (khu vực avatar) | Thêm/thay/xoá avatar | Là 1 phần UI trong `/profile`, không tách route. 🚧 **Chưa implement** — `POST`/`DELETE /users/me/avatar` đã xong ở BE (Cloudinary) nhưng không có method nào trong `user.api.ts`, không có `endpoints.ts` constant, và `ProfilePage.tsx` không có khu vực avatar nào. |
+| `/profile/change-password` | Đổi mật khẩu | ⛔ **Đã quyết định KHÔNG làm route riêng** — `ProfilePage.tsx` đã có sẵn tab "Security" chạy thật (`userApi.changePassword()`), làm thêm 1 trang riêng sẽ trùng lặp UI cho cùng 1 chức năng. Đổi mật khẩu khi đã đăng nhập dùng tab Security trong `/profile`; không nhầm với `/forgot-password` → `/reset-password` (luồng OTP dành cho lúc chưa đăng nhập, đã đầy đủ, không đụng tới). |
+| `/profile` (khu vực avatar) | Thêm/thay/xoá avatar | Là 1 phần UI trong `/profile`, không tách route. ✅ **Đã dựng** — nút "Change Avatar" (mở file picker ẩn, validate type/size client-side trước khi gọi `userApi.uploadAvatar()`) + "Remove Avatar" (chỉ hiện khi đã có avatar, gọi `userApi.removeAvatar()`). Sau khi đổi/xoá đều gọi `refreshUser()` (`useAuth()`) để avatar trên `Header.tsx` cập nhật ngay, không cần F5. Giới hạn client-side (`constants/avatar.ts`: 5MB, jpg/jpeg/png/webp) PHẢI khớp `backend/src/config/avatar-upload.config.ts`. |
 | `/bookings` | Lịch sử booking | Danh sách booking của user hiện tại. ✅ Đã dựng (`BookingHistoryPage.tsx`), có route thật. **Khác thiết kế gốc của tài liệu này**: trang hiện gộp luôn action Sửa/Huỷ ngay tại đây qua modal (xem 2 dòng "Sửa booking"/"Huỷ booking" bên dưới) thay vì có trang chi tiết `/bookings/:bookingId` riêng. |
-| 🚧 `/payments` | Lịch sử thanh toán | **TODO — FE chưa dựng, để session sau** (BE đã implement `GET /payments/me`, xem `backend/docs/DANH_SACH_API.md` mục 4a, sẵn sàng dùng ngay). Trang riêng cho user xem toàn bộ giao dịch thanh toán của chính mình (mọi booking gộp lại). Route nằm ngang hàng `/bookings`, page component ở `pages/payments/` (ngang hàng `pages/bookings/`), không phải route con của `/bookings/:bookingId`. Route chưa có trong `router/paths.ts` (không có `ROUTES.PAYMENTS`), và `payment.api.ts` chỉ có `adminList()` — chưa có method gọi `GET /payments/me`. |
+| `/reviews` | Đánh giá của tôi | ✅ **Đã dựng** (`MyReviewsPage.tsx`), có tab riêng "My Reviews" trên thanh nav ngang hàng "My Bookings" (`Header.tsx`, chỉ hiện với user thường). Liệt kê toàn bộ đánh giá user hiện tại đã viết, gộp từ mọi phòng, qua `reviewApi.listMine()` (`GET /reviews/me`). |
+| `/payments` | Lịch sử thanh toán | ✅ **Đã dựng** (`PaymentHistoryPage.tsx`), đăng ký trong nhánh `AuthGuard`, `ROUTES.PAYMENTS` trong `router/paths.ts`. Trang cho user xem toàn bộ giao dịch thanh toán của chính mình (mọi booking gộp lại) qua `paymentApi.listMine()` (`GET /payments/me`) — filter theo `status`/`method` (2 `Dropdown`), phân trang. Không có link riêng trên thanh nav — truy cập qua mục "Payment History" trong dropdown profile (`Header.tsx`, chỉ hiện với user thường, xem mục "Auth/role state" ở trên). |
 | `/bookings/:bookingId` | Chi tiết booking | Gồm các action: | 🚧 **Route + page (drill-down riêng) CHƯA tồn tại** — thiết kế thực tế hiện tại không có trang chi tiết 1 booking cho user, mọi thứ (xem, sửa, huỷ) nằm gộp ngay trên card ở `/bookings`. Cân nhắc: bỏ hẳn route con này khỏi tài liệu nếu team chốt giữ pattern "tất cả trên list", hoặc dựng trang chi tiết thật nếu muốn tách theo đúng thiết kế gốc. |
 | — Sửa booking | Form chỉnh sửa (đổi ngày...) | Modal hoặc route con `/bookings/:bookingId/edit`, tuỳ độ phức tạp form. ✅ **Đã có, dạng modal** (`EditBookingModal`, `src/components/bookings/`) mở ngay từ `/bookings`, không phải route con — khớp lựa chọn "modal" trong ô Ghi chú gốc, không dùng `/bookings/:bookingId/edit`. ⚠️ **Đã sửa cột "Mô tả" — trước đây ghi "đổi ngày, số khách...", nhưng số khách (`guests`) đã chốt là KHÔNG sửa được sau khi tạo** (xem `bridge.md` mục 6) — form sửa chỉ còn đổi `checkInDate`/`checkOutDate`/`note`, muốn đổi số khách phải huỷ và đặt lại. |
 | — Huỷ booking | Popup xác nhận, có ô nhập lý do (optional) | Modal, không có route riêng. ✅ **Đã có** (`CancelBookingModal`, `src/components/bookings/`), mở từ `/bookings`. |
-| — Thanh toán | **Stub** — để nút disabled hoặc trang placeholder | `/bookings/:bookingId/payment` (chưa cần làm thật). 🆕⚠️ **Đã lỗi thời — BE không còn là stub**: `POST /bookings/:id/pay` đã implement đầy đủ (mock luôn `SUCCESS`, xem `backend/docs/DANH_SACH_API.md` mục 4), `bookingApi.pay()` đã sẵn ở FE. Nhưng **route `/bookings/:bookingId/payment` vẫn CHƯA đăng ký, `BookingPaymentPage` CHƯA tồn tại** — trong khi nút "Pay" trên `BookingCard`/`BookingHistoryPage` (`handlePay`) **đã navigate thẳng tới route này** (`navigate(\`/bookings/${booking.id}/payment\`)`). Đây là **dead link đang tồn tại thật trong code hiện tại**, mức độ ưu tiên cao hơn các gap khác vì nút bấm được nhưng không tới đâu. |
-| — Viết đánh giá | Chỉ hiện nếu booking đã/đang ở | Modal hoặc route con `/bookings/:bookingId/review`. 🚧 **Hoàn toàn chưa có** — không route, không page, và khác nút "Pay" (có nút nhưng thiếu đích), ở đây **không có cả nút/link nào** trong `BookingCard`/`BookingHistoryPage` trỏ tới hành động này. `POST /reviews` đã implement đủ ở cả BE lẫn FE (`reviewApi.create()`), chỉ chưa UI nào gọi. |
+| — Thanh toán | `/bookings/:bookingId/payment` | ✅ **Đã dựng** (`BookingPaymentPage.tsx`), đăng ký trong nhánh `AuthGuard`. Chọn method (`CASH`/`BANK_TRANSFER`/`CREDIT_CARD`/`VNPAY`) → `bookingApi.pay()`, bắt riêng lỗi 409 Conflict. Nút "Pay" trên `BookingCard`/`BookingHistoryPage` không còn là dead link. |
+| — Viết đánh giá | Chỉ hiện nếu booking đã/đang ở | Route con `/bookings/:bookingId/review`. ✅ **Đã dựng** — nút "Viết đánh giá" trên `BookingCard` chỉ hiện khi ACCEPTED + đã thanh toán + qua `checkOutDate`, dẫn tới `BookingReviewPage` (`POST /reviews`). |
 
 > Mọi thay đổi trạng thái tài khoản/booking đều trigger gửi email — không ảnh
 > hưởng routing, chỉ cần đảm bảo FE hiển thị đúng toast/thông báo tương ứng.
@@ -104,16 +140,17 @@ Tất cả nằm dưới `AdminLayout` + `AdminGuard` (role !== admin → `/403`
 /activate?email=           (guest, nhập OTP tay từ email)
 /forgot-password           (guest)
 /reset-password?email=     (guest, nhập OTP tay từ email)
-/rooms                     (guest/user)               🚧 route+page chưa dựng, dead link từ HomePage
-/rooms/:roomId             (guest/user)               🚧 route+page chưa dựng, dead link từ HomePage
-/rooms/:roomId/book        (user — auth required)     🚧 route+page chưa dựng, dead link từ HomePage
+/rooms                     (guest/user)               ✅ đã dựng
+/rooms/:roomId             (guest/user)               ✅ đã dựng
+/rooms/:roomId/book        (user — auth required)     ✅ đã dựng
 /profile                   (user)                     ✅ đã dựng
-/profile/change-password   (user)                     🚧 route+page chưa dựng
+/profile/change-password   (user)                     ⛔ đã quyết định KHÔNG làm — dùng tab Security trong /profile
 /bookings                  (user)                     ✅ đã dựng (gộp cả sửa/huỷ qua modal)
-/payments                  (user — TODO, chưa dựng)
+/reviews                   (user)                     ✅ đã dựng
+/payments                  (user)                     ✅ đã dựng
 /bookings/:bookingId       (user)                     🚧 không tồn tại trong thiết kế thực tế hiện tại
-/bookings/:bookingId/payment  (user)                  🆕⚠️ BE hết stub rồi, FE vẫn chưa dựng — dead link thật (nút "Pay")
-/bookings/:bookingId/review   (user)                  🚧 route+page+cả nút bấm đều chưa có
+/bookings/:bookingId/payment  (user)                  ✅ đã dựng
+/bookings/:bookingId/review   (user)                  ✅ đã dựng
 /403                       (system)                   ✅ đã dựng
 /404                       (system)                   ✅ đã dựng
 
@@ -171,32 +208,30 @@ Tất cả nằm dưới `AdminLayout` + `AdminGuard` (role !== admin → `/403`
       condition — phòng vừa bị người khác đặt): hiện thông báo "chọn phòng
       khác" thay vì toast lỗi chung. Format response/error đã chốt tại
       `backend/docs/DANH_SACH_API.md` (mục "Response envelope").
-- [ ] 🆕 `/rooms/:roomId` — gọi thêm `GET /rooms/:roomId/reviews` để hiển thị
-      danh sách đánh giá của phòng (đã implement ở BE, public, không cần
-      login — `reviewApi.listByRoom()` đã có sẵn ở
-      `frontend/src/api/review.api.ts`, chỉ chưa được dùng ở page nào). Xem
-      `backend/docs/DANH_SACH_API.md` mục 5 và
-      `frontend/docs/DANH_SACH_MAN_HINH.md` mục C.
+- [x] `/rooms/:roomId` — gọi thêm `GET /rooms/:roomId/reviews` để hiển thị
+      danh sách đánh giá của phòng, đã nối trong `RoomDetailPage.tsx`.
 
-### 🆕 Rà lại route thật vs `router/index.tsx` (đối chiếu code, không phải giả định)
+### Rà lại route thật vs `router/index.tsx` (đối chiếu code, không phải giả định)
 
-- [ ] **Ưu tiên cao — dead link thật đang tồn tại**: `BookingHistoryPage.tsx`
-      (`handlePay`) navigate tới `/bookings/:bookingId/payment` khi bấm nút
-      "Pay" trên `BookingCard`, nhưng route này chưa đăng ký và
-      `BookingPaymentPage` chưa tồn tại. BE đã hết stub từ lâu
-      (`POST /bookings/:id/pay` implement đầy đủ) — chỉ còn thiếu đúng 1
-      trang FE để nối vào nút đã có sẵn.
-- [ ] **Toàn bộ nhánh `/rooms/**`** (`/rooms`, `/rooms/:roomId`,
-      `/rooms/:roomId/book`) chưa có route lẫn page nào — đây là luồng
-      nghiệp vụ lõi (tìm phòng → xem chi tiết → đặt phòng) của cả app, hiện
-      **không có UI nào**, dù `HomePage.tsx` đã có nhiều link/nút điều
-      hướng thẳng tới các route này (dead link).
-- [ ] `/profile/change-password` và khu vực avatar trong `/profile` — API
-      2 phía đã sẵn (`userApi.changePassword()`; riêng avatar thì **chưa cả
-      API layer**, cần viết mới `POST`/`DELETE /users/me/avatar`), chỉ
-      thiếu UI.
-- [ ] `/bookings/:bookingId/review` — thiếu toàn bộ (route, page, cả nút
-      bấm dẫn vào), dù `POST /reviews` đã sẵn sàng ở cả 2 phía.
+- [x] `BookingPaymentPage.tsx` đã dựng, route `/bookings/:bookingId/payment`
+      đã đăng ký — nút "Pay" trên `BookingCard`/`BookingHistoryPage` không
+      còn là dead link.
+- [x] Toàn bộ nhánh `/rooms/**` (`/rooms`, `/rooms/:roomId`,
+      `/rooms/:roomId/book`) đã có route + page, nối `HomePage.tsx`.
+- [x] `/profile/change-password` — đã quyết định **không làm route riêng**,
+      dùng tab Security có sẵn trong `ProfilePage.tsx`.
+- [x] Khu vực avatar trong `/profile` — đã dựng (`userApi.uploadAvatar()`/
+      `removeAvatar()` + UI), xem dòng `/profile` (khu vực avatar) ở mục B.
+- [x] **Bug đăng xuất đã sửa** — `Header.tsx`/`AdminLayout.tsx` giờ gọi
+      `authApi.logout()` (`POST /auth/logout`, thu hồi token qua Redis
+      blacklist) TRƯỚC khi xoá token cục bộ, best-effort (không chặn đăng
+      xuất nếu request lỗi/mạng down). Trước đây chỉ `clearAccessToken()`
+      phía client, blacklist không bao giờ được kích hoạt.
+- [x] `/bookings/:bookingId/review` — đã dựng, nút "Viết đánh giá" trên
+      `BookingCard` gate đúng điều kiện BE (`ReviewsService.create()`).
+- [x] `/reviews` (`MyReviewsPage.tsx`) và `/payments` (`PaymentHistoryPage.tsx`)
+      — cả 2 đã dựng, truy cập qua `Header.tsx` (tab nav + dropdown profile,
+      xem mục "Auth/role state" ở đầu file).
 - [x] `/403`, `/404` — đã dựng `ForbiddenPage`/`NotFoundPage`, đăng ký route
       (`ROUTES.FORBIDDEN`, fallback `path: '*'`), sửa `AdminGuard` redirect
       đúng `/403`.

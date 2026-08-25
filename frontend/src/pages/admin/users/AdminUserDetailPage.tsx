@@ -6,13 +6,14 @@ import PageHeader from '../../../components/PageHeader'
 import Card from '../../../components/Card'
 import DetailGrid from '../../../components/DetailGrid'
 import RoleBadge from '../../../components/RoleBadge'
+import Dropdown from '../../../components/Dropdown'
 import { PageLoader } from '../../../components/common/PageLoader'
-import { Breadcrumb, StatusBadge, USER_STATUS_CONFIG, AdminTable, BOOKING_STATUS_CONFIG } from '../../../components/admin'
+import { Breadcrumb, StatusBadge, USER_STATUS_CONFIG, AdminTable, BOOKING_STATUS_CONFIG, ConfirmModal } from '../../../components/admin'
 import { ROUTES } from '../../../router/paths'
 import { adminUserApi } from '../../../api/admin-user.api'
 import { bookingApi } from '../../../api/booking.api'
 import { getErrorMessage } from '../../../api/errorMessage'
-import type { AdminUserListItem, Booking } from '../../../api/types'
+import type { AdminUserListItem, Booking, UserRole } from '../../../api/types'
 
 export default function AdminUserDetailPage() {
   const { t, i18n } = useTranslation('admin')
@@ -21,6 +22,11 @@ export default function AdminUserDetailPage() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
   const [toggling, setToggling] = useState(false)
+  // Vai trò được chọn trong dropdown - tách riêng khỏi user.role, chỉ áp
+  // dụng thật khi xác nhận trong modal (đổi role là hành động nhạy cảm hơn
+  // toggle status, không nên áp dụng ngay khi vừa đổi dropdown).
+  const [pendingRole, setPendingRole] = useState<UserRole | null>(null)
+  const [savingRole, setSavingRole] = useState(false)
 
   useEffect(() => {
     if (!userId) return
@@ -51,17 +57,41 @@ export default function AdminUserDetailPage() {
     }
   }
 
+  const roleOptions = [
+    { value: 'USER', label: t('status.role.USER') },
+    { value: 'ADMIN', label: t('status.role.ADMIN') },
+  ]
+
+  const handleConfirmRoleChange = async () => {
+    if (!pendingRole || savingRole) return
+    setSavingRole(true)
+    try {
+      const updated = await adminUserApi.update(user.id, { role: pendingRole })
+      setUser(updated)
+      toast.success(t('users.detail.roleUpdateSuccess'))
+      setPendingRole(null)
+    } catch (err) {
+      toast.error(getErrorMessage(err, t('users.detail.roleUpdateError')))
+    } finally {
+      setSavingRole(false)
+    }
+  }
+
   return (
     <div className="space-y-5">
       <Breadcrumb items={[{ label: t('users.list.title'), to: ROUTES.ADMIN.USERS }, { label: user.fullName ?? user.username }]} />
-      <PageHeader eyebrow={t('users.list.eyebrow')} title={user.fullName ?? user.username} />
+      <PageHeader eyebrow={t('users.list.eyebrow')} title={user.fullName ?? user.username} showBack />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <Card className="p-5">
           <div className="text-center mb-5">
-            <div className="w-16 h-16 rounded-full bg-navy/10 flex items-center justify-center text-navy font-bold text-2xl mx-auto mb-3">
-              {(user.fullName ?? user.username)[0]}
-            </div>
+            {user.avatarUrl ? (
+              <img src={user.avatarUrl} alt="" className="w-16 h-16 rounded-full object-cover mx-auto mb-3" />
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-navy/10 flex items-center justify-center text-navy font-bold text-2xl mx-auto mb-3">
+                {(user.fullName ?? user.username)[0]}
+              </div>
+            )}
             <h2 className="font-bold text-navy text-lg">{user.fullName ?? user.username}</h2>
             <p className="text-xs text-slate-400 mt-0.5">{user.email}</p>
             <div className="mt-2">
@@ -79,6 +109,11 @@ export default function AdminUserDetailPage() {
               { label: t('users.detail.fieldTotalBookings'), value: String(bookings.length) },
             ]}
           />
+
+          <div className="mb-3">
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">{t('users.detail.changeRole')}</label>
+            <Dropdown value={user.role} onChange={(v) => setPendingRole(v as UserRole)} options={roleOptions} size="sm" />
+          </div>
 
           <div className="flex gap-2">
             <button
@@ -117,6 +152,16 @@ export default function AdminUserDetailPage() {
           )}
         </Card>
       </div>
+
+      <ConfirmModal
+        open={!!pendingRole}
+        title={t('users.detail.roleChangeTitle')}
+        desc={t('users.detail.roleChangeDesc', { name: user.fullName ?? user.username })}
+        confirmLabel={t('users.detail.roleChangeConfirm')}
+        danger={false}
+        onConfirm={handleConfirmRoleChange}
+        onCancel={() => setPendingRole(null)}
+      />
     </div>
   )
 }

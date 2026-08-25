@@ -140,6 +140,7 @@
     "CREATE_SUCCESS": "Tạo đánh giá thành công.",
     "FIND_ALL_SUCCESS": "Lấy danh sách đánh giá thành công.",
     "FIND_BY_ROOM_SUCCESS": "Lấy danh sách đánh giá của phòng thành công.",
+    "FIND_MINE_SUCCESS": "Lấy danh sách đánh giá của bạn thành công.",
     "DELETE_SUCCESS": "Review xóa thành công."
   }
 }

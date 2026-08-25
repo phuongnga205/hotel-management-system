@@ -5,15 +5,21 @@ import PageHeader from '../../../components/PageHeader'
 import Card from '../../../components/Card'
 import FieldLabel from '../../../components/FieldLabel'
 import inputBase from '../../../components/inputBase'
+import Pagination from '../../../components/Pagination'
 import { PageLoader } from '../../../components/common/PageLoader'
-import { AdminTable, ConfirmModal } from '../../../components/admin'
+import { AdminTable, ConfirmModal, SearchInput } from '../../../components/admin'
 import { amenityApi } from '../../../api/amenity.api'
 import { getErrorMessage } from '../../../api/errorMessage'
 import type { Amenity } from '../../../api/types'
 
+const PER_PAGE = 10
+
 export default function AdminAmenityListPage() {
   const { t } = useTranslation('admin')
+  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
   const [amenities, setAmenities] = useState<Amenity[]>([])
+  const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -26,14 +32,14 @@ export default function AdminAmenityListPage() {
   const load = () => {
     setLoading(true)
     amenityApi
-      .list()
-      .then(setAmenities)
+      .adminList({ page, limit: PER_PAGE, search: search || undefined })
+      .then((res) => { setAmenities(res.items); setTotal(res.total) })
       .catch((err) => setError(getErrorMessage(err, t('common.notFoundGeneric'))))
       .finally(() => setLoading(false))
   }
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-with-loading-flag pattern, xem AdminBookingListPage.tsx
-  useEffect(load, [t])
+  useEffect(load, [page, search, t])
 
   const openCreate = () => {
     setName('')
@@ -66,8 +72,8 @@ export default function AdminAmenityListPage() {
 
   const handleDelete = async (id: string) => {
     await amenityApi.remove(id)
-    setAmenities((prev) => prev.filter((a) => a.id !== id))
     setShowDeleteModal(null)
+    load()
   }
 
   return (
@@ -75,7 +81,7 @@ export default function AdminAmenityListPage() {
       <PageHeader
         eyebrow={t('amenities.list.eyebrow')}
         title={t('amenities.list.title')}
-        subtitle={t('amenities.list.subtitle', { count: amenities.length })}
+        subtitle={t('amenities.list.subtitle', { count: total })}
         action={
           <button onClick={openCreate} className="px-4 py-2 text-xs font-semibold text-white bg-navy rounded-lg hover:opacity-90 transition-opacity">
             {t('amenities.list.addAmenity')}
@@ -84,29 +90,36 @@ export default function AdminAmenityListPage() {
       />
 
       <Card>
+        <div className="flex items-center gap-3 p-4 border-b border-slate-100">
+          <SearchInput value={search} onChange={(v) => { setSearch(v); setPage(1) }} placeholder={t('amenities.list.searchPlaceholder')} className="flex-1 max-w-xs" />
+        </div>
+
         {loading ? (
           <PageLoader fullPage={false} />
         ) : error ? (
           <p className="p-6 text-danger text-sm">{error}</p>
         ) : (
-          <AdminTable
-            rowKey={(a: Amenity) => a.id}
-            rows={amenities}
-            columns={[
-              { key: 'name', header: t('amenities.list.columnName'), render: (a) => <span className="font-medium text-navy">{a.name}</span> },
-              { key: 'description', header: t('amenities.list.columnDescription'), render: (a) => a.description || t('amenities.list.noDescription') },
-              {
-                key: 'actions',
-                header: t('common.actions'),
-                render: (a) => (
-                  <div className="flex gap-1.5">
-                    <button onClick={() => openEdit(a)} className="px-2.5 py-1 text-xs font-semibold text-navy border border-navy/30 rounded-lg hover:bg-navy hover:text-white transition-colors">{t('common.edit')}</button>
-                    <button onClick={() => setShowDeleteModal(a.id)} className="px-2.5 py-1 text-xs font-semibold text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors">{t('common.delete')}</button>
-                  </div>
-                ),
-              },
-            ]}
-          />
+          <>
+            <AdminTable
+              rowKey={(a: Amenity) => a.id}
+              rows={amenities}
+              columns={[
+                { key: 'name', header: t('amenities.list.columnName'), render: (a) => <span className="font-medium text-navy">{a.name}</span> },
+                { key: 'description', header: t('amenities.list.columnDescription'), render: (a) => a.description || t('amenities.list.noDescription') },
+                {
+                  key: 'actions',
+                  header: t('common.actions'),
+                  render: (a) => (
+                    <div className="flex gap-1.5">
+                      <button onClick={() => openEdit(a)} className="px-2.5 py-1 text-xs font-semibold text-navy border border-navy/30 rounded-lg hover:bg-navy hover:text-white transition-colors">{t('common.edit')}</button>
+                      <button onClick={() => setShowDeleteModal(a.id)} className="px-2.5 py-1 text-xs font-semibold text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors">{t('common.delete')}</button>
+                    </div>
+                  ),
+                },
+              ]}
+            />
+            <Pagination page={page} total={total} perPage={PER_PAGE} onChange={setPage} />
+          </>
         )}
         {!loading && !error && amenities.length === 0 && (
           <div className="p-16 text-center text-slate-400 text-sm">{t('amenities.list.empty')}</div>

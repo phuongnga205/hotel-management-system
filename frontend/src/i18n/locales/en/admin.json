@@ -22,7 +22,9 @@
     "status": "Status",
     "notFoundGeneric": "Item not found.",
     "wip": "API in progress",
-    "logout": "Log out"
+    "logout": "Log out",
+    "sortNewest": "Newest first",
+    "sortOldest": "Oldest first"
   },
   "dashboard": {
     "eyebrow": "Overview",
@@ -34,6 +36,7 @@
     "pendingReviews": "Pending Reviews",
     "monthlyRevenue": "Monthly Revenue",
     "bookingsByRoomType": "Bookings by Room Type",
+    "bookingsTrend": "Bookings Trend",
     "recentBookings": "Recent Bookings",
     "viewAll": "View all →"
   },
@@ -73,7 +76,9 @@
       "title": "Rooms",
       "subtitle": "{{count}} rooms in inventory",
       "searchPlaceholder": "Search rooms...",
-      "exportCsv": "Export CSV",
+      "exportCsv": "Export Excel",
+      "typeFilterPlaceholder": "Filter by type...",
+      "sortByColumn": "Sort by time",
       "addRoom": "+ Add Room",
       "columnRoom": "Room",
       "columnType": "Type",
@@ -138,6 +143,7 @@
       "eyebrow": "Catalog",
       "title": "Amenities",
       "subtitle": "{{count}} amenities",
+      "searchPlaceholder": "Search amenities...",
       "addAmenity": "+ Add Amenity",
       "columnName": "Name",
       "columnDescription": "Description",
@@ -240,7 +246,20 @@
       "tabAll": "All",
       "tabActive": "Active",
       "tabInactive": "Inactive",
-      "showingSummary": "Showing {{shown}} of {{total}} users"
+      "showingSummary": "Showing {{shown}} of {{total}} users",
+      "addUser": "+ Add User"
+    },
+    "form": {
+      "createTitle": "Add New User",
+      "fieldEmail": "Email",
+      "fieldUsername": "Username",
+      "fieldPassword": "Password",
+      "fieldPasswordHint": "At least 6 characters.",
+      "fieldPhone": "Phone",
+      "submitCreate": "Create User",
+      "submitCreating": "Creating…",
+      "createSuccess": "User created successfully.",
+      "createError": "Failed to create user."
     },
     "detail": {
       "fieldPhone": "Phone",
@@ -251,33 +270,43 @@
       "deactivate": "Deactivate",
       "bookingHistoryTitle": "Booking History",
       "bookingCount": "{{count}} booking(s)",
-      "noBookings": "No bookings found for this user."
+      "noBookings": "No bookings found for this user.",
+      "changeRole": "Change Role",
+      "roleChangeTitle": "Change Role?",
+      "roleChangeDesc": "This changes what {{name}} can access in the system.",
+      "roleChangeConfirm": "Confirm",
+      "roleUpdateSuccess": "Role updated successfully.",
+      "roleUpdateError": "Failed to update role."
     }
   },
   "statistics": {
+    "controls": {
+      "period": "Period",
+      "periodDay": "Day",
+      "periodMonth": "Month",
+      "periodQuarter": "Quarter",
+      "year": "Year",
+      "month": "Month"
+    },
     "bookings": {
       "eyebrow": "Analytics",
       "title": "Booking Statistics",
       "goToRevenue": "Revenue Stats →",
       "tileTotal": "Total Bookings",
-      "tileAccepted": "Accepted",
-      "tilePending": "Pending",
-      "tileAvgStay": "Avg Stay (nights)",
-      "monthlyChartTitle": "Monthly Bookings",
-      "byRoomTypeChartTitle": "Bookings by Room Type",
-      "statusBreakdownTitle": "Status Breakdown"
+      "tileBestPeriod": "Best Period",
+      "tileAvgPerPeriod": "Avg per Period",
+      "chartTitle": "Bookings Over Time"
     },
     "revenue": {
       "eyebrow": "Analytics",
       "title": "Revenue Statistics",
       "goToBookings": "Booking Stats →",
-      "tileTotal": "Total Revenue (YTD)",
-      "tileAvgMonthly": "Avg Monthly",
-      "tileBestMonth": "Best Month",
+      "tileTotal": "Total Revenue",
+      "tileAvgPerPeriod": "Avg per Period",
+      "tileBestPeriod": "Best Period",
       "tileTotalBookings": "Total Bookings",
       "trendChartTitle": "Revenue Trend",
-      "byRoomTypeChartTitle": "Revenue by Room Type",
-      "monthlyBreakdownTitle": "Monthly Breakdown",
+      "breakdownTitle": "Breakdown",
       "transactionsTitle": "Transactions",
       "statusAll": "All Status",
       "methodAll": "All Methods",

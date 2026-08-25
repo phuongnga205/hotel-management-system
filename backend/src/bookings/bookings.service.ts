@@ -22,6 +22,7 @@ import { Room } from '../rooms/entities/room.entity';
 import { RoomStatus } from '../rooms/enums/room-status.enum';
 import { Payment } from '../payments/entities/payment.entity';
 import { PaymentStatus } from '../payments/enums/payment-status.enum';
+import { Review } from '../reviews/entities/review.entity';
 import { AdminBookingQueryDto } from './dto/admin-booking-query.dto';
 import { BookingResponseDto } from './dto/booking-response.dto';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
@@ -31,6 +32,7 @@ import { RejectBookingDto } from './dto/reject-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { Booking } from './entities/booking.entity';
 import { BookingStatus } from './enums/booking-status.enum';
+import { SortOrder } from '../common/enums/sort-order.enum';
 import {
   BOOKING_HOLD_MINUTES,
   MINUTE_IN_MS,
@@ -117,21 +119,56 @@ export class BookingsService {
     };
   }
 
-  async findHistory(userId: string, page: number, limit: number) {
+  async findHistory(
+    userId: string,
+    page: number,
+    limit: number,
+    status?: BookingStatus,
+  ) {
     const offset = (page - 1) * limit;
 
-    const [bookings, total] = await this.bookingsRepository
-      .createQueryBuilder('booking')
-      .leftJoinAndSelect('booking.room', 'room')
-      .where('booking.user_id = :userId', { userId })
-      .orderBy('booking.created_at', 'DESC')
-      .offset(offset)
-      .limit(limit)
-      .getManyAndCount();
+    // Phan trang truoc, JOIN sau (Luat 4 - cung pattern voi
+    // RoomsService.listRooms()): KHONG duoc ket hop .skip()/.take() voi
+    // leftJoinAndSelect() vao 1 quan he 1-N (room.images) tren CUNG 1 query -
+    // LIMIT/OFFSET ap dung o muc dong SQL, TRUOC khi cac dong bi JOIN nhan
+    // ban duoc gop lai thanh entity, nen 1 phong co >=2 anh con hieu luc co
+    // the chiem het "cho" cua 1 booking khac trong trang, tra ve it booking
+    // hon limit va it hon ca `total` (vd total=5 nhung items chi con 3-4
+    // dong). Truoc day gop chung 1 query da gay dung loi nay khi fix
+    // thumbnail - phai tach lam 2 buoc: (1) lay dung `limit` id (khong
+    // JOIN), (2) hydrate room+images cho dung cac id do bang query rieng.
+    const [idRows, total] = await this.bookingsRepository.findAndCount({
+      where: { userId, ...(status ? { status } : {}) },
+      select: { id: true },
+      order: { createdAt: 'DESC' },
+      take: limit,
+      skip: offset,
+    });
+    const bookingIds = idRows.map((row) => row.id);
 
-    const latestPayments = await this.fetchLatestPayments(
-      bookings.map((booking) => booking.id),
-    );
+    const bookings = bookingIds.length
+      ? await this.bookingsRepository
+          .createQueryBuilder('booking')
+          .leftJoinAndSelect('booking.room', 'room')
+          // 'images.deletedAt IS NULL' - Image la soft-delete, QueryBuilder
+          // khong tu loai anh da xoa o quan he JOIN (chi ap dung cho entity
+          // goc). Thieu dieu kien nay, 1 anh thumbnail cu da bi xoa van lot
+          // vao room.images va co the bi chon nham (URL hong) hoac khong con
+          // anh isThumbnail nao -> lai roi ve fallback placeholder o FE.
+          .leftJoinAndSelect(
+            'room.images',
+            'images',
+            'images.deletedAt IS NULL',
+          )
+          .whereInIds(bookingIds)
+          .orderBy('booking.created_at', 'DESC')
+          .getMany()
+      : [];
+
+    const [latestPayments, reviewedBookingIds] = await Promise.all([
+      this.fetchLatestPayments(bookingIds),
+      this.fetchReviewedBookingIds(bookingIds),
+    ]);
 
     return {
       statusCode: 200,
@@ -141,6 +178,7 @@ export class BookingsService {
           (booking) =>
             new BookingResponseDto(booking, {
               payment: latestPayments.get(booking.id) ?? null,
+              hasReview: reviewedBookingIds.has(booking.id),
             }),
         ),
         page,
@@ -343,14 +381,14 @@ export class BookingsService {
   // ---------------------------------------------------------------------
 
   async findAllForAdmin(query: AdminBookingQueryDto) {
-    const { page, limit, status, search } = query;
+    const { page, limit, status, search, sortOrder = SortOrder.DESC } = query;
     const offset = (page - 1) * limit;
 
     const qb = this.bookingsRepository
       .createQueryBuilder('booking')
       .leftJoinAndSelect('booking.room', 'room')
       .leftJoinAndSelect('booking.user', 'user')
-      .orderBy('booking.created_at', 'DESC')
+      .orderBy('booking.created_at', sortOrder)
       .offset(offset)
       .limit(limit);
 
@@ -358,11 +396,18 @@ export class BookingsService {
       qb.andWhere('booking.status = :status', { status });
     }
     if (search) {
+      // Placeholder FE ("Tìm khách, phòng...") hứa tìm được cả theo phòng -
+      // truoc day chi tim theo user (full_name/email/id), bo sot room name/
+      // room_number khien search "khong hoat dong" voi truy van la ten phong.
       qb.andWhere(
         new Brackets((qbSearch) => {
           qbSearch
             .where('user.full_name ILIKE :search', { search: `%${search}%` })
             .orWhere('user.email ILIKE :search', { search: `%${search}%` })
+            .orWhere('room.name ILIKE :search', { search: `%${search}%` })
+            .orWhere('room.room_number ILIKE :search', {
+              search: `%${search}%`,
+            })
             .orWhere('CAST(booking.id AS TEXT) = :exactId', {
               exactId: search,
             });
@@ -486,11 +531,19 @@ export class BookingsService {
   }
 
   private bookingDetailQuery() {
-    return this.bookingsRepository
-      .createQueryBuilder('booking')
-      .leftJoinAndSelect('booking.room', 'room')
-      .leftJoinAndSelect('room.images', 'roomImage')
-      .leftJoinAndSelect('booking.payments', 'payment');
+    return (
+      this.bookingsRepository
+        .createQueryBuilder('booking')
+        .leftJoinAndSelect('booking.room', 'room')
+        // 'roomImage.deletedAt IS NULL' - Image la soft-delete, JOIN khong tu
+        // loai anh da xoa (xem giai thich chi tiet o findHistory() ben tren).
+        .leftJoinAndSelect(
+          'room.images',
+          'roomImage',
+          'roomImage.deletedAt IS NULL',
+        )
+        .leftJoinAndSelect('booking.payments', 'payment')
+    );
   }
 
   // Lấy payment mới nhất của mỗi booking bằng DISTINCT ON (Postgres) — DB
@@ -517,6 +570,27 @@ export class BookingsService {
       latestByBooking.set(payment.bookingId, payment);
     }
     return latestByBooking;
+  }
+
+  // Moi booking chi duoc review dung 1 lan (Review.bookingId unique - xem
+  // reviews/entities/review.entity.ts), va review khong the sua/tao lai sau
+  // khi bi xoa (constraint khong phai partial index theo deletedAt). FE
+  // (BookingHistoryPage/BookingCard) can biet dieu nay de an nut "Write
+  // Review" + hien trang thai "Da danh gia" thay vi de user bam lai va an
+  // 1 loi 409 ALREADY_REVIEWED kho hieu.
+  private async fetchReviewedBookingIds(
+    bookingIds: string[],
+  ): Promise<Set<string>> {
+    if (bookingIds.length === 0) return new Set();
+
+    const rows = await this.dataSource
+      .getRepository(Review)
+      .createQueryBuilder('review')
+      .select('review.booking_id', 'bookingId')
+      .where('review.booking_id IN (:...bookingIds)', { bookingIds })
+      .getRawMany<{ bookingId: string }>();
+
+    return new Set(rows.map((row) => row.bookingId));
   }
 
   private buildHoldExpiry(): Date {

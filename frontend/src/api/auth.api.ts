@@ -34,6 +34,13 @@ const authRealApi = {
     const res = await axiosClient.post(API_ENDPOINTS.AUTH_RESET_PASSWORD, data)
     return res.data
   },
+  // Thu hoi token phia BE (Redis blacklist qua TokenUtil.revokeAuthToken) -
+  // PHAI goi truoc khi xoa token o localStorage, khong thi BE khong con biet
+  // token nao de thu hoi (interceptor lay Bearer token tu localStorage).
+  logout: async (): Promise<MessageResponse> => {
+    const res = await axiosClient.post(API_ENDPOINTS.AUTH_LOGOUT)
+    return res.data
+  },
 }
 
 export const authApi = env.useMock ? authMockApi : authRealApi

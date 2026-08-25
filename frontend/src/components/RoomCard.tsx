@@ -15,7 +15,7 @@ function thumbnailUrl(room: Room): string | undefined {
 }
 
 export function RoomGridCard({ room, onView, onBook }: RoomCardProps) {
-  const { t } = useTranslation('common')
+  const { t } = useTranslation(['common', 'rooms'])
   const amenities = room.amenities ?? []
 
   return (
@@ -32,6 +32,9 @@ export function RoomGridCard({ room, onView, onBook }: RoomCardProps) {
 
       <div className="p-5">
         <h3 className="font-semibold text-navy mb-1 leading-tight">{room.name}</h3>
+        {room.viewType && (
+          <p className="text-xs text-slate-400 mb-1">{t(`rooms:list.viewTypeLabel.${room.viewType}`)}</p>
+        )}
         {room.description && <p className="text-sm text-slate-500 mb-3 line-clamp-2">{room.description}</p>}
         <div className="flex flex-wrap gap-1.5 mb-4">
           {amenities.slice(0, 4).map((a) => (
@@ -57,7 +60,7 @@ export function RoomGridCard({ room, onView, onBook }: RoomCardProps) {
 }
 
 export function RoomListCard({ room, onView, onBook }: RoomCardProps) {
-  const { t } = useTranslation('common')
+  const { t } = useTranslation(['common', 'rooms'])
   const amenities = room.amenities ?? []
 
   return (
@@ -75,6 +78,9 @@ export function RoomListCard({ room, onView, onBook }: RoomCardProps) {
       <div className="p-5 flex-1 flex flex-col justify-between">
         <div>
           <h3 className="font-semibold text-navy text-base mb-1">{room.name}</h3>
+          {room.viewType && (
+            <p className="text-xs text-slate-400 mb-1">{t(`rooms:list.viewTypeLabel.${room.viewType}`)}</p>
+          )}
           {room.description && <p className="text-sm text-slate-500 mb-3">{room.description}</p>}
           <div className="flex flex-wrap gap-1.5">
             {amenities.slice(0, 5).map((a) => (
