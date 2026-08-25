@@ -231,7 +231,7 @@ describe('RoomsService', () => {
     );
     expect(bookingRepository.countBy).toHaveBeenCalledWith({
       roomId: room.id,
-      status: expect.anything(),
+      status: expect.anything() as unknown,
     });
     expect(roomRepository.softDelete).not.toHaveBeenCalled();
     expect(imageRepository.softDelete).not.toHaveBeenCalled();
