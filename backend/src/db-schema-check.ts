@@ -62,6 +62,11 @@ async function main() {
         table: 'bookings',
         mustContain: ['PENDING'],
       },
+      {
+        name: 'chk_bookings_guests',
+        table: 'bookings',
+        mustContain: ['guests'],
+      },
       { name: 'chk_users_status', table: 'users', mustContain: ['ACTIVE'] },
       { name: 'chk_users_role', table: 'users', mustContain: ['ADMIN'] },
       {
@@ -88,6 +93,16 @@ async function main() {
         name: 'chk_email_logs_retry_count',
         table: 'email_logs',
         mustContain: ['retry_count'],
+      },
+      {
+        name: 'chk_mail_outbox_status',
+        table: 'mail_outbox',
+        mustContain: ['PROCESSING'],
+      },
+      {
+        name: 'chk_monthly_report_dispatch_status',
+        table: 'monthly_report_dispatches',
+        mustContain: ['QUEUED'],
       },
       { name: 'chk_reviews_rating', table: 'reviews', mustContain: ['rating'] },
       {
@@ -189,6 +204,10 @@ async function main() {
       'idx_payments_status',
       'idx_room_amenities_amenity_id',
       'idx_email_logs_status',
+      'idx_mail_outbox_status_created_at',
+      'uq_monthly_report_recipient_month',
+      'idx_payments_success_paid_at',
+      'idx_bookings_created_at',
     ];
     for (const indexName of expectedIndexes) {
       const [row] = await query<{ exists: boolean }>(
@@ -265,8 +284,16 @@ async function main() {
     const recordedNames = new Set(recorded.map((r) => r.name));
 
     const pending = expectedNames.filter((n) => !recordedNames.has(n));
+    // Hai migration mail dưới đây đã chạy trên Neon trước khi lịch sử của
+    // feature được squash/đổi timestamp. Schema của chúng được kiểm tra cụ
+    // thể ở các bước constraint/table/index, nên giữ allowlist tường minh
+    // thay vì xoá record lịch sử trên database đang dùng.
+    const acceptedLegacyMigrationNames = new Set([
+      'AddMailOutboxAndReports1787310561591',
+      'EnsureMailOutboxAndMonthlyReportDispatch1787311000000',
+    ]);
     const orphaned = [...recordedNames].filter(
-      (n) => !expectedNames.includes(n),
+      (n) => !expectedNames.includes(n) && !acceptedLegacyMigrationNames.has(n),
     );
 
     record(
@@ -303,6 +330,8 @@ async function main() {
       'payments',
       'reviews',
       'email_logs',
+      'mail_outbox',
+      'monthly_report_dispatches',
       'migrations',
     ]);
     // Tên constraint auto-đặt bởi Postgres cho PRIMARY KEY khai báo inline
@@ -328,6 +357,7 @@ async function main() {
         'bookings_pkey',
         'chk_bookings_dates',
         'chk_bookings_status',
+        'chk_bookings_guests',
         'FK_bookings_user',
         'FK_bookings_room',
         'excl_bookings_no_overlap',
@@ -350,6 +380,20 @@ async function main() {
         'email_logs_pkey',
         'chk_email_logs_retry_count',
         'chk_email_logs_status',
+        'chk_email_logs_retry_generation',
+        'fk_email_logs_recipient',
+      ],
+      mail_outbox: [
+        'PK_mail_outbox',
+        'chk_mail_outbox_status',
+        'fk_mail_outbox_email_log',
+      ],
+      monthly_report_dispatches: [
+        'PK_monthly_report_dispatches',
+        'UQ_monthly_report_dispatches_month_recipient',
+        'chk_monthly_report_dispatch_status',
+        'fk_monthly_report_email_log',
+        'fk_monthly_report_recipient',
       ],
       // KHÔNG kiểm tra bảng `migrations` ở đây: nó do TypeORM tự tạo lúc
       // chạy (không phải từ file migration nào ta viết) và đặt tên PK bằng

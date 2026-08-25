@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { QueryFailedError, Repository } from 'typeorm';
+import { DataSource, QueryFailedError, Repository } from 'typeorm';
 
 import { Review } from './entities/review.entity';
 import { CreateReviewDto } from './dto/create-review.dto';
@@ -18,6 +18,8 @@ import { PostgresErrorCode } from '../common/enums/postgres-error-code.enum';
 import { ReviewQueryDto } from './dto/review-query.dto';
 import { ReviewResponseDto } from './dto/review-response.dto';
 import { REVIEW_ADMIN_DELETE_REASON } from './reviews.constants';
+import { TransactionalMailService } from '../mail/transactional-mail.service';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class ReviewsService {
@@ -27,6 +29,8 @@ export class ReviewsService {
     private readonly i18n: I18nService,
     @InjectRepository(Booking)
     private readonly bookingRepository: Repository<Booking>,
+    private readonly dataSource: DataSource,
+    private readonly mailService: TransactionalMailService,
   ) {}
 
   async create(userId: string, createReviewDto: CreateReviewDto) {
@@ -155,21 +159,27 @@ export class ReviewsService {
   }
 
   async remove(reviewId: string) {
-    const review = await this.reviewRepository.findOne({
-      where: {
-        id: reviewId,
-      },
+    await this.dataSource.transaction(async (manager) => {
+      const reviewRepository = manager.getRepository(Review);
+      const review = await reviewRepository.findOne({
+        where: { id: reviewId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!review) {
+        throw new NotFoundException(this.i18n.t('messages.REVIEWS.NOT_FOUND'));
+      }
+
+      const user = await manager
+        .getRepository(User)
+        .findOneByOrFail({ id: review.userId });
+
+      // DELETE không nhận lý do từ client (xem docs mục "Admin — Reviews") —
+      // email thông báo cho user luôn dùng 1 template cố định.
+      review.deleteReason = REVIEW_ADMIN_DELETE_REASON;
+      await reviewRepository.softRemove(review);
+      await this.mailService.createReviewDeletedOutbox(manager, user.email);
     });
-
-    if (!review) {
-      throw new NotFoundException(this.i18n.t('messages.REVIEWS.NOT_FOUND'));
-    }
-
-    // DELETE không nhận lý do từ client (xem docs mục "Admin — Reviews") —
-    // email thông báo cho user luôn dùng 1 template cố định.
-    review.deleteReason = REVIEW_ADMIN_DELETE_REASON;
-
-    await this.reviewRepository.softRemove(review);
 
     return {
       statusCode: 200,

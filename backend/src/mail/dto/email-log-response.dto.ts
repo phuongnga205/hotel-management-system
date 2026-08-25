@@ -1,18 +1,18 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { EmailLog } from '../entities/email-log.entity';
+import { EmailLog, EmailStatus, EmailType } from '../entities/email-log.entity';
 
 export class EmailLogResponseDto {
   @ApiProperty()
   id!: string;
 
-  @ApiProperty()
-  type!: string;
+  @ApiProperty({ enum: Object.values(EmailType) })
+  type!: EmailType;
 
   @ApiProperty()
   recipient!: string;
 
-  @ApiProperty()
-  status!: string;
+  @ApiProperty({ enum: Object.values(EmailStatus) })
+  status!: EmailStatus;
 
   @ApiProperty()
   retryCount!: number;

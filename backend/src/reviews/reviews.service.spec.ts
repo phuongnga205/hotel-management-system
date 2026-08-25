@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { Decimal } from 'decimal.js';
 import { I18nService } from 'nestjs-i18n';
-import { QueryFailedError, Repository } from 'typeorm';
+import { DataSource, QueryFailedError, Repository } from 'typeorm';
 import { Booking } from '../bookings/entities/booking.entity';
 import { BookingStatus } from '../bookings/enums/booking-status.enum';
 import { PaymentStatus } from '../payments/enums/payment-status.enum';
@@ -14,6 +14,8 @@ import { CreateReviewDto } from './dto/create-review.dto';
 import { Review } from './entities/review.entity';
 import { ReviewsService } from './reviews.service';
 import { REVIEW_ADMIN_DELETE_REASON } from './reviews.constants';
+import { TransactionalMailService } from '../mail/transactional-mail.service';
+import { User } from '../users/entities/user.entity';
 
 describe('ReviewsService', () => {
   const i18n = { t: jest.fn((key: string) => key) };
@@ -28,6 +30,20 @@ describe('ReviewsService', () => {
 
   const bookingRepository = {
     findOne: jest.fn(),
+  };
+  const userRepository = { findOneByOrFail: jest.fn() };
+  const mailService = {
+    createReviewDeletedOutbox: jest.fn().mockResolvedValue({}),
+  };
+  const manager = {
+    getRepository: jest.fn((entity: unknown) =>
+      entity === User ? userRepository : reviewRepository,
+    ),
+  };
+  const dataSource = {
+    transaction: jest.fn((callback: (value: typeof manager) => unknown) =>
+      callback(manager),
+    ),
   };
 
   let service: ReviewsService;
@@ -53,7 +69,13 @@ describe('ReviewsService', () => {
       reviewRepository as unknown as Repository<Review>,
       i18n as unknown as I18nService,
       bookingRepository as unknown as Repository<Booking>,
+      dataSource as unknown as DataSource,
+      mailService as unknown as TransactionalMailService,
     );
+    userRepository.findOneByOrFail.mockResolvedValue({
+      id: '1',
+      email: 'guest@example.com',
+    });
   });
 
   function mockQueryBuilder(reviews: Review[], total: number) {
@@ -204,7 +226,7 @@ describe('ReviewsService', () => {
     });
 
     it('does not accept a client-supplied reason — always records the fixed admin reason', async () => {
-      const review = { id: '1' } as Review;
+      const review = { id: '1', userId: '2' } as Review;
       reviewRepository.findOne.mockResolvedValue(review);
       reviewRepository.softRemove.mockResolvedValue(review);
 

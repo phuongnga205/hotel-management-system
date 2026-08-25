@@ -98,7 +98,7 @@ chung toàn app), không thêm field tuỳ biến:
 {
   "statusCode": 400,
   "message": "Tham số truy vấn không hợp lệ (minPrice phải nhỏ hơn hoặc bằng maxPrice)",
-  "error": "Bad Request"
+  "error": "Bad Request",
 }
 ```
 
@@ -111,7 +111,7 @@ chung toàn app), không thêm field tuỳ biến:
   `statusCode === 409` ở 2 endpoint này để hiện UI "chọn phòng khác" thay vì
   toast lỗi chung chung.
 - Lỗi validate input (thiếu field, sai kiểu dữ liệu...) dùng `400 Bad
-  Request` với `message` là mảng string nếu có nhiều lỗi cùng lúc (theo
+Request` với `message` là mảng string nếu có nhiều lỗi cùng lúc (theo
   `ValidationPipe` mặc định của NestJS), FE hiển thị lỗi đầu tiên hoặc lặp
   qua từng field nếu form hỗ trợ.
 
@@ -119,14 +119,14 @@ chung toàn app), không thêm field tuỳ biến:
 
 ## 1. Auth
 
-| Chức năng | Method | URL | Quyền | Auth |
-|---|---|---|---|---|
-| Đăng ký | POST | `/api/v1/auth/register` | Guest | Không cần |
-| Kích hoạt tài khoản (nhập OTP tay) | POST | `/api/v1/auth/activate` | Guest | Không cần (body `{ email, otp }`, `ActivateAccountDto` — `otp` là chuỗi số đúng 6 ký tự, xem `frontend/docs/bridge.md`) |
-| Đăng nhập | POST | `/api/v1/auth/login` | Guest | Không cần |
-| Đăng xuất | POST | `/api/v1/auth/logout` | User | JWT |
-| Quên mật khẩu | POST | `/api/v1/auth/forgot-password` | Guest | Không cần (body `{ email }`, `ForgotPasswordDto` — luôn trả response giống nhau kể cả email không tồn tại, tránh lộ thông tin) |
-| Đặt lại mật khẩu | POST | `/api/v1/auth/reset-password` | Guest (xác thực bằng `email` + `otp` trong body) | Không cần (body `{ email, otp, newPassword }`, `ResetPasswordDto`) |
+| Chức năng                          | Method | URL                            | Quyền                                            | Auth                                                                                                                           |
+| ---------------------------------- | ------ | ------------------------------ | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| Đăng ký                            | POST   | `/api/v1/auth/register`        | Guest                                            | Không cần                                                                                                                      |
+| Kích hoạt tài khoản (nhập OTP tay) | POST   | `/api/v1/auth/activate`        | Guest                                            | Không cần (body `{ email, otp }`, `ActivateAccountDto` — `otp` là chuỗi số đúng 6 ký tự, xem `frontend/docs/bridge.md`)        |
+| Đăng nhập                          | POST   | `/api/v1/auth/login`           | Guest                                            | Không cần                                                                                                                      |
+| Đăng xuất                          | POST   | `/api/v1/auth/logout`          | User                                             | JWT                                                                                                                            |
+| Quên mật khẩu                      | POST   | `/api/v1/auth/forgot-password` | Guest                                            | Không cần (body `{ email }`, `ForgotPasswordDto` — luôn trả response giống nhau kể cả email không tồn tại, tránh lộ thông tin) |
+| Đặt lại mật khẩu                   | POST   | `/api/v1/auth/reset-password`  | Guest (xác thực bằng `email` + `otp` trong body) | Không cần (body `{ email, otp, newPassword }`, `ResetPasswordDto`)                                                             |
 
 > **Chốt: kích hoạt tài khoản và đặt lại mật khẩu dùng OTP 6 số gửi qua
 > email, không dùng link kèm token.** User tự mở app, vào route
@@ -141,21 +141,21 @@ chung toàn app), không thêm field tuỳ biến:
 > định ban đầu cho việc này, xem `backend/db.md`) đã bị xoá hẳn (migration
 > `DropAuthTokensTable`) — team quyết định mọi loại token có TTL (JWT
 > blacklist khi logout, và giờ cả OTP) đều lưu Redis, không persist Postgres.
-> BE implement `/auth/activate`, `/auth/forgot-password`, `/auth/reset-password`
-> phải dùng `TokenUtil.saveOtp`/`verifyOtp`/`consumeOtp`
+> BE đã implement `/auth/activate`, `/auth/forgot-password`, `/auth/reset-password`
+> bằng `TokenUtil.saveOtp`/`verifyOtp`/`consumeOtp`
 > (`src/token/token.util.ts`), **không** tạo lại entity/table cho việc này.
-> 3 endpoint này hiện vẫn chỉ là hợp đồng API đã chốt — code thật (sinh OTP,
-> so khớp, emit event gửi mail) chưa implement, xem mục 14.
+> OTP có TTL cấu hình bằng `OTP_TTL_SECONDS` (mặc định 600 giây). Cả ba
+> endpoint đã có DTO validation, Swagger và event gửi email, xem mục 14.
 
 ## 2. Users (self-service)
 
-| Chức năng | Method | URL | Quyền | Auth |
-|---|---|---|---|---|
-| Xem thông tin cá nhân | GET | `/api/v1/users/me` | User | JWT |
-| Chỉnh sửa thông tin cá nhân | PATCH | `/api/v1/users/me` | User | JWT |
-| Đổi mật khẩu (đã đăng nhập) | PATCH | `/api/v1/users/me/password` | User | JWT |
-| Thêm/thay ảnh đại diện | POST | `/api/v1/users/me/avatar` | User | JWT |
-| Xoá ảnh đại diện | DELETE | `/api/v1/users/me/avatar` | User | JWT |
+| Chức năng                   | Method | URL                         | Quyền | Auth |
+| --------------------------- | ------ | --------------------------- | ----- | ---- |
+| Xem thông tin cá nhân       | GET    | `/api/v1/users/me`          | User  | JWT  |
+| Chỉnh sửa thông tin cá nhân | PATCH  | `/api/v1/users/me`          | User  | JWT  |
+| Đổi mật khẩu (đã đăng nhập) | PATCH  | `/api/v1/users/me/password` | User  | JWT  |
+| Thêm/thay ảnh đại diện      | POST   | `/api/v1/users/me/avatar`   | User  | JWT  |
+| Xoá ảnh đại diện            | DELETE | `/api/v1/users/me/avatar`   | User  | JWT  |
 
 > **Đã implement (Cloudinary)**: file ảnh gửi dạng `multipart/form-data`
 > (field `file`, JPG/PNG/WEBP, tối đa `AVATAR_MAX_FILE_SIZE_BYTES`). Lưu
@@ -167,17 +167,17 @@ chung toàn app), không thêm field tuỳ biến:
 
 ## 3. Rooms (public / user)
 
-| Chức năng | Method | URL | Quyền | Auth |
-|---|---|---|---|---|
-| Xem danh sách phòng (hỗ trợ filter) | GET | `/api/v1/rooms` | Guest / User | Không cần |
-| Tìm phòng còn trống theo thời gian + tiện nghi | GET | `/api/v1/rooms/available` | Guest / User | Không cần |
-| Xem chi tiết phòng | GET | `/api/v1/rooms/:id` | Guest / User | Không cần |
+| Chức năng                                      | Method | URL                       | Quyền        | Auth      |
+| ---------------------------------------------- | ------ | ------------------------- | ------------ | --------- |
+| Xem danh sách phòng (hỗ trợ filter)            | GET    | `/api/v1/rooms`           | Guest / User | Không cần |
+| Tìm phòng còn trống theo thời gian + tiện nghi | GET    | `/api/v1/rooms/available` | Guest / User | Không cần |
+| Xem chi tiết phòng                             | GET    | `/api/v1/rooms/:id`       | Guest / User | Không cần |
 
 > **Giữ `/rooms/available`, không gộp vào cột `status`**: cột `rooms.status`
 > (varchar/enum: `ACTIVE` / `INACTIVE` / `MAINTENANCE`) chỉ phản ánh **trạng
 > thái tĩnh** của phòng (phòng có đang được vận hành hay không), không biết
 > gì về **khoảng ngày cụ thể** người dùng đang tìm. Một phòng `status =
-> ACTIVE` vẫn có thể đã kín lịch cho tuần sau vì đã có booking `ACCEPTED`
+ACTIVE` vẫn có thể đã kín lịch cho tuần sau vì đã có booking `ACCEPTED`
 > trùng ngày — điều này chỉ xác định được bằng cách join/kiểm tra bảng
 > `bookings` (không có overlap ngày `checkIn`–`checkOut` với booking đã
 > accepted), chứ không đọc được từ 1 cột status trên bảng `rooms`.
@@ -214,14 +214,14 @@ chung toàn app), không thêm field tuỳ biến:
 
 ## 4. Bookings (user)
 
-| Chức năng | Method | URL | Quyền | Auth |
-|---|---|---|---|---|
-| Tạo request đặt phòng | POST | `/api/v1/bookings` | User | JWT |
-| Xem chi tiết request đặt phòng của chính mình | GET | `/api/v1/bookings/:id` | User (chỉ chủ booking) | JWT |
-| Xem lịch sử các request của tôi | GET | `/api/v1/bookings/me` | User | JWT |
-| Chỉnh sửa request đặt phòng (chỉ khi đang `PENDING`) | PATCH | `/api/v1/bookings/:id` | User (chủ booking) | JWT |
-| Huỷ request đặt phòng (kèm lý do, chỉ khi đang `PENDING`) | PATCH | `/api/v1/bookings/:id/cancel` | User (chủ booking) | JWT |
-| Thanh toán request đặt phòng (chỉ khi đang `PENDING`) | POST | `/api/v1/bookings/:id/pay` | User (chủ booking) | JWT |
+| Chức năng                                                 | Method | URL                           | Quyền                  | Auth |
+| --------------------------------------------------------- | ------ | ----------------------------- | ---------------------- | ---- |
+| Tạo request đặt phòng                                     | POST   | `/api/v1/bookings`            | User                   | JWT  |
+| Xem chi tiết request đặt phòng của chính mình             | GET    | `/api/v1/bookings/:id`        | User (chỉ chủ booking) | JWT  |
+| Xem lịch sử các request của tôi                           | GET    | `/api/v1/bookings/me`         | User                   | JWT  |
+| Chỉnh sửa request đặt phòng (chỉ khi đang `PENDING`)      | PATCH  | `/api/v1/bookings/:id`        | User (chủ booking)     | JWT  |
+| Huỷ request đặt phòng (kèm lý do, chỉ khi đang `PENDING`) | PATCH  | `/api/v1/bookings/:id/cancel` | User (chủ booking)     | JWT  |
+| Thanh toán request đặt phòng (chỉ khi đang `PENDING`)     | POST   | `/api/v1/bookings/:id/pay`    | User (chủ booking)     | JWT  |
 
 > **Booking không thuộc về user hiện tại → `404 Not Found`, không phải
 > `403`.** Đây là lựa chọn có chủ đích (tránh lộ thông tin "booking này tồn
@@ -237,13 +237,13 @@ chung toàn app), không thêm field tuỳ biến:
 > validate `guests <= room.capacity` ngay tại thời điểm tạo — trả `400`
 > (`BOOKING.GUESTS_EXCEED_CAPACITY`) nếu vượt sức chứa phòng. **`totalPrice`
 > giờ tính theo cả số khách**: `totalPrice = nights × pricePerNight ×
-> guests` (trước đây chỉ `nights × pricePerNight`, không phụ thuộc số
+guests` (trước đây chỉ `nights × pricePerNight`, không phụ thuộc số
 > người ở). `guests` được lưu lại trên booking (cột `bookings.guests`,
 > migration `AddGuestsToBookings`) và trả về trong mọi response
 > (`BookingResponseDto.guests`) — nhưng **KHÔNG có trong
 > `PATCH /bookings/:id`** (`UpdateBookingDto` không nhận field này): số
 > khách cố định ngay từ lúc tạo, muốn đổi phải huỷ và đặt lại. `PATCH
-> /bookings/:id` (sửa ngày/note) vẫn validate lại `guests` cũ so với
+/bookings/:id` (sửa ngày/note) vẫn validate lại `guests` cũ so với
 > `room.capacity` mỗi lần sửa (phòng phòng trường hợp sau này cho đổi
 > phòng), và tính lại `totalPrice` theo `guests` cũ × số đêm mới.
 
@@ -259,6 +259,7 @@ chung toàn app), không thêm field tuỳ biến:
 > **🆕 2 tình huống hợp lệ để gọi `.../pay`** (bảng phía trên ghi gọn "chỉ
 > khi đang PENDING" nhưng thực ra rộng hơn — FE cần tính đúng cả 2 khi hiện
 > nút "Thanh toán"):
+>
 > 1. Booking đang `PENDING` **và** hold còn hạn → thanh toán xong tự chuyển
 >    `booking.status → ACCEPTED`, xoá hold.
 > 2. Booking đã `ACCEPTED` nhưng **chưa có payment nào `SUCCESS`** (ví dụ
@@ -274,6 +275,7 @@ chung toàn app), không thêm field tuỳ biến:
 >
 > **Cơ chế giữ chỗ (hold) 10 phút, chống race condition đặt trùng phòng**
 > (xem thêm `frontend/docs/bridge.md` mục `bookings`):
+>
 > - `POST /bookings` set `holdExpiresAt = now + 10 phút` (hằng số
 >   `BOOKING_HOLD_MINUTES`, `backend/src/bookings/constants/booking.constants.ts`).
 >   Trong 10 phút đó, booking được giải quyết bằng 1 trong 3 cách — thanh
@@ -299,9 +301,9 @@ chung toàn app), không thêm field tuỳ biến:
 
 ## 4a. Payments (user)
 
-| Chức năng | Method | URL | Quyền | Auth |
-|---|---|---|---|---|
-| Xem lịch sử thanh toán của chính mình (mọi booking) | GET | `/api/v1/payments/me` | User | JWT |
+| Chức năng                                           | Method | URL                   | Quyền | Auth |
+| --------------------------------------------------- | ------ | --------------------- | ----- | ---- |
+| Xem lịch sử thanh toán của chính mình (mọi booking) | GET    | `/api/v1/payments/me` | User  | JWT  |
 
 > **Đã implement ở BE — `PaymentsController`**
 > (`backend/src/payments/payments.controller.ts`, tách khỏi
@@ -325,6 +327,7 @@ chung toàn app), không thêm field tuỳ biến:
 >   `booking.user_id = :userId`.
 >
 > Mẫu response:
+>
 > ```jsonc
 > {
 >   "statusCode": 200,
@@ -345,24 +348,24 @@ chung toàn app), không thêm field tuỳ biến:
 >           "roomName": "Ocean View Suite",
 >           "roomNumber": "202",
 >           "checkInDate": "2026-08-20",
->           "checkOutDate": "2026-08-23"
->         }
->       }
+>           "checkOutDate": "2026-08-23",
+>         },
+>       },
 >     ],
 >     "page": 1,
 >     "limit": 10,
 >     "total": 5,
->     "totalPages": 1
->   }
+>     "totalPages": 1,
+>   },
 > }
 > ```
 
 ## 5. Reviews (user)
 
-| Chức năng | Method | URL | Quyền | Auth |
-|---|---|---|---|---|
-| Tạo đánh giá cho phòng đã đặt | POST | `/api/v1/reviews` | User | JWT |
-| Xem đánh giá công khai theo phòng | GET | `/api/v1/rooms/:roomId/reviews` | Guest / User | Không cần |
+| Chức năng                         | Method | URL                             | Quyền        | Auth      |
+| --------------------------------- | ------ | ------------------------------- | ------------ | --------- |
+| Tạo đánh giá cho phòng đã đặt     | POST   | `/api/v1/reviews`               | User         | JWT       |
+| Xem đánh giá công khai theo phòng | GET    | `/api/v1/rooms/:roomId/reviews` | Guest / User | Không cần |
 
 > **Đã implement**, tách controller trong `ReviewsModule`:
 > `ReviewsController` (`POST /reviews`, cần JWT),
@@ -387,17 +390,17 @@ chung toàn app), không thêm field tuỳ biến:
 
 ## 6. Admin — Rooms
 
-| Chức năng | Method | URL | Quyền | Auth |
-|---|---|---|---|---|
-| Xem danh sách phòng (đầy đủ, gồm cả inactive/maintenance) | GET | `/api/v1/admin/rooms` | Admin | JWT + RolesGuard(ADMIN) |
-| Xem chi tiết 1 phòng (view quản trị) | GET | `/api/v1/admin/rooms/:id` | Admin | JWT + RolesGuard(ADMIN) |
-| Tạo phòng | POST | `/api/v1/admin/rooms` | Admin | JWT + RolesGuard(ADMIN) |
-| Chỉnh sửa thông tin phòng | PATCH | `/api/v1/admin/rooms/:id` | Admin | JWT + RolesGuard(ADMIN) |
-| Cập nhật riêng giá phòng | PATCH | `/api/v1/admin/rooms/:id/price` | Admin | JWT + RolesGuard(ADMIN) |
-| Gán tiện nghi cho phòng | POST | `/api/v1/admin/rooms/:id/amenities` | Admin | JWT + RolesGuard(ADMIN) |
-| Gỡ 1 tiện nghi khỏi phòng | DELETE | `/api/v1/admin/rooms/:id/amenities/:amenityId` | Admin | JWT + RolesGuard(ADMIN) |
-| Xoá phòng | DELETE | `/api/v1/admin/rooms/:id` | Admin | JWT + RolesGuard(ADMIN) |
-| Export danh sách phòng ra Excel | GET | `/api/v1/admin/rooms/export` | Admin | JWT + RolesGuard(ADMIN) |
+| Chức năng                                                 | Method | URL                                            | Quyền | Auth                    |
+| --------------------------------------------------------- | ------ | ---------------------------------------------- | ----- | ----------------------- |
+| Xem danh sách phòng (đầy đủ, gồm cả inactive/maintenance) | GET    | `/api/v1/admin/rooms`                          | Admin | JWT + RolesGuard(ADMIN) |
+| Xem chi tiết 1 phòng (view quản trị)                      | GET    | `/api/v1/admin/rooms/:id`                      | Admin | JWT + RolesGuard(ADMIN) |
+| Tạo phòng                                                 | POST   | `/api/v1/admin/rooms`                          | Admin | JWT + RolesGuard(ADMIN) |
+| Chỉnh sửa thông tin phòng                                 | PATCH  | `/api/v1/admin/rooms/:id`                      | Admin | JWT + RolesGuard(ADMIN) |
+| Cập nhật riêng giá phòng                                  | PATCH  | `/api/v1/admin/rooms/:id/price`                | Admin | JWT + RolesGuard(ADMIN) |
+| Gán tiện nghi cho phòng                                   | POST   | `/api/v1/admin/rooms/:id/amenities`            | Admin | JWT + RolesGuard(ADMIN) |
+| Gỡ 1 tiện nghi khỏi phòng                                 | DELETE | `/api/v1/admin/rooms/:id/amenities/:amenityId` | Admin | JWT + RolesGuard(ADMIN) |
+| Xoá phòng                                                 | DELETE | `/api/v1/admin/rooms/:id`                      | Admin | JWT + RolesGuard(ADMIN) |
+| Export danh sách phòng ra Excel                           | GET    | `/api/v1/admin/rooms/export`                   | Admin | JWT + RolesGuard(ADMIN) |
 
 > **Đã implement.** `GET /admin/rooms` trả **mọi status** (mặc định không
 > lọc), có thêm query `status` optional để admin tự thu hẹp theo 1 trạng
@@ -406,6 +409,7 @@ chung toàn app), không thêm field tuỳ biến:
 > tạo/sửa phòng, không có endpoint quản lý danh mục riêng cho nó.
 >
 > **🆕 3 dòng bổ sung (có trong code, trước đây thiếu trong bảng này)**:
+>
 > - `PATCH /admin/rooms/:id/price` (`UpdateRoomPriceDto`) — cập nhật riêng
 >   `pricePerNight`, tách khỏi `PATCH /admin/rooms/:id` (sửa thông tin
 >   chung). Dùng khi FE chỉ cần đổi giá mà không đụng các field khác.
@@ -418,11 +422,11 @@ chung toàn app), không thêm field tuỳ biến:
 
 ## 7. Admin — Room Images
 
-| Chức năng | Method | URL | Quyền | Auth |
-|---|---|---|---|---|
-| Upload 1 ảnh cho 1 phòng | POST | `/api/v1/admin/rooms/:id/images` | Admin | JWT + RolesGuard(ADMIN) |
-| Xoá 1 ảnh của phòng | DELETE | `/api/v1/admin/rooms/:id/images/:imageId` | Admin | JWT + RolesGuard(ADMIN) |
-| Đặt 1 ảnh (đã upload) làm ảnh đại diện phòng | PATCH | `/api/v1/admin/rooms/:id/images/:imageId/thumbnail` | Admin | JWT + RolesGuard(ADMIN) |
+| Chức năng                                    | Method | URL                                                 | Quyền | Auth                    |
+| -------------------------------------------- | ------ | --------------------------------------------------- | ----- | ----------------------- |
+| Upload 1 ảnh cho 1 phòng                     | POST   | `/api/v1/admin/rooms/:id/images`                    | Admin | JWT + RolesGuard(ADMIN) |
+| Xoá 1 ảnh của phòng                          | DELETE | `/api/v1/admin/rooms/:id/images/:imageId`           | Admin | JWT + RolesGuard(ADMIN) |
+| Đặt 1 ảnh (đã upload) làm ảnh đại diện phòng | PATCH  | `/api/v1/admin/rooms/:id/images/:imageId/thumbnail` | Admin | JWT + RolesGuard(ADMIN) |
 
 > **Đã implement — ảnh phòng lưu Cloudinary**, đồng bộ cách avatar user đang
 > lưu (đã bỏ hẳn phương án lưu local disk từng dùng ở 1 nhánh trước đó —
@@ -466,17 +470,18 @@ chung toàn app), không thêm field tuỳ biến:
 
 ## 8. Admin — Bookings
 
-| Chức năng | Method | URL | Quyền | Auth |
-|---|---|---|---|---|
-| Xem danh sách toàn bộ booking (mọi user, filter `status`/`search`, phân trang) | GET | `/api/v1/admin/bookings` | Admin | JWT + RolesGuard(ADMIN) |
-| Xem chi tiết booking (view quản trị, gồm thông tin user đặt, không giới hạn chủ sở hữu) | GET | `/api/v1/admin/bookings/:id` | Admin | JWT + RolesGuard(ADMIN) |
-| Chấp nhận request đặt phòng (chỉ khi đang `PENDING`) | PATCH | `/api/v1/admin/bookings/:id/accept` | Admin | JWT + RolesGuard(ADMIN) |
-| Từ chối request đặt phòng (kèm lý do, chỉ khi đang `PENDING`) | PATCH | `/api/v1/admin/bookings/:id/reject` | Admin | JWT + RolesGuard(ADMIN) |
+| Chức năng                                                                               | Method | URL                                 | Quyền | Auth                    |
+| --------------------------------------------------------------------------------------- | ------ | ----------------------------------- | ----- | ----------------------- |
+| Xem danh sách toàn bộ booking (mọi user, filter `status`/`search`, phân trang)          | GET    | `/api/v1/admin/bookings`            | Admin | JWT + RolesGuard(ADMIN) |
+| Xem chi tiết booking (view quản trị, gồm thông tin user đặt, không giới hạn chủ sở hữu) | GET    | `/api/v1/admin/bookings/:id`        | Admin | JWT + RolesGuard(ADMIN) |
+| Chấp nhận request đặt phòng (chỉ khi đang `PENDING`)                                    | PATCH  | `/api/v1/admin/bookings/:id/accept` | Admin | JWT + RolesGuard(ADMIN) |
+| Từ chối request đặt phòng (kèm lý do, chỉ khi đang `PENDING`)                           | PATCH  | `/api/v1/admin/bookings/:id/reject` | Admin | JWT + RolesGuard(ADMIN) |
 
 > **Đã implement — `AdminBookingsController`** (`backend/src/bookings/admin-bookings.controller.ts`),
 > tách controller riêng khỏi `BookingsController` (self-service của khách)
 > nhưng dùng chung 1 `BookingsService`, đúng pattern `RoomsController`/
 > `AdminRoomsController` ở mục 6.
+>
 > - `GET /admin/bookings` dùng `QueryBuilder` + `.offset()/.limit()` (không
 >   dùng `.skip()/.take()` — né đúng vấn đề TypeORM tính sai số dòng khi kết
 >   hợp `skip/take` với `leftJoinAndSelect` một quan hệ 1-nhiều), trả kèm
@@ -494,13 +499,13 @@ chung toàn app), không thêm field tuỳ biến:
 
 ## 9. Admin — Users
 
-| Chức năng | Method | URL | Quyền | Auth |
-|---|---|---|---|---|
-| Tạo người dùng mới | POST | `/api/v1/admin/users` | Admin | JWT + RolesGuard(ADMIN) |
-| Xem danh sách người dùng | GET | `/api/v1/admin/users` | Admin | JWT + RolesGuard(ADMIN) |
-| Xem chi tiết người dùng | GET | `/api/v1/admin/users/:id` | Admin | JWT + RolesGuard(ADMIN) |
-| Chỉnh sửa thông tin người dùng (gồm cả đổi trạng thái/role) | PATCH | `/api/v1/admin/users/:id` | Admin | JWT + RolesGuard(ADMIN) |
-| Xoá người dùng | DELETE | `/api/v1/admin/users/:id` | Admin | JWT + RolesGuard(ADMIN) |
+| Chức năng                                                   | Method | URL                       | Quyền | Auth                    |
+| ----------------------------------------------------------- | ------ | ------------------------- | ----- | ----------------------- |
+| Tạo người dùng mới                                          | POST   | `/api/v1/admin/users`     | Admin | JWT + RolesGuard(ADMIN) |
+| Xem danh sách người dùng                                    | GET    | `/api/v1/admin/users`     | Admin | JWT + RolesGuard(ADMIN) |
+| Xem chi tiết người dùng                                     | GET    | `/api/v1/admin/users/:id` | Admin | JWT + RolesGuard(ADMIN) |
+| Chỉnh sửa thông tin người dùng (gồm cả đổi trạng thái/role) | PATCH  | `/api/v1/admin/users/:id` | Admin | JWT + RolesGuard(ADMIN) |
+| Xoá người dùng                                              | DELETE | `/api/v1/admin/users/:id` | Admin | JWT + RolesGuard(ADMIN) |
 
 > 🆕 **Optional — vượt phạm vi tối thiểu ban đầu của mục này** (bản đầu chỉ
 > định nghĩa 3 API: xem danh sách/chi tiết + đổi trạng thái qua
@@ -508,6 +513,7 @@ chung toàn app), không thêm field tuỳ biến:
 > (`backend/src/users/admin-users.controller.ts`) đã implement đầy đủ CRUD
 > thay vì chỉ 3 API đó — đã hoàn thiện, sẵn dùng, không bắt buộc FE phải làm
 > UI ngay nếu chưa cần:
+>
 > - `POST /admin/users` — Admin tạo tài khoản mới, tài khoản được **kích
 >   hoạt ngay** (`status=ACTIVE`, `activatedAt` được set), khác với
 >   `POST /auth/register` (phải qua OTP kích hoạt).
@@ -526,10 +532,10 @@ chung toàn app), không thêm field tuỳ biến:
 
 ## 10. Admin — Reviews
 
-| Chức năng | Method | URL | Quyền | Auth |
-|---|---|---|---|---|
-| Xem danh sách đánh giá (toàn hệ thống) | GET | `/api/v1/admin/reviews` | Admin | JWT + RolesGuard(ADMIN) |
-| Xoá đánh giá | DELETE | `/api/v1/admin/reviews/:id` | Admin | JWT + RolesGuard(ADMIN) |
+| Chức năng                              | Method | URL                         | Quyền | Auth                    |
+| -------------------------------------- | ------ | --------------------------- | ----- | ----------------------- |
+| Xem danh sách đánh giá (toàn hệ thống) | GET    | `/api/v1/admin/reviews`     | Admin | JWT + RolesGuard(ADMIN) |
+| Xoá đánh giá                           | DELETE | `/api/v1/admin/reviews/:id` | Admin | JWT + RolesGuard(ADMIN) |
 
 > **Chốt**: `DELETE /admin/reviews/:id` không nhận body, chỉ cần `id` trên
 > path. Email thông báo cho User (event `ReviewDeleted`, xem mục 14) dùng
@@ -541,11 +547,11 @@ chung toàn app), không thêm field tuỳ biến:
 
 ## 11. Admin — Statistics
 
-| Chức năng | Method | URL | Quyền | Auth |
-|---|---|---|---|---|
-| Thống kê booking (theo tháng/quý/loại phòng/trạng thái) | GET | `/api/v1/admin/statistics/bookings` | Admin | JWT + RolesGuard(ADMIN) |
-| Thống kê doanh thu (theo thời gian/loại phòng) | GET | `/api/v1/admin/statistics/revenue` | Admin | JWT + RolesGuard(ADMIN) |
-| Danh sách giao dịch thanh toán (dùng ở bảng "Transactions" trong màn Revenue Statistics) | GET | `/api/v1/admin/payments` | Admin | JWT + RolesGuard(ADMIN) |
+| Chức năng                                                                                | Method | URL                                 | Quyền | Auth                    |
+| ---------------------------------------------------------------------------------------- | ------ | ----------------------------------- | ----- | ----------------------- |
+| Thống kê booking (theo tháng/quý/loại phòng/trạng thái)                                  | GET    | `/api/v1/admin/statistics/bookings` | Admin | JWT + RolesGuard(ADMIN) |
+| Thống kê doanh thu (theo thời gian/loại phòng)                                           | GET    | `/api/v1/admin/statistics/revenue`  | Admin | JWT + RolesGuard(ADMIN) |
+| Danh sách giao dịch thanh toán (dùng ở bảng "Transactions" trong màn Revenue Statistics) | GET    | `/api/v1/admin/payments`            | Admin | JWT + RolesGuard(ADMIN) |
 
 > **Đã implement — `PaymentsController`/`PaymentsService`**
 > (`backend/src/payments/payments.controller.ts` /
@@ -570,6 +576,7 @@ chung toàn app), không thêm field tuỳ biến:
 >   FE gọi thêm request nào khác để hiển thị bảng.
 >
 > Mẫu response:
+>
 > ```jsonc
 > {
 >   "statusCode": 200,
@@ -590,60 +597,47 @@ chung toàn app), không thêm field tuỳ biến:
 >           "guestName": "Isabella Romano",
 >           "guestEmail": "i.romano@mail.com",
 >           "roomName": "Ocean View Suite",
->           "roomNumber": "202"
->         }
->       }
+>           "roomNumber": "202",
+>         },
+>       },
 >     ],
 >     "page": 1,
 >     "limit": 10,
 >     "total": 34,
->     "totalPages": 4
->   }
+>     "totalPages": 4,
+>   },
 > }
 > ```
 
 ## 12. Admin — Email Log
 
-| Chức năng | Method | URL | Quyền | Auth |
-|---|---|---|---|---|
-| Xem lịch sử gửi email (lọc theo PENDING/SENT/FAILED) | GET | `/api/v1/admin/email-logs` | Admin | JWT + RolesGuard(ADMIN) |
-| Xem chi tiết 1 email log | GET | `/api/v1/admin/email-logs/:id` | Admin | JWT + RolesGuard(ADMIN) |
-| Gửi lại email thất bại | POST | `/api/v1/admin/email-logs/:id/retry` | Admin | JWT + RolesGuard(ADMIN) |
+| Chức năng                                                                                             | Method | URL                                  | Quyền | Auth                    |
+| ----------------------------------------------------------------------------------------------------- | ------ | ------------------------------------ | ----- | ----------------------- |
+| Xem lịch sử gửi email (lọc theo PENDING/SENT/FAILED/DELIVERED_UNCONFIRMED, phân trang `page`/`limit`) | GET    | `/api/v1/admin/email-logs`           | Admin | JWT + RolesGuard(ADMIN) |
+| Xem chi tiết 1 email log                                                                              | GET    | `/api/v1/admin/email-logs/:id`       | Admin | JWT + RolesGuard(ADMIN) |
+| Gửi lại email thất bại                                                                                | POST   | `/api/v1/admin/email-logs/:id/retry` | Admin | JWT + RolesGuard(ADMIN) |
 
-## 12a. Mail — endpoint dev/test (⚠️ chưa chốt, không nên coi là API chính thức)
+## 12a. Mail — endpoint kiểm tra nội bộ (Admin)
 
-| Chức năng | Method | URL | Quyền | Auth |
-|---|---|---|---|---|
-| Gửi thử 1 email (verify Redis/BullMQ/Nodemailer còn sống) | POST | `/api/v1/mail/test` | — | **Không guard** |
-| Xem trạng thái gửi 1 email theo id | GET | `/api/v1/mail/:id` | — | **Không guard** |
+| Chức năng                                                 | Method | URL                 | Quyền | Auth                    |
+| --------------------------------------------------------- | ------ | ------------------- | ----- | ----------------------- |
+| Gửi thử 1 email (verify Redis/BullMQ/Nodemailer còn sống) | POST   | `/api/v1/mail/test` | Admin | JWT + RolesGuard(ADMIN) |
+| Xem trạng thái gửi 1 email theo id                        | GET    | `/api/v1/mail/:id`  | Admin | JWT + RolesGuard(ADMIN) |
 
-> **🆕 Phát hiện khi đối chiếu code thật — `MailController`
-> (`backend/src/mail/mail.controller.ts`) chưa từng có trong bất kỳ bản
-> docs nào trước đây.** Đây là 2 route dev/test nội bộ, **không gắn
-> `JwtAuthGuard`/`RolesGuard` nào** — ai cũng gọi được kể cả chưa đăng
-> nhập, kể cả trigger gửi 1 email thật (`POST .../test`, body `SendMailDto`)
-> hoặc đọc `status`/`retryCount`/`lastError`/`recipient` của bất kỳ email
-> log nào theo `id` (`GET .../:id`), không giới hạn theo quyền sở hữu hay
-> role.
->
-> 🚧 **Cần team quyết định trước khi lên môi trường thật** (không thuộc
-> phạm vi audit docs — đây là quyết định implement, để PR BE khác xử lý):
-> xoá hẳn khỏi router, chuyển sang `RolesGuard(ADMIN)`, hoặc chỉ bật khi
-> `NODE_ENV` là local/test. Không có route FE nào gọi 2 endpoint này —
-> không thuộc luồng nghiệp vụ chính thức, khác hẳn `/admin/email-logs/**`
-> (mục 12) là API thật cho màn hình Admin.
+> Hai route này đã được khóa bằng JWT + `RolesGuard(ADMIN)`. Không có route
+> FE chính thức gọi chúng; mục đích là kiểm tra hạ tầng mail có kiểm soát.
 
 ---
 
 ## 13. Admin — Amenities
 
-| Chức năng | Method | URL | Quyền | Auth |
-|---|---|---|---|---|
-| Xem danh sách tiện nghi (catalogue) | GET | `/api/v1/amenities` | Guest / User / Admin | Không cần |
-| Xem chi tiết 1 tiện nghi | GET | `/api/v1/amenities/:id` | Guest / User / Admin | Không cần |
-| Tạo tiện nghi mới | POST | `/api/v1/amenities` | Admin | JWT + RolesGuard(ADMIN) |
-| Chỉnh sửa tiện nghi | PATCH | `/api/v1/amenities/:id` | Admin | JWT + RolesGuard(ADMIN) |
-| Xoá tiện nghi (xoá mềm) | DELETE | `/api/v1/amenities/:id` | Admin | JWT + RolesGuard(ADMIN) |
+| Chức năng                           | Method | URL                     | Quyền                | Auth                    |
+| ----------------------------------- | ------ | ----------------------- | -------------------- | ----------------------- |
+| Xem danh sách tiện nghi (catalogue) | GET    | `/api/v1/amenities`     | Guest / User / Admin | Không cần               |
+| Xem chi tiết 1 tiện nghi            | GET    | `/api/v1/amenities/:id` | Guest / User / Admin | Không cần               |
+| Tạo tiện nghi mới                   | POST   | `/api/v1/amenities`     | Admin                | JWT + RolesGuard(ADMIN) |
+| Chỉnh sửa tiện nghi                 | PATCH  | `/api/v1/amenities/:id` | Admin                | JWT + RolesGuard(ADMIN) |
+| Xoá tiện nghi (xoá mềm)             | DELETE | `/api/v1/amenities/:id` | Admin                | JWT + RolesGuard(ADMIN) |
 
 > **Đã implement.** 2 API `GET` không guard — khác `POST`/`PATCH`/`DELETE`
 > (Admin only) — vì FE public cần đọc catalogue tên tiện nghi để: (1) hiển
@@ -660,6 +654,7 @@ chung toàn app), không thêm field tuỳ biến:
 > nghi cho 1 phòng cụ thể là 2 API riêng dưới `/admin/rooms/:id/amenities`
 > (xem mục 6), thao tác trên bảng nối `room_amenities`, không đụng tới bản
 > ghi `Amenity` gốc:
+>
 > - Xoá phòng (`DELETE /admin/rooms/:id`) chỉ xoá các dòng `room_amenities`
 >   trỏ tới phòng đó, **không** xoá `Amenity`.
 > - Xoá tiện nghi (`DELETE /amenities/:id`, xoá mềm) **không** tự động gỡ
@@ -674,13 +669,14 @@ chung toàn app), không thêm field tuỳ biến:
 > lại ở đây để team biết luồng gửi email tự động vận hành thế nào, tránh
 > nhầm là API còn thiếu.
 
-| Chức năng | Cơ chế | Trigger | Ghi chú |
-|---|---|---|---|
-| Gửi email khi booking đổi trạng thái | Event Listener nội bộ (`EventEmitter2`) | Event `BookingStatusChanged` (emit khi accept/reject/sửa booking) | Gửi cho User khi booking chuyển `ACCEPTED` / `REJECTED` / đổi thông tin (ngày, phòng...). Mỗi lần gửi tạo 1 record trong `email-logs`. |
-| Gửi email kích hoạt tài khoản | Event Listener nội bộ (`EventEmitter2`) | Event `UserRegistered` (emit khi `POST /auth/register` thành công) | Sinh mã OTP 6 số (không phải link), email chỉ hiển thị mã để user tự gõ vào form ở route `/activate`, xác thực qua `POST /auth/activate`. |
-| 🆕 Gửi email đặt lại mật khẩu | Event Listener nội bộ (`EventEmitter2`) | Event `PasswordResetRequested` (emit khi `POST /auth/forgot-password` thành công, kể cả khi email không tồn tại — vẫn trả response giống nhau để tránh lộ thông tin tài khoản nào tồn tại) | Sinh mã OTP 6 số (không phải link), email chỉ hiển thị mã để user tự gõ vào form ở route `/reset-password`, xác thực qua `POST /auth/reset-password`. |
-| 🆕 Gửi email khi đánh giá bị Admin xoá | Event Listener nội bộ (`EventEmitter2`) | Event `ReviewDeleted` (emit khi `DELETE /admin/reviews/:id` thành công, payload chỉ gồm `reviewId` + `userId` chủ review) | Thông báo cho User biết đánh giá của họ đã bị gỡ, dùng **1 template email cố định** (không có phần lý do tuỳ chỉnh). |
-| Gửi báo cáo doanh thu cuối tháng | Cron job (`@Cron`) | `@Cron('0 55 23 * * *', { timeZone: 'Asia/Ho_Chi_Minh' })`, chỉ chạy khi `isLastDayOfMonth() === true` | Tổng hợp doanh thu tháng, gửi email cho Admin. Không liên quan route FE. |
+| Chức năng                              | Cơ chế                                          | Trigger                                                                                                                                                   | Ghi chú                                                                                                                               |
+| -------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Gửi email khi booking đổi trạng thái   | Transactional outbox                            | `accept`, `reject`, `cancel` hoặc thanh toán làm booking chuyển `ACCEPTED` sẽ persist business data + `email_logs` + `mail_outbox` trong cùng transaction | Worker gửi bất đồng bộ; lỗi persist outbox làm rollback cả thay đổi booking nên không mất email.                                      |
+| Gửi email kích hoạt tài khoản          | Transactional outbox                            | `POST /auth/register` persist User + `email_logs` + `mail_outbox` trong cùng transaction                                                                  | Sinh OTP 6 số; lỗi persist outbox làm rollback User, worker gửi email sau khi transaction commit.                                     |
+| 🆕 Gửi email đặt lại mật khẩu          | Transactional outbox                            | Khi email tồn tại, `POST /auth/forgot-password` persist `email_logs` + `mail_outbox`; email không tồn tại vẫn trả cùng response để tránh lộ tài khoản     | Sinh OTP 6 số; worker gửi email bất đồng bộ và lỗi persist outbox không bị nuốt.                                                      |
+| 🆕 Gửi email khi đánh giá bị Admin xoá | Transactional outbox                            | `DELETE /admin/reviews/:id` persist soft-delete + `email_logs` + `mail_outbox` trong cùng transaction                                                     | Thông báo bằng **1 subject/body cố định**; lỗi persist outbox làm rollback soft-delete.                                               |
+| Gửi báo cáo doanh thu tháng            | Cron job động (`SchedulerRegistry` + `CronJob`) | `REPORT_CRON` (mặc định `55 23 28-31 * *`) theo `REPORT_TIME_ZONE`; service chỉ chạy đúng ngày cuối tháng                                                 | Tổng hợp tháng hiện tại và gửi email cho Admin qua transactional outbox. Doanh thu giữ dạng decimal string để không mất độ chính xác. |
+| Khôi phục báo cáo tháng bị bỏ sót      | Recovery cron nội bộ                            | Chạy mỗi 10 phút từ 00:00–02:59 ngày đầu tháng, xử lý lại kỳ trước                                                                                        | Unique constraint theo tháng/Admin đảm bảo idempotency: chỉ Admin bị bỏ sót được tạo lại, không gửi trùng người đã có dispatch.       |
 
 > Quy tắc chung: **mọi thay đổi liên quan tài khoản (kích hoạt, đặt lại mật
 > khẩu) và mọi thay đổi trạng thái booking/review đều emit event riêng**,
@@ -719,15 +715,12 @@ chung toàn app), không thêm field tuỳ biến:
       (mục 11) — **chưa có module/controller nào trong code** (không có
       `StatisticsModule` trong `app.module.ts`). Để nguyên trong docs như
       hợp đồng API, việc implement dời sang 1 PR BE riêng.
-- [ ] `POST /mail/test`, `GET /mail/:id` (mục 12a) — tồn tại trong code,
-      không guard, chưa từng có trong docs trước đây, nay đã bổ sung để rà
-      security. Cần team quyết định giữ/xoá/khoá guard trước khi lên
-      production (thuộc phạm vi 1 PR BE khác).
-- [ ] Emit đủ 5 event gửi mail: `UserRegistered`, `PasswordResetRequested`,
+- [x] `POST /mail/test`, `GET /mail/:id` (mục 12a) đã khóa ADMIN.
+- [x] Emit đủ 5 event gửi mail: `UserRegistered`, `PasswordResetRequested`,
       `BookingStatusChanged`, `ReviewDeleted`, + cron báo cáo doanh thu —
       xem mục 14.
-- [ ] Soạn sẵn nội dung template email `ReviewDeleted` (tiêu đề + nội dung
-      cố định, không có phần lý do tuỳ chỉnh) — xem mục 14 và mục Admin
+- [x] Soạn sẵn nội dung template email `ReviewDeleted` (tiêu đề + nội dung
+      cố định, không chèn ID review hoặc lý do xoá) — xem mục 14 và mục Admin
       Reviews.
 - [x] Đảm bảo `GET /bookings/:id` chặn user xem booking không phải của
       mình, khác với `GET /admin/bookings/:id` không bị chặn theo chủ sở

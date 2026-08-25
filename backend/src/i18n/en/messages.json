@@ -52,7 +52,28 @@
     "INVALID_REVENUE_DATA": "Revenue data is invalid. Please contact the system administrator."
   },
   "MAIL": {
-    "LOG_NOT_FOUND": "Email log {id} not found."
+    "LOG_NOT_FOUND": "Email log {id} not found.",
+    "GET_LOG_SUCCESS": "Email log retrieved successfully.",
+    "GET_LOGS_SUCCESS": "Email logs retrieved successfully.",
+    "QUEUE_ACCEPTED": "The email has been accepted for delivery.",
+    "RETRY_INVALID_STATUS": "Only failed emails can be retried.",
+    "RETRY_ACCEPTED": "The email retry request has been accepted.",
+    "ACTIVATION": {
+      "SUBJECT": "Hotel Management account activation code",
+      "BODY": "Hello {recipientName},\nYour account activation code is: {otp}\nThis code will expire. Do not share it with anyone."
+    },
+    "PASSWORD_RESET": {
+      "SUBJECT": "Hotel Management password reset code",
+      "BODY": "Hello {recipientName},\nYour password reset code is: {otp}\nThis code will expire. Do not share it with anyone."
+    },
+    "BOOKING_STATUS": {
+      "SUBJECT": "Booking #{bookingId} status update",
+      "BODY": "Hello {recipientName},\nBooking #{bookingId} for room {roomNumber} is now {status}."
+    },
+    "REVIEW_DELETED": {
+      "SUBJECT": "Your review was removed",
+      "BODY": "Your review was removed by an administrator."
+    }
   },
   "PAYMENT": {
     "FIND_ALL_SUCCESS": "Payment list retrieved successfully."
@@ -92,7 +113,14 @@
     "UNAUTHORIZED": "Unauthorized or session expired.",
     "TOKEN_BLACKLISTED": "Token has been invalidated (logged out).",
     "USER_ALREADY_EXISTS": "User with this email, username, or phone already exists.",
-    "USER_INACTIVE": "Your account has been locked or is inactive."
+    "USER_INACTIVE": "Your account has been locked or is inactive.",
+    "USER_NOT_FOUND": "Account not found.",
+    "ALREADY_ACTIVATED": "This account has already been activated.",
+    "INVALID_OR_EXPIRED_OTP": "The OTP is invalid or has expired.",
+    "ACTIVATE_SUCCESS": "Account activated successfully.",
+    "FORGOT_PASSWORD_ACCEPTED": "If the email exists, a password reset code has been sent.",
+    "RESET_PASSWORD_SUCCESS": "Password reset successfully.",
+    "INVALID_OTP_CONFIGURATION": "OTP expiration configuration is invalid."
   },
   "VALIDATION": {
     "IS_EMAIL": "Email format is invalid.",
@@ -101,6 +129,7 @@
     "MAX_LENGTH": "{property} must be shorter than or equal to {constraints.0} characters.",
     "IS_STRING": "{property} must be a string.",
     "IS_NUMBER_STRING": "{property} must be a number string.",
+    "LENGTH": "{property} must contain exactly {constraints.0} characters.",
     "IS_INT": "{property} must be an integer number.",
     "IS_ENUM": "{property} is invalid.",
     "MIN": "{property} must not be less than {constraints.0}.",
@@ -133,9 +162,21 @@
     "AVATAR_NOT_FOUND": "This account has no avatar to remove.",
     "AVATAR_REMOVE_SUCCESS": "Avatar removed successfully."
   },
-  "REVIEWS":{
-    "ALREADY_REVIEWED":"This booking has already been reviewed.",
-    "BOOKING_NOT_COMPLETED" :"Booking has not been completed.",
+  "REPORTS": {
+    "EMAIL_LOG_NOT_FOUND": "Email log not found.",
+    "MONTHLY": {
+      "TITLE": "Monthly Revenue Report - {reportMonth}",
+      "SUBJECT": "Monthly Revenue Report - {reportMonth}",
+      "TOTAL_BOOKINGS_LABEL": "Total Bookings:",
+      "TOTAL_PAID_BOOKINGS_LABEL": "Total Paid Bookings:",
+      "TOTAL_REVENUE_LABEL": "Total Revenue:",
+      "DEFAULT_RECIPIENT_NAME": "Admin",
+      "DESCRIPTION": "Dear {firstName},\nHere is the revenue report for {reportMonth}."
+    }
+  },
+  "REVIEWS": {
+    "ALREADY_REVIEWED": "This booking has already been reviewed.",
+    "BOOKING_NOT_COMPLETED": "Booking has not been completed.",
     "NOT_FOUND": "Review not found.",
     "CREATE_SUCCESS": "Review created successfully.",
     "FIND_ALL_SUCCESS": "Reviews retrieved successfully.",

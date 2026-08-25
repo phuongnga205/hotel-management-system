@@ -7,6 +7,7 @@ import { BookingsController } from './bookings.controller';
 import { BookingsService } from './bookings.service';
 import { Booking } from './entities/booking.entity';
 import { Room } from '../rooms/entities/room.entity';
+import { TransactionalMailService } from '../mail/transactional-mail.service';
 
 describe('BookingsController', () => {
   let controller: BookingsController;
@@ -30,6 +31,7 @@ describe('BookingsController', () => {
           useValue: { t: jest.fn((key: string) => key) },
         },
         { provide: ConfigService, useValue: { get: jest.fn() } },
+        { provide: TransactionalMailService, useValue: {} },
       ],
     }).compile();
 

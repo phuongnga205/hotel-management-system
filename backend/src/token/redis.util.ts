@@ -11,6 +11,8 @@ const RELEASE_LOCK_SCRIPT =
   'if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("del", KEYS[1]) else return 0 end';
 const EXTEND_LOCK_SCRIPT =
   'if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("expire", KEYS[1], ARGV[2]) else return 0 end';
+const COMPARE_AND_DELETE_SCRIPT =
+  'if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("del", KEYS[1]) else return 0 end';
 const REDIS_EVAL_COMMAND = 'EVAL';
 
 @Injectable()
@@ -48,6 +50,25 @@ export class RedisUtil implements OnModuleInit, OnModuleDestroy {
 
   async delete(key: string): Promise<void> {
     await this.client.del(key);
+  }
+
+  async compareAndDelete(key: string, expectedValue: string): Promise<boolean> {
+    const result = await this.client.call(
+      REDIS_EVAL_COMMAND,
+      COMPARE_AND_DELETE_SCRIPT,
+      1,
+      key,
+      expectedValue,
+    );
+    return result === 1;
+  }
+
+  async lpush(key: string, value: string): Promise<void> {
+    await this.client.lpush(key, value);
+  }
+
+  async rpop(key: string): Promise<string | null> {
+    return this.client.rpop(key);
   }
 
   async acquireLock(

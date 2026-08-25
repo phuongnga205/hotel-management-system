@@ -13,6 +13,7 @@ import { User, UserStatus } from '../src/users/entities/user.entity';
 import { Payment } from '../src/payments/entities/payment.entity';
 import { PaymentMethod } from '../src/payments/enums/payment-method.enum';
 import { PaymentStatus } from '../src/payments/enums/payment-status.enum';
+import { TransactionalMailService } from '../src/mail/transactional-mail.service';
 
 const configService = new ConfigService();
 const e2eDatabaseUrl = configService.get<string>(
@@ -49,6 +50,9 @@ describeWithDatabase(
 
     const fakeI18n = { t: (key: string) => key } as unknown as I18nService;
     const fakeConfig = { get: () => undefined } as unknown as ConfigService;
+    const fakeMailService = {
+      createBookingStatusOutbox: jest.fn().mockResolvedValue({}),
+    } as unknown as TransactionalMailService;
 
     beforeAll(async () => {
       dataSource = new DataSource({
@@ -68,6 +72,7 @@ describeWithDatabase(
         dataSource,
         fakeI18n,
         fakeConfig,
+        fakeMailService,
       );
 
       const user = await dataSource.getRepository(User).save({

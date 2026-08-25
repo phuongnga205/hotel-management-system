@@ -70,14 +70,13 @@ export interface ResetPasswordPayload {
   newPassword: string
 }
 
-// Activate/forgotPassword/resetPassword: BE chưa implement 3 endpoint này
-// (chỉ mới có trong docs) nên chưa biết chắc shape response thật — tạm coi
-// như trả `{ message }` không bọc envelope, giống style hiện tại của
-// `login`/`register` (2 endpoint BE đã làm thật, cũng không bọc
-// `{statusCode, message, data}` — interceptor đó còn là TODO trong
-// backend/docs/DANH_SACH_API.md). Sửa lại type này khi BE chốt.
 export interface MessageResponse {
   message: string
+}
+
+export interface AuthMessageResponse extends MessageResponse {
+  statusCode: number
+  data: null
 }
 
 // --- pagination (moi endpoint list dung chung 1 shape, xem
@@ -327,16 +326,13 @@ export interface ListReviewsQuery extends ListQuery {
   roomId?: string
 }
 
-// --- email logs (EmailType dung 4 gia tri that o backend - KHONG co
-// 'password-changed', bridge.md liet ke nham gia tri nay) ---
-export type EmailType = 'account-activation' | 'password-reset' | 'booking-status-changed' | 'review-deleted'
-export type EmailStatus = 'PENDING' | 'SENT' | 'FAILED'
+// --- email logs ---
+export type EmailType = 'account-activation' | 'password-reset' | 'booking-status-changed' | 'review-deleted' | 'monthly-report'
+export type EmailStatus = 'PENDING' | 'SENT' | 'FAILED' | 'DELIVERED_UNCONFIRMED'
 
 export interface EmailLog {
   id: string
   type: EmailType
-  // Dung dung ten cot that trong bang email_logs (xem backend/db.md) - KHONG
-  // co cot "subject" rieng, khong duoc bay dat them field nay.
   recipient: string
   status: EmailStatus
   sentAt: string | null

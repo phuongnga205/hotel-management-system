@@ -40,6 +40,7 @@ export const EMAIL_LOG_STATUS_CONFIG: StatusConfig = {
   PENDING: { labelKey: 'status.email.PENDING', bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-400' },
   SENT: { labelKey: 'status.email.SENT', bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-400' },
   FAILED: { labelKey: 'status.email.FAILED', bg: 'bg-red-50', text: 'text-red-600', dot: 'bg-red-400' },
+  DELIVERED_UNCONFIRMED: { labelKey: 'status.email.DELIVERED_UNCONFIRMED', bg: 'bg-sky-50', text: 'text-sky-700', dot: 'bg-sky-400' },
 }
 
 // Review khong co field "status" that o backend - suy ra tu deletedAt
