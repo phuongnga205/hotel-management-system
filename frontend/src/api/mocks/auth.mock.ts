@@ -9,15 +9,15 @@
  * `backend/src/auth/auth.service.ts`): trả thẳng `{ message, ... }`, KHÔNG
  * bọc `{statusCode, data}` (envelope đó còn là 🚧 TODO ở
  * `backend/docs/DANH_SACH_API.md`). `activate`/`forgotPassword`/
- * `resetPassword` chưa có endpoint thật nào để soi theo, tạm dùng cùng
+ * `resetPassword` dùng cùng
  * style `{ message }` cho nhất quán — sửa lại khi BE làm xong.
  */
 import type {
   ActivatePayload,
+  AuthMessageResponse,
   ForgotPasswordPayload,
   LoginPayload,
   LoginResponse,
-  MessageResponse,
   RegisterPayload,
   RegisterResponse,
   ResetPasswordPayload,
@@ -63,14 +63,14 @@ export const authMockApi = {
       user: buildMockUser({ email: data.email, username: data.username, phone: data.phone ?? null, status: 'INACTIVE' }),
     })
   },
-  activate: async (_data: ActivatePayload): Promise<MessageResponse> => {
-    return mockDelay({ message: 'Kích hoạt tài khoản thành công (mock).' })
+  activate: async (_data: ActivatePayload): Promise<AuthMessageResponse> => {
+    return mockDelay({ statusCode: 200, message: 'Kích hoạt tài khoản thành công (mock).', data: null })
   },
-  forgotPassword: async (_data: ForgotPasswordPayload): Promise<MessageResponse> => {
-    return mockDelay({ message: 'Đã gửi mã OTP (mock).' })
+  forgotPassword: async (_data: ForgotPasswordPayload): Promise<AuthMessageResponse> => {
+    return mockDelay({ statusCode: 200, message: 'Đã gửi mã OTP (mock).', data: null })
   },
-  resetPassword: async (_data: ResetPasswordPayload): Promise<MessageResponse> => {
-    return mockDelay({ message: 'Đổi mật khẩu thành công (mock).' })
+  resetPassword: async (_data: ResetPasswordPayload): Promise<AuthMessageResponse> => {
+    return mockDelay({ statusCode: 200, message: 'Đổi mật khẩu thành công (mock).', data: null })
   },
   logout: async (): Promise<MessageResponse> => {
     return mockDelay({ message: 'Đăng xuất thành công (mock).' })

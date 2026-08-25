@@ -127,7 +127,7 @@ Tất cả nằm dưới `AdminLayout` + `AdminGuard` (role !== admin → `/403`
 | — Xoá đánh giá | Popup xác nhận | Modal. |
 | `/admin/statistics/bookings` | Thống kê Booking | Route con của `/admin/statistics`, dùng tab UI để share URL theo từng tab. |
 | `/admin/statistics/revenue` | Thống kê Doanh thu | |
-| `/admin/email-logs` | Lịch sử email | Danh sách log các email hệ thống đã gửi (đổi tài khoản, đổi trạng thái booking...), lọc theo trạng thái `PENDING/SENT/FAILED`. |
+| `/admin/email-logs` | Lịch sử email | Danh sách log email hệ thống và báo cáo tháng, lọc theo `PENDING/SENT/FAILED/DELIVERED_UNCONFIRMED`, phân trang bằng `page`/`limit`. |
 | `/admin/email-logs/:logId` | Chi tiết log email | Nếu trạng thái `FAILED`: hiện nút **"Gửi lại"** → gọi `POST /admin/email-logs/:id/retry`. Không cần route riêng. |
 
 ## Sơ đồ rút gọn

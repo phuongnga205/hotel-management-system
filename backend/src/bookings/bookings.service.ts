@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -42,9 +43,13 @@ import {
   DEFAULT_HOTEL_TIMEZONE,
   ENVIRONMENT_KEYS,
 } from '../config/environment.constants';
+import { TransactionalMailService } from '../mail/transactional-mail.service';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class BookingsService {
+  private readonly logger = new Logger(BookingsService.name);
+
   constructor(
     @InjectRepository(Booking)
     private readonly bookingsRepository: Repository<Booking>,
@@ -52,6 +57,7 @@ export class BookingsService {
     private readonly dataSource: DataSource,
     private readonly i18n: I18nService,
     private readonly configService: ConfigService,
+    private readonly mailService: TransactionalMailService,
   ) {}
 
   // create() chạy hoàn toàn trong 1 transaction: expire hold cũ → check
@@ -277,7 +283,7 @@ export class BookingsService {
   }
 
   async cancel(id: string, userId: string, reason: CancelBookingDto) {
-    return this.dataSource.transaction(async (manager) => {
+    const result = await this.dataSource.transaction(async (manager) => {
       const bookingRepository = manager.getRepository(Booking);
       const booking = await bookingRepository.findOne({
         where: { id, userId },
@@ -298,12 +304,14 @@ export class BookingsService {
       booking.cancelReason = reason.cancelReason;
 
       await bookingRepository.save(booking);
+      await this.createStatusChangedOutbox(manager, booking);
 
       return {
         statusCode: 200,
         message: this.i18n.t('messages.BOOKING.CANCEL_SUCCESS'),
       };
     });
+    return result;
   }
 
   // Thanh toán + xác nhận booking trong cùng 1 transaction (2 thao tác ghi:
@@ -323,7 +331,7 @@ export class BookingsService {
   // Payment SUCCESS rồi) đều bị chặn — không cho trả tiền cho booking đã
   // "chết" hoặc trả trùng lần 2.
   async pay(id: string, userId: string, dto: PayBookingDto) {
-    return this.dataSource.transaction(async (manager) => {
+    const response = await this.dataSource.transaction(async (manager) => {
       const bookingRepository = manager.getRepository(Booking);
       const booking = await bookingRepository.findOne({
         where: { id, userId },
@@ -338,7 +346,6 @@ export class BookingsService {
       await this.assertHoldStillActive(manager, booking);
 
       const paymentRepository = manager.getRepository(Payment);
-
       if (booking.status === BookingStatus.ACCEPTED) {
         const alreadyPaid = await paymentRepository.exists({
           where: { bookingId: booking.id, status: PaymentStatus.SUCCESS },
@@ -367,6 +374,7 @@ export class BookingsService {
         booking.status = BookingStatus.ACCEPTED;
         booking.holdExpiresAt = null;
         await bookingRepository.save(booking);
+        await this.createStatusChangedOutbox(manager, booking);
       }
 
       return {
@@ -374,6 +382,7 @@ export class BookingsService {
         message: this.i18n.t('messages.BOOKING.PAY_SUCCESS'),
       };
     });
+    return response;
   }
 
   // ---------------------------------------------------------------------
@@ -455,7 +464,7 @@ export class BookingsService {
   }
 
   async accept(id: string) {
-    return this.dataSource.transaction(async (manager) => {
+    const result = await this.dataSource.transaction(async (manager) => {
       const bookingRepository = manager.getRepository(Booking);
       const booking = await bookingRepository.findOne({
         where: { id },
@@ -474,16 +483,18 @@ export class BookingsService {
       booking.status = BookingStatus.ACCEPTED;
       booking.holdExpiresAt = null;
       await bookingRepository.save(booking);
+      await this.createStatusChangedOutbox(manager, booking);
 
       return {
         statusCode: 200,
         message: this.i18n.t('messages.BOOKING.ACCEPT_SUCCESS'),
       };
     });
+    return result;
   }
 
   async reject(id: string, dto: RejectBookingDto) {
-    return this.dataSource.transaction(async (manager) => {
+    const result = await this.dataSource.transaction(async (manager) => {
       const bookingRepository = manager.getRepository(Booking);
       const booking = await bookingRepository.findOne({
         where: { id },
@@ -502,11 +513,30 @@ export class BookingsService {
       booking.status = BookingStatus.REJECTED;
       booking.cancelReason = dto.cancelReason;
       await bookingRepository.save(booking);
+      await this.createStatusChangedOutbox(manager, booking);
 
       return {
         statusCode: 200,
         message: this.i18n.t('messages.BOOKING.REJECT_SUCCESS'),
       };
+    });
+    return result;
+  }
+
+  private async createStatusChangedOutbox(
+    manager: EntityManager,
+    booking: Booking,
+  ): Promise<void> {
+    const [user, room] = await Promise.all([
+      manager.getRepository(User).findOneByOrFail({ id: booking.userId }),
+      manager.getRepository(Room).findOneByOrFail({ id: booking.roomId }),
+    ]);
+    await this.mailService.createBookingStatusOutbox(manager, {
+      id: booking.id,
+      status: booking.status,
+      roomNumber: room.roomNumber,
+      recipientEmail: user.email,
+      recipientName: user.fullName ?? user.username,
     });
   }
 

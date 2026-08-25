@@ -10,10 +10,12 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { StringValue } from 'ms';
+import { MailPersistenceModule } from '../mail/mail-persistence.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User]),
+    MailPersistenceModule,
 
     PassportModule.register({
       defaultStrategy: 'jwt',

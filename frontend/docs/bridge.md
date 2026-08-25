@@ -126,7 +126,7 @@ required), `newPassword` (string, tối thiểu 6 ký tự).
 > real+mock từ trước.
 
 
-## 2. `auth_tokens` — nội bộ, FE không gọi trực tiếp
+## 2. OTP xác thực trong Redis — nội bộ, FE không gọi trực tiếp
 
 Không có endpoint trả entity này thẳng ra FE. Luồng liên quan:
 - Kích hoạt tài khoản: FE gửi `email` + `otp` (`ActivateAccountDto`) —
@@ -137,6 +137,11 @@ Không có endpoint trả entity này thẳng ra FE. Luồng liên quan:
 
 `type` nội bộ chỉ nhận `'EMAIL_VERIFICATION' | 'PASSWORD_RESET'` — không
 liên quan trực tiếp tới FE vì không trả ra API.
+
+Ba endpoint đã được BE implement và trả envelope
+`{ statusCode: 200, message, data: null }`. OTP được lưu ở Redis với key
+`otp:<purpose>:<userId>`, TTL lấy từ `OTP_TTL_SECONDS` (mặc định 600 giây),
+không tạo lại bảng `auth_tokens` trong PostgreSQL.
 
 > **Đã chốt (thay cho model link/token trước đây)**: kích hoạt tài khoản và
 > đặt lại mật khẩu dùng **OTP 6 số nhập tay**, không dùng link kèm token
@@ -361,7 +366,7 @@ phải `403`, ở mọi route self-service (`GET/PATCH /bookings/:id`,
 | `userId` | `string` | — | BE tự lấy từ JWT, FE không gửi |
 | `rating` | `number` (int) | ✔ | `1`–`5` (`Min(1)`, `Max(5)`) |
 | `comment` | `string \| null` | optional | tối đa 2000 ký tự |
-| `deleteReason` | `string \| null` | — | chỉ có giá trị khi admin xoá review (`DELETE /admin/reviews/:id`), lý do **cố định theo template email** (`ADMIN_REMOVED`), server tự gán — **BE không nhận `deleteReason` từ body**, dù FE có gửi cũng bị bỏ qua |
+| `deleteReason` | `string \| null` | — | chỉ có giá trị khi admin xoá review (`DELETE /admin/reviews/:id`), server tự gán `ADMIN_REMOVED` — **BE không nhận `deleteReason` từ body**. Email thông báo dùng body cố định, không hiển thị ID review hoặc lý do xoá. |
 | `createdAt` | `string` | — | |
 | `deletedAt` | `string \| null` | — | review **không được sửa**, chỉ tạo hoặc xoá (không có field `updatedAt`) |
 | `user` | `{ id, fullName, avatarUrl } \| undefined` | — | chỉ có khi API load kèm relation — `GET /rooms/:roomId/reviews`, `GET /reviews/me` và `GET /admin/reviews` đều trả kèm, `POST /reviews` (response tạo mới) thì không |
@@ -400,9 +405,9 @@ phải `403`, ở mọi route self-service (`GET/PATCH /bookings/:id`,
 | Field | Kiểu FE | Ghi chú / giá trị hợp lệ |
 |---|---|---|
 | `id` | `string` | |
-| `type` | `string` | về mặt DB là `varchar(50)` tự do, nhưng giá trị thực tế luôn là 1 trong `EmailType`: `'account-activation' \| 'password-reset' \| 'booking-status-changed' \| 'review-deleted'` — **đúng 4 giá trị** (lưu ý: kebab-case, khác style `UPPER_SNAKE_CASE` của các status khác; bản trước của tài liệu này liệt kê nhầm thêm `'password-changed'` — giá trị đó không tồn tại trong code) |
+| `type` | `string` | một trong `EmailType`: `'account-activation' \| 'password-reset' \| 'booking-status-changed' \| 'review-deleted' \| 'monthly-report'` |
 | `recipient` | `string` | email người nhận, tối đa 255 ký tự |
-| `status` | `'PENDING' \| 'SENT' \| 'FAILED'` | dùng để lọc danh sách (`GET /admin/email-logs?status=`) |
+| `status` | `'PENDING' \| 'SENT' \| 'FAILED' \| 'DELIVERED_UNCONFIRMED'` | dùng để lọc danh sách (`GET /admin/email-logs?status=`) |
 | `retryCount` | `number` (int ≥ 0) | |
 | `lastError` | `string \| null` | |
 | `sentAt` | `string \| null` (ISO datetime) | `null` nếu chưa gửi thành công |
@@ -432,12 +437,13 @@ type PaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'CREDIT_CARD' | 'VNPAY';
 type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED';
 
 // email_logs
-type EmailStatus = 'PENDING' | 'SENT' | 'FAILED';
+type EmailStatus = 'PENDING' | 'SENT' | 'FAILED' | 'DELIVERED_UNCONFIRMED';
 type EmailType =
   | 'account-activation'
   | 'password-reset'
   | 'booking-status-changed'
-  | 'review-deleted';
+  | 'review-deleted'
+  | 'monthly-report';
 ```
 
 ---

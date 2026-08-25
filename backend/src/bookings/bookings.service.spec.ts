@@ -18,6 +18,8 @@ import { BookingsService } from './bookings.service';
 import { Booking } from './entities/booking.entity';
 import { BookingStatus } from './enums/booking-status.enum';
 import { BOOKING_HOLD_MINUTES } from './constants/booking.constants';
+import { TransactionalMailService } from '../mail/transactional-mail.service';
+import { User } from '../users/entities/user.entity';
 
 function chainableQueryBuilder(overrides: Record<string, unknown> = {}) {
   const qb: Record<string, unknown> = {
@@ -66,6 +68,11 @@ describe('BookingsService', () => {
   };
   const roomManagerRepo = {
     findOne: jest.fn(),
+    findOneByOrFail: jest.fn(),
+  };
+  const userManagerRepo = { findOneByOrFail: jest.fn() };
+  const mailService = {
+    createBookingStatusOutbox: jest.fn().mockResolvedValue({}),
   };
   const bookingManagerRepo = {
     findOne: jest.fn(),
@@ -82,6 +89,7 @@ describe('BookingsService', () => {
     getRepository: (entity: unknown) => {
       if (entity === Payment) return paymentManagerRepo;
       if (entity === Room) return roomManagerRepo;
+      if (entity === User) return userManagerRepo;
       return bookingManagerRepo;
     },
     createQueryBuilder: managerCreateQueryBuilder,
@@ -125,6 +133,13 @@ describe('BookingsService', () => {
     );
     managerCreateQueryBuilder.mockImplementation(() => createQueryBuilder());
     roomManagerRepo.findOne.mockResolvedValue(room);
+    roomManagerRepo.findOneByOrFail.mockResolvedValue(room);
+    userManagerRepo.findOneByOrFail.mockResolvedValue({
+      id: '1',
+      email: 'guest@example.com',
+      username: 'guest',
+      fullName: null,
+    });
     paymentManagerRepo.exists.mockResolvedValue(false);
 
     const module: TestingModule = await Test.createTestingModule({
@@ -150,6 +165,7 @@ describe('BookingsService', () => {
           provide: ConfigService,
           useValue: { get: () => undefined },
         },
+        { provide: TransactionalMailService, useValue: mailService },
       ],
     }).compile();
 

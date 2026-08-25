@@ -336,7 +336,8 @@
     "email": {
       "PENDING": "Đang chờ",
       "SENT": "Đã gửi",
-      "FAILED": "Thất bại"
+      "FAILED": "Thất bại",
+      "DELIVERED_UNCONFIRMED": "Đã gửi, chờ xác nhận"
     },
     "user": {
       "ACTIVE": "Đang hoạt động",

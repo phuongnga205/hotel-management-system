@@ -2,18 +2,35 @@ import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { EmailLog } from './entities/email-log.entity';
+import { MailOutbox } from './entities/mail-outbox.entity';
 import { MailController } from './mail.controller';
+import { AdminEmailLogsController } from './admin-email-logs.controller';
 import { MAIL_QUEUE } from './mail.constants';
 import { MailProcessor } from './mail.processor';
 import { MailService } from './mail.service';
+import { OutboxProcessor } from './outbox.processor';
+import { MailErrorSanitizer } from './mail-error.sanitizer';
+import { EmailReconciliationService } from './email-reconciliation.service';
+import { ScheduleModule } from '@nestjs/schedule';
+import { MailPersistenceModule } from './mail-persistence.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([EmailLog]),
-    BullModule.registerQueue({ name: MAIL_QUEUE }),
+    TypeOrmModule.forFeature([EmailLog, MailOutbox]),
+    ScheduleModule.forRoot(),
+    MailPersistenceModule,
+    BullModule.registerQueue({
+      name: MAIL_QUEUE,
+    }),
   ],
-  controllers: [MailController],
-  providers: [MailService, MailProcessor],
+  controllers: [MailController, AdminEmailLogsController],
+  providers: [
+    MailService,
+    MailProcessor,
+    OutboxProcessor,
+    MailErrorSanitizer,
+    EmailReconciliationService,
+  ],
   exports: [MailService],
 })
 export class MailModule {}

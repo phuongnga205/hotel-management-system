@@ -336,7 +336,8 @@
     "email": {
       "PENDING": "Pending",
       "SENT": "Sent",
-      "FAILED": "Failed"
+      "FAILED": "Failed",
+      "DELIVERED_UNCONFIRMED": "Delivered, awaiting confirmation"
     },
     "user": {
       "ACTIVE": "Active",

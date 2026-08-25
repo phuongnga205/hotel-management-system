@@ -1,12 +1,15 @@
 /* sunlint-disable */
 import {
   ConflictException,
+  BadRequestException,
   ForbiddenException,
   Injectable,
+  InternalServerErrorException,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { instanceToPlain } from 'class-transformer';
 import { User, UserStatus } from '../users/entities/user.entity';
 import { JwtService } from '@nestjs/jwt';
@@ -16,9 +19,23 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 
 import { TokenUtil } from '../token/token.util';
+import { ConfigService } from '@nestjs/config';
+import { randomInt } from 'node:crypto';
+import { ActivateAccountDto } from './dto/activate-account.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import {
+  DEFAULT_OTP_TTL_SECONDS,
+  ENVIRONMENT_KEYS,
+} from '../config/environment.constants';
+import { TransactionalMailService } from '../mail/transactional-mail.service';
 
 export const BCRYPT_SALT_ROUNDS = 10;
 export const POSTGRES_UNIQUE_VIOLATION_CODE = '23505';
+const OTP_MIN_VALUE = 100_000;
+const OTP_MAX_EXCLUSIVE = 1_000_000;
+const EMAIL_VERIFICATION_PURPOSE = 'EMAIL_VERIFICATION';
+const PASSWORD_RESET_PURPOSE = 'PASSWORD_RESET';
 
 @Injectable()
 export class AuthService {
@@ -28,6 +45,9 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly i18n: I18nService,
     private readonly tokenUtil: TokenUtil,
+    private readonly configService: ConfigService,
+    private readonly dataSource: DataSource,
+    private readonly mailService: TransactionalMailService,
   ) {}
 
   async logout(token: string) {
@@ -51,15 +71,31 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
 
-    const user = this.userRepository.create({
-      email,
-      password: hashedPassword,
-      username,
-      phone,
-    });
-
+    let savedUser: User;
+    const otp = this.generateOtp();
     try {
-      await this.userRepository.save(user);
+      savedUser = await this.dataSource.transaction(async (manager) => {
+        const user = manager.create(User, {
+          email,
+          password: hashedPassword,
+          username,
+          phone,
+        });
+        const persistedUser = await manager.save(User, user);
+
+        await this.tokenUtil.saveOtp(
+          EMAIL_VERIFICATION_PURPOSE,
+          persistedUser.id,
+          otp,
+          this.getOtpTtlSeconds(),
+        );
+        await this.mailService.createAccountActivationOutbox(manager, {
+          email: persistedUser.email,
+          name: persistedUser.fullName ?? persistedUser.username,
+          otp,
+        });
+        return persistedUser;
+      });
     } catch (error: unknown) {
       if (
         error &&
@@ -79,7 +115,112 @@ export class AuthService {
       // Never hand the raw entity to a controller — instanceToPlain() strips
       // every @Exclude()-marked field (password) regardless of whether the
       // caller remembers to have ClassSerializerInterceptor wired up.
-      user: instanceToPlain(user),
+      user: instanceToPlain(savedUser),
+    };
+  }
+
+  async activate(dto: ActivateAccountDto) {
+    const user = await this.userRepository.findOne({
+      where: { email: dto.email },
+    });
+    if (!user) {
+      throw new NotFoundException(this.i18n.t('messages.AUTH.USER_NOT_FOUND'));
+    }
+    if (user.status === UserStatus.ACTIVE) {
+      throw new ConflictException(
+        this.i18n.t('messages.AUTH.ALREADY_ACTIVATED'),
+      );
+    }
+    const valid = await this.tokenUtil.consumeOtpIfMatches(
+      EMAIL_VERIFICATION_PURPOSE,
+      user.id,
+      dto.otp,
+    );
+    if (!valid) {
+      throw new BadRequestException(
+        this.i18n.t('messages.AUTH.INVALID_OR_EXPIRED_OTP'),
+      );
+    }
+    user.status = UserStatus.ACTIVE;
+    user.activatedAt = new Date();
+    await this.userRepository.save(user);
+    return this.messageResponse('messages.AUTH.ACTIVATE_SUCCESS');
+  }
+
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const user = await this.userRepository.findOne({
+      where: { email: dto.email },
+    });
+    if (user) {
+      const otp = this.generateOtp();
+      await this.dataSource.transaction(async (manager) => {
+        await this.tokenUtil.saveOtp(
+          PASSWORD_RESET_PURPOSE,
+          user.id,
+          otp,
+          this.getOtpTtlSeconds(),
+        );
+        await this.mailService.createPasswordResetOutbox(manager, {
+          email: user.email,
+          name: user.fullName ?? user.username,
+          otp,
+        });
+      });
+    }
+    return this.messageResponse('messages.AUTH.FORGOT_PASSWORD_ACCEPTED');
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    const user = await this.userRepository.findOne({
+      where: { email: dto.email },
+    });
+    const valid = user
+      ? await this.tokenUtil.consumeOtpIfMatches(
+          PASSWORD_RESET_PURPOSE,
+          user.id,
+          dto.otp,
+        )
+      : false;
+    if (!valid) {
+      throw new BadRequestException(
+        this.i18n.t('messages.AUTH.INVALID_OR_EXPIRED_OTP'),
+      );
+    }
+    // `valid` can only be true when `user` exists, but keep the guard explicit
+    // so the invariant is clear to TypeScript and future maintainers.
+    if (!user) {
+      throw new BadRequestException(
+        this.i18n.t('messages.AUTH.INVALID_OR_EXPIRED_OTP'),
+      );
+    }
+    user.password = await bcrypt.hash(dto.newPassword, BCRYPT_SALT_ROUNDS);
+    await this.userRepository.save(user);
+    return this.messageResponse('messages.AUTH.RESET_PASSWORD_SUCCESS');
+  }
+
+  private generateOtp(): string {
+    return randomInt(OTP_MIN_VALUE, OTP_MAX_EXCLUSIVE).toString();
+  }
+
+  private getOtpTtlSeconds(): number {
+    const rawValue = this.configService.get<string | number>(
+      ENVIRONMENT_KEYS.OTP_TTL_SECONDS,
+      DEFAULT_OTP_TTL_SECONDS,
+    );
+    const ttl = Number(rawValue);
+    if (!Number.isInteger(ttl) || ttl <= 0) {
+      throw new InternalServerErrorException(
+        this.i18n.t('messages.AUTH.INVALID_OTP_CONFIGURATION'),
+      );
+    }
+    return ttl;
+  }
+
+  private messageResponse(messageKey: string) {
+    return {
+      statusCode: 200,
+      message: this.i18n.t(messageKey),
+      data: null,
     };
   }
 

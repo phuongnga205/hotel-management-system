@@ -48,22 +48,16 @@ export class TokenUtil {
     await this.redisUtil.save(this.getOtpKey(purpose, userId), otp, ttlSeconds);
   }
 
-  // So khớp OTP, KHÔNG tự xoá — service gọi `consumeOtp` sau khi xử lý xong
-  // (kích hoạt tài khoản / đổi mật khẩu thành công) để đánh dấu đã dùng,
-  // thay cho cột `used_at` cũ. Tách riêng 2 bước để tránh trường hợp OTP bị
-  // xoá dù bước xử lý sau đó thất bại.
-  async verifyOtp(
+  // So khớp và xoá OTP trong cùng một Redis Lua operation. Hai request đồng
+  // thời không thể cùng claim một mã, tránh replay khi kích hoạt/reset mật khẩu.
+  async consumeOtpIfMatches(
     purpose: OtpPurpose,
     userId: string,
     otp: string,
   ): Promise<boolean> {
-    const stored = await this.redisUtil.findOne(
+    return this.redisUtil.compareAndDelete(
       this.getOtpKey(purpose, userId),
+      otp,
     );
-    return stored !== null && stored === otp;
-  }
-
-  async consumeOtp(purpose: OtpPurpose, userId: string): Promise<void> {
-    await this.redisUtil.delete(this.getOtpKey(purpose, userId));
   }
 }
