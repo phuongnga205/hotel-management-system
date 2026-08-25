@@ -21,5 +21,12 @@ export const EMAIL_HTML_MAX_LENGTH = 50_000;
 export const MAIL_QUEUE_BATCH_SIZE = 50;
 export const MAIL_QUEUE_LOCK_TIMEOUT_MINUTES = 5;
 
+export const MAIL_RECONCILIATION = {
+  JOB_NAME: 'email-reconciliation-job',
+  CRON: '*/5 * * * *',
+  QUEUE_KEY: 'email:delivery:unconfirmed',
+  BATCH_SIZE: 100,
+} as const;
+
 // Cổng SMTP mặc định khi biến môi trường MAIL_PORT không được cấu hình.
 export const DEFAULT_MAIL_PORT = 587;

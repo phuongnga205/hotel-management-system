@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unused-vars */
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService, BCRYPT_SALT_ROUNDS } from './auth.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -12,8 +12,9 @@ import {
   ConflictException,
   ForbiddenException,
 } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ConfigService } from '@nestjs/config';
+import { DataSource } from 'typeorm';
+import { TransactionalMailService } from '../mail/transactional-mail.service';
 
 jest.mock('bcrypt');
 
@@ -23,7 +24,7 @@ describe('AuthService', () => {
   let jwtService: any;
   let i18nService: any;
   let tokenUtil: any;
-  let eventEmitter: any;
+  let mailService: any;
 
   beforeEach(async () => {
     const mockUserRepository = {
@@ -43,8 +44,23 @@ describe('AuthService', () => {
       saveOtp: jest.fn(),
       consumeOtpIfMatches: jest.fn(),
     };
-    const mockEventEmitter = { emitAsync: jest.fn().mockResolvedValue([]) };
     const mockConfigService = { get: jest.fn().mockReturnValue(600) };
+    const mockMailService = {
+      createAccountActivationOutbox: jest.fn().mockResolvedValue({}),
+      createPasswordResetOutbox: jest.fn().mockResolvedValue({}),
+    };
+    const mockDataSource = {
+      transaction: jest.fn((callback: (manager: any) => unknown) =>
+        Promise.resolve(
+          callback({
+            create: (_entity: unknown, value: unknown) =>
+              mockUserRepository.create(value),
+            save: (_entity: unknown, value: unknown) =>
+              mockUserRepository.save(value),
+          }),
+        ),
+      ),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -53,8 +69,9 @@ describe('AuthService', () => {
         { provide: JwtService, useValue: mockJwtService },
         { provide: I18nService, useValue: mockI18nService },
         { provide: TokenUtil, useValue: mockTokenUtil },
-        { provide: EventEmitter2, useValue: mockEventEmitter },
         { provide: ConfigService, useValue: mockConfigService },
+        { provide: DataSource, useValue: mockDataSource },
+        { provide: TransactionalMailService, useValue: mockMailService },
       ],
     }).compile();
 
@@ -63,7 +80,7 @@ describe('AuthService', () => {
     jwtService = module.get(JwtService);
     i18nService = module.get(I18nService);
     tokenUtil = module.get(TokenUtil);
-    eventEmitter = module.get(EventEmitter2);
+    mailService = module.get(TransactionalMailService);
   });
 
   afterEach(() => {
@@ -122,7 +139,7 @@ describe('AuthService', () => {
         expect.stringMatching(/^\d{6}$/),
         600,
       );
-      expect(eventEmitter.emitAsync).toHaveBeenCalled();
+      expect(mailService.createAccountActivationOutbox).toHaveBeenCalled();
       expect(result.message).toEqual('messages.AUTH.REGISTER_SUCCESS');
     });
 
@@ -202,10 +219,10 @@ describe('AuthService', () => {
 
       expect(result.message).toBe('messages.AUTH.FORGOT_PASSWORD_ACCEPTED');
       expect(tokenUtil.saveOtp).not.toHaveBeenCalled();
-      expect(eventEmitter.emitAsync).not.toHaveBeenCalled();
+      expect(mailService.createPasswordResetOutbox).not.toHaveBeenCalled();
     });
 
-    it('creates a password-reset OTP and emits the mail event', async () => {
+    it('creates a password-reset OTP and persists its outbox', async () => {
       userRepository.findOne.mockResolvedValue({ ...inactiveUser });
 
       await service.forgotPassword({ email: inactiveUser.email });
@@ -216,7 +233,7 @@ describe('AuthService', () => {
         expect.stringMatching(/^\d{6}$/),
         600,
       );
-      expect(eventEmitter.emitAsync).toHaveBeenCalled();
+      expect(mailService.createPasswordResetOutbox).toHaveBeenCalled();
     });
 
     it('resets the password with a valid OTP and consumes it', async () => {
@@ -256,7 +273,7 @@ describe('AuthService', () => {
       expect(tokenUtil.consumeOtpIfMatches).not.toHaveBeenCalled();
     });
 
-    it('keeps registration successful when mail event persistence fails', async () => {
+    it('rolls registration back when outbox persistence fails', async () => {
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashedPass');
       userRepository.create.mockReturnValue({
         email: 'test@mail.com',
@@ -269,7 +286,9 @@ describe('AuthService', () => {
         password: 'hashedPass',
         username: 'test',
       });
-      eventEmitter.emitAsync.mockRejectedValueOnce(new Error('outbox down'));
+      mailService.createAccountActivationOutbox.mockRejectedValueOnce(
+        new Error('outbox down'),
+      );
 
       await expect(
         service.register({
@@ -277,9 +296,7 @@ describe('AuthService', () => {
           password: 'pass',
           username: 'test',
         } as any),
-      ).resolves.toEqual(
-        expect.objectContaining({ message: 'messages.AUTH.REGISTER_SUCCESS' }),
-      );
+      ).rejects.toThrow('outbox down');
     });
   });
 

@@ -6,10 +6,10 @@ import { AdminReviewsController } from './admin-reviews.controller';
 import { RoomReviewsController } from './room-reviews.controller';
 import { Review } from './entities/review.entity';
 import { Booking } from '../bookings/entities/booking.entity';
-import { DomainEventsModule } from '../common/events/domain-events.module';
+import { MailPersistenceModule } from '../mail/mail-persistence.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Review, Booking]), DomainEventsModule],
+  imports: [TypeOrmModule.forFeature([Review, Booking]), MailPersistenceModule],
   controllers: [
     ReviewsController,
     RoomReviewsController,

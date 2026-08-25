@@ -5,10 +5,10 @@ import { BookingsController } from './bookings.controller';
 import { AdminBookingsController } from './admin-bookings.controller';
 import { Booking } from './entities/booking.entity';
 import { Room } from '../rooms/entities/room.entity';
-import { DomainEventsModule } from '../common/events/domain-events.module';
+import { MailPersistenceModule } from '../mail/mail-persistence.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Booking, Room]), DomainEventsModule],
+  imports: [TypeOrmModule.forFeature([Booking, Room]), MailPersistenceModule],
   controllers: [BookingsController, AdminBookingsController],
   providers: [BookingsService],
   exports: [TypeOrmModule],

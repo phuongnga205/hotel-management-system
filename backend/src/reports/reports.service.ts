@@ -5,6 +5,7 @@ import { Repository, DataSource } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
 import { Decimal } from 'decimal.js';
+import { DateTime } from 'luxon';
 import { CronJob } from 'cron';
 import { MailService } from '../mail/mail.service';
 import {
@@ -29,10 +30,7 @@ import {
 import { ReportEmailLogNotFoundError } from './errors/report-email-log-not-found.error';
 import { REPORT_CLOCK } from './report-clock.provider';
 import type { ReportClock } from './report-clock.provider';
-
-const MONTHLY_REPORT_JOB_NAME = 'monthly-report-job';
-
-const ADMIN_BATCH_SIZE = 100;
+import { MONTHLY_REPORT_SCHEDULE } from './reports.constants';
 
 @Injectable()
 export class ReportsService implements OnModuleInit {
@@ -81,9 +79,29 @@ export class ReportsService implements OnModuleInit {
         timeZone,
       );
 
-      this.schedulerRegistry.addCronJob(MONTHLY_REPORT_JOB_NAME, job);
+      this.schedulerRegistry.addCronJob(MONTHLY_REPORT_SCHEDULE.JOB_NAME, job);
       job.start();
       this.logger.log(`Scheduled monthly report with cron: ${cronExpression}`);
+
+      const recoveryJob = new CronJob(
+        MONTHLY_REPORT_SCHEDULE.RECOVERY_CRON,
+        () => {
+          this.recoverPreviousMonthReport().catch((err: unknown) => {
+            this.logger.error(
+              'Error recovering previous monthly report',
+              err instanceof Error ? err.stack : String(err),
+            );
+          });
+        },
+        null,
+        false,
+        timeZone,
+      );
+      this.schedulerRegistry.addCronJob(
+        MONTHLY_REPORT_SCHEDULE.RECOVERY_JOB_NAME,
+        recoveryJob,
+      );
+      recoveryJob.start();
     } catch (error: unknown) {
       this.logger.error(
         'Failed to initialize monthly report schedule',
@@ -94,21 +112,35 @@ export class ReportsService implements OnModuleInit {
   }
 
   async generateMonthlyReport(): Promise<void> {
+    const timeZone = this.configService.get<string>(
+      ENVIRONMENT_KEYS.REPORT_TIME_ZONE,
+      DEFAULT_REPORT_TIME_ZONE,
+    );
+
+    const reportPeriod = this.clock.now().setZone(timeZone);
+
+    // REPORT_CRON runs on days 28-31 because standard cron syntax has no
+    // dedicated "last day" operator. Only the real final calendar day may
+    // enqueue a report, preventing premature or duplicate monthly sends.
+    if (reportPeriod.day !== reportPeriod.daysInMonth) return;
+
+    await this.generateReportForPeriod(reportPeriod);
+  }
+
+  async recoverPreviousMonthReport(): Promise<void> {
+    const timeZone = this.configService.get<string>(
+      ENVIRONMENT_KEYS.REPORT_TIME_ZONE,
+      DEFAULT_REPORT_TIME_ZONE,
+    );
+    const previousMonth = this.clock
+      .now()
+      .setZone(timeZone)
+      .minus({ months: 1 });
+    await this.generateReportForPeriod(previousMonth);
+  }
+
+  private async generateReportForPeriod(reportPeriod: DateTime): Promise<void> {
     try {
-      const timeZone = this.configService.get<string>(
-        ENVIRONMENT_KEYS.REPORT_TIME_ZONE,
-        DEFAULT_REPORT_TIME_ZONE,
-      );
-
-      const reportPeriod = this.clock.now().setZone(timeZone);
-
-      // REPORT_CRON runs on days 28-31 because standard cron syntax has no
-      // dedicated "last day" operator. Only the real final calendar day may
-      // enqueue a report, preventing premature or duplicate monthly sends.
-      if (reportPeriod.day !== reportPeriod.daysInMonth) {
-        return;
-      }
-
       const reportMonth = reportPeriod.toFormat('yyyy-MM');
       const startDate = reportPeriod.startOf('month').toUTC().toJSDate();
       const nextMonth = reportPeriod
@@ -143,8 +175,9 @@ export class ReportsService implements OnModuleInit {
         revenueSummary?.paidBookingsCount || '0',
         10,
       );
-      const totalRevenueStr = revenueSummary?.totalRevenue || '0';
-      const totalRevenue = new Decimal(totalRevenueStr).toNumber();
+      const totalRevenue = new Decimal(
+        revenueSummary?.totalRevenue || '0',
+      ).toFixed(2);
 
       const title = this.i18n.t('messages.REPORTS.MONTHLY.TITLE', {
         args: { reportMonth },
@@ -172,7 +205,7 @@ export class ReportsService implements OnModuleInit {
           .where('user.role = :role', { role: UserRole.ADMIN })
           .andWhere('user.status = :status', { status: UserStatus.ACTIVE })
           .orderBy('user.id', 'ASC')
-          .limit(ADMIN_BATCH_SIZE)
+          .limit(MONTHLY_REPORT_SCHEDULE.ADMIN_BATCH_SIZE)
           .offset(offset)
           .getMany();
 
@@ -257,7 +290,7 @@ export class ReportsService implements OnModuleInit {
                       type: EmailType.MONTHLY_REPORT,
                       to: admin.email,
                       subject,
-                      text: `${description}\n${totalBookingsLabel} ${totalBookings}\n${totalPaidBookingsLabel} ${paidBookingsCount}\n${totalRevenueLabel} $${totalRevenue.toFixed(2)}`,
+                      text: `${description}\n${totalBookingsLabel} ${totalBookings}\n${totalPaidBookingsLabel} ${paidBookingsCount}\n${totalRevenueLabel} $${totalRevenue}`,
                       html,
                     },
                     { reportMonth, recipientUserId: admin.id },

@@ -20,6 +20,7 @@ import {
   EmailLogDetailResponseDto,
   RetryEmailLogResponseDto,
 } from './dto/email-log-detail-response.dto';
+import { TransactionalMailService } from './transactional-mail.service';
 
 @Injectable()
 export class MailService {
@@ -32,6 +33,7 @@ export class MailService {
     private readonly mailQueue: Queue,
     private readonly i18n: I18nService,
     private readonly dataSource: DataSource,
+    private readonly transactionalMailService: TransactionalMailService,
   ) {}
 
   async createOutbox(
@@ -39,31 +41,7 @@ export class MailService {
     dto: SendMailDto,
     report?: { reportMonth: string; recipientUserId: string },
   ): Promise<EmailLog> {
-    const newEmailLog = manager.create(EmailLog, {
-      type: dto.type,
-      recipient: dto.to,
-      subject: dto.subject,
-      text: dto.text,
-      html: dto.html,
-      status: EmailStatus.PENDING,
-      reportMonth: report?.reportMonth ?? null,
-      recipientUserId: report?.recipientUserId ?? null,
-    });
-    const savedEmailLog = await manager.save(EmailLog, newEmailLog);
-
-    const outbox = manager.create(MailOutbox, {
-      emailLogId: savedEmailLog.id,
-      status: OutboxStatus.PENDING,
-      payload: {
-        to: dto.to,
-        subject: dto.subject,
-        text: dto.text,
-        html: dto.html,
-      },
-    });
-    await manager.save(MailOutbox, outbox);
-
-    return savedEmailLog;
+    return this.transactionalMailService.createOutbox(manager, dto, report);
   }
 
   async createOutboxForExisting(

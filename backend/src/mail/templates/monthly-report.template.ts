@@ -2,7 +2,7 @@ export function getMonthlyReportHtml(
   reportMonth: string,
   totalBookings: number,
   paidBookingsCount: number,
-  totalRevenue: number,
+  totalRevenue: string,
   title: string,
   description: string,
   totalBookingsLabel: string,
@@ -15,7 +15,7 @@ export function getMonthlyReportHtml(
     <ul>
       <li><strong>${totalBookingsLabel}</strong> ${totalBookings}</li>
       <li><strong>${totalPaidBookingsLabel}</strong> ${paidBookingsCount}</li>
-      <li><strong>${totalRevenueLabel}</strong> $${totalRevenue.toFixed(2)}</li>
+      <li><strong>${totalRevenueLabel}</strong> $${totalRevenue}</li>
     </ul>
   `;
 }

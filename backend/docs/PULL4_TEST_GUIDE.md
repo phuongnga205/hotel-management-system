@@ -97,6 +97,9 @@ Restart backend sau khi doi bien moi truong.
 Production mac dinh danh thuc luc 23:55 cac ngay 28-31 theo
 `REPORT_TIME_ZONE`; service kiem tra va chi gui vao ngay cuoi cung cua thang.
 De test noi dung bao cao, dung E2E voi `ReportClock` gia lap ngay cuoi thang.
+Neu transaction tao dispatch/email/outbox tam thoi that bai, recovery job chay
+moi 10 phut tu 00:00 den 02:59 ngay dau thang va xu ly lai ky truoc. Unique
+constraint theo thang/Admin ngan gui trung.
 
 Log thanh cong mong doi:
 
@@ -130,6 +133,9 @@ Kiem tra `email_logs.status`:
 - `SENT`: SMTP gui thanh cong.
 - `FAILED`: gui that bai sau retry.
 - `DELIVERED_UNCONFIRMED`: SMTP da chap nhan, dang cho reconciliation.
+
+Reconciliation xu ly toi da 100 email moi lan. Neu DB loi, item duoc dua lai
+queue va lan chay hien tai dung ngay, tranh lap vo han va danh DB lien tuc.
 
 ## Khoi phuc cau hinh chuan
 

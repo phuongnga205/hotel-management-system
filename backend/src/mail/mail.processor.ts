@@ -10,7 +10,12 @@ import { DataSource, Repository } from 'typeorm';
 import { EmailLog, EmailStatus } from './entities/email-log.entity';
 import { ReportDispatchStatus } from '../reports/entities/monthly-report-dispatch.entity';
 import { MonthlyReportDispatch } from '../reports/entities/monthly-report-dispatch.entity';
-import { DEFAULT_MAIL_PORT, MAIL_JOB, MAIL_QUEUE } from './mail.constants';
+import {
+  DEFAULT_MAIL_PORT,
+  MAIL_JOB,
+  MAIL_QUEUE,
+  MAIL_RECONCILIATION,
+} from './mail.constants';
 import { ENVIRONMENT_KEYS } from '../config/environment.constants';
 import {
   MailDeliveryError,
@@ -150,7 +155,7 @@ export class MailProcessor extends WorkerHost {
         error instanceof Error ? error.stack : String(error),
       );
       try {
-        await this.redisUtil.lpush('email:delivery:unconfirmed', emailLogId);
+        await this.redisUtil.lpush(MAIL_RECONCILIATION.QUEUE_KEY, emailLogId);
       } catch (redisError) {
         this.logger.error('Failed to push to unconfirmed queue', redisError);
       }

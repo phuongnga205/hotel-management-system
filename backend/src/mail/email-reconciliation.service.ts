@@ -8,8 +8,7 @@ import {
   MonthlyReportDispatch,
   ReportDispatchStatus,
 } from '../reports/entities/monthly-report-dispatch.entity';
-
-const EMAIL_RECONCILIATION_JOB_NAME = 'email-reconciliation-job';
+import { MAIL_RECONCILIATION } from './mail.constants';
 
 @Injectable()
 export class EmailReconciliationService implements OnModuleInit {
@@ -22,29 +21,30 @@ export class EmailReconciliationService implements OnModuleInit {
   ) {}
 
   onModuleInit() {
-    const job = new CronJob(
-      '*/5 * * * *', // Run every 5 minutes
-      () => {
-        this.reconcileEmails().catch((err: unknown) => {
-          this.logger.error(
-            'Error in email reconciliation',
-            err instanceof Error ? err.stack : String(err),
-          );
-        });
-      },
-    );
+    const job = new CronJob(MAIL_RECONCILIATION.CRON, () => {
+      this.reconcileEmails().catch((err: unknown) => {
+        this.logger.error(
+          'Error in email reconciliation',
+          err instanceof Error ? err.stack : String(err),
+        );
+      });
+    });
 
-    this.schedulerRegistry.addCronJob(EMAIL_RECONCILIATION_JOB_NAME, job);
+    this.schedulerRegistry.addCronJob(MAIL_RECONCILIATION.JOB_NAME, job);
     job.start();
     this.logger.log('Started email reconciliation cron job');
   }
 
-  async reconcileEmails() {
-    while (true) {
+  async reconcileEmails(): Promise<void> {
+    for (
+      let processed = 0;
+      processed < MAIL_RECONCILIATION.BATCH_SIZE;
+      processed += 1
+    ) {
       const emailLogId = await this.redisUtil.rpop(
-        'email:delivery:unconfirmed',
+        MAIL_RECONCILIATION.QUEUE_KEY,
       );
-      if (!emailLogId) break;
+      if (!emailLogId) return;
 
       try {
         await this.dataSource.transaction(async (manager) => {
@@ -72,10 +72,16 @@ export class EmailReconciliationService implements OnModuleInit {
             this.logger.log(`Reconciled email delivery for log ${emailLogId}`);
           }
         });
-      } catch (error) {
-        this.logger.error(`Failed to reconcile email log ${emailLogId}`, error);
-        // Put it back to retry later
-        await this.redisUtil.lpush('email:delivery:unconfirmed', emailLogId);
+      } catch (error: unknown) {
+        await this.redisUtil.lpush(MAIL_RECONCILIATION.QUEUE_KEY, emailLogId);
+        this.logger.error({
+          message: 'Email reconciliation failed',
+          emailLogId,
+          error: error instanceof Error ? error.message : String(error),
+          nextAction: 'Retry on the next scheduled reconciliation run',
+        });
+        // Stop so the requeued item cannot be popped again in the same run.
+        return;
       }
     }
   }

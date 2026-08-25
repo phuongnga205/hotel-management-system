@@ -2,11 +2,10 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
-  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { QueryFailedError, Repository } from 'typeorm';
+import { DataSource, QueryFailedError, Repository } from 'typeorm';
 
 import { Review } from './entities/review.entity';
 import { CreateReviewDto } from './dto/create-review.dto';
@@ -19,20 +18,19 @@ import { PostgresErrorCode } from '../common/enums/postgres-error-code.enum';
 import { ReviewQueryDto } from './dto/review-query.dto';
 import { ReviewResponseDto } from './dto/review-response.dto';
 import { REVIEW_ADMIN_DELETE_REASON } from './reviews.constants';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { MAIL_EVENT, ReviewDeletedEvent } from '../mail/mail.events';
+import { TransactionalMailService } from '../mail/transactional-mail.service';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class ReviewsService {
-  private readonly logger = new Logger(ReviewsService.name);
-
   constructor(
     @InjectRepository(Review)
     private readonly reviewRepository: Repository<Review>,
     private readonly i18n: I18nService,
     @InjectRepository(Booking)
     private readonly bookingRepository: Repository<Booking>,
-    private readonly eventEmitter: EventEmitter2,
+    private readonly dataSource: DataSource,
+    private readonly mailService: TransactionalMailService,
   ) {}
 
   async create(userId: string, createReviewDto: CreateReviewDto) {
@@ -161,35 +159,27 @@ export class ReviewsService {
   }
 
   async remove(reviewId: string) {
-    const review = await this.reviewRepository.findOne({
-      where: {
-        id: reviewId,
-      },
-    });
-
-    if (!review) {
-      throw new NotFoundException(this.i18n.t('messages.REVIEWS.NOT_FOUND'));
-    }
-
-    // DELETE không nhận lý do từ client (xem docs mục "Admin — Reviews") —
-    // email thông báo cho user luôn dùng 1 template cố định.
-    review.deleteReason = REVIEW_ADMIN_DELETE_REASON;
-
-    await this.reviewRepository.softRemove(review);
-    try {
-      await this.eventEmitter.emitAsync(
-        MAIL_EVENT.REVIEW_DELETED,
-        new ReviewDeletedEvent(review.id, review.userId),
-      );
-    } catch (error: unknown) {
-      this.logger.error({
-        message: 'Review deleted but email event persistence failed',
-        reviewId: review.id,
-        userId: review.userId,
-        error: error instanceof Error ? error.message : String(error),
-        nextAction: 'Retry delivery through the admin email workflow',
+    await this.dataSource.transaction(async (manager) => {
+      const reviewRepository = manager.getRepository(Review);
+      const review = await reviewRepository.findOne({
+        where: { id: reviewId },
+        lock: { mode: 'pessimistic_write' },
       });
-    }
+
+      if (!review) {
+        throw new NotFoundException(this.i18n.t('messages.REVIEWS.NOT_FOUND'));
+      }
+
+      const user = await manager
+        .getRepository(User)
+        .findOneByOrFail({ id: review.userId });
+
+      // DELETE không nhận lý do từ client (xem docs mục "Admin — Reviews") —
+      // email thông báo cho user luôn dùng 1 template cố định.
+      review.deleteReason = REVIEW_ADMIN_DELETE_REASON;
+      await reviewRepository.softRemove(review);
+      await this.mailService.createReviewDeletedOutbox(manager, user.email);
+    });
 
     return {
       statusCode: 200,

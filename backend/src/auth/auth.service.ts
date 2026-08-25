@@ -5,12 +5,11 @@ import {
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
-  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { instanceToPlain } from 'class-transformer';
 import { User, UserStatus } from '../users/entities/user.entity';
 import { JwtService } from '@nestjs/jwt';
@@ -20,21 +19,16 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 
 import { TokenUtil } from '../token/token.util';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ConfigService } from '@nestjs/config';
 import { randomInt } from 'node:crypto';
 import { ActivateAccountDto } from './dto/activate-account.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import {
-  MAIL_EVENT,
-  PasswordResetRequestedEvent,
-  UserRegisteredEvent,
-} from '../mail/mail.events';
-import {
   DEFAULT_OTP_TTL_SECONDS,
   ENVIRONMENT_KEYS,
 } from '../config/environment.constants';
+import { TransactionalMailService } from '../mail/transactional-mail.service';
 
 export const BCRYPT_SALT_ROUNDS = 10;
 export const POSTGRES_UNIQUE_VIOLATION_CODE = '23505';
@@ -45,16 +39,15 @@ const PASSWORD_RESET_PURPOSE = 'PASSWORD_RESET';
 
 @Injectable()
 export class AuthService {
-  private readonly logger = new Logger(AuthService.name);
-
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private readonly jwtService: JwtService,
     private readonly i18n: I18nService,
     private readonly tokenUtil: TokenUtil,
-    private readonly eventEmitter: EventEmitter2,
     private readonly configService: ConfigService,
+    private readonly dataSource: DataSource,
+    private readonly mailService: TransactionalMailService,
   ) {}
 
   async logout(token: string) {
@@ -78,16 +71,31 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
 
-    const user = this.userRepository.create({
-      email,
-      password: hashedPassword,
-      username,
-      phone,
-    });
-
     let savedUser: User;
+    const otp = this.generateOtp();
     try {
-      savedUser = await this.userRepository.save(user);
+      savedUser = await this.dataSource.transaction(async (manager) => {
+        const user = manager.create(User, {
+          email,
+          password: hashedPassword,
+          username,
+          phone,
+        });
+        const persistedUser = await manager.save(User, user);
+
+        await this.tokenUtil.saveOtp(
+          EMAIL_VERIFICATION_PURPOSE,
+          persistedUser.id,
+          otp,
+          this.getOtpTtlSeconds(),
+        );
+        await this.mailService.createAccountActivationOutbox(manager, {
+          email: persistedUser.email,
+          name: persistedUser.fullName ?? persistedUser.username,
+          otp,
+        });
+        return persistedUser;
+      });
     } catch (error: unknown) {
       if (
         error &&
@@ -101,24 +109,6 @@ export class AuthService {
       }
       throw error;
     }
-
-    const otp = this.generateOtp();
-    await this.tokenUtil.saveOtp(
-      EMAIL_VERIFICATION_PURPOSE,
-      savedUser.id,
-      otp,
-      this.getOtpTtlSeconds(),
-    );
-    await this.dispatchMailEventSafely(
-      MAIL_EVENT.USER_REGISTERED,
-      new UserRegisteredEvent(
-        savedUser.id,
-        savedUser.email,
-        savedUser.fullName ?? savedUser.username,
-        otp,
-      ),
-      { userId: savedUser.id, event: MAIL_EVENT.USER_REGISTERED },
-    );
 
     return {
       message: this.i18n.t('messages.AUTH.REGISTER_SUCCESS'),
@@ -163,25 +153,19 @@ export class AuthService {
     });
     if (user) {
       const otp = this.generateOtp();
-      await this.tokenUtil.saveOtp(
-        PASSWORD_RESET_PURPOSE,
-        user.id,
-        otp,
-        this.getOtpTtlSeconds(),
-      );
-      await this.dispatchMailEventSafely(
-        MAIL_EVENT.PASSWORD_RESET_REQUESTED,
-        new PasswordResetRequestedEvent(
+      await this.dataSource.transaction(async (manager) => {
+        await this.tokenUtil.saveOtp(
+          PASSWORD_RESET_PURPOSE,
           user.id,
-          user.email,
-          user.fullName ?? user.username,
           otp,
-        ),
-        {
-          userId: user.id,
-          event: MAIL_EVENT.PASSWORD_RESET_REQUESTED,
-        },
-      );
+          this.getOtpTtlSeconds(),
+        );
+        await this.mailService.createPasswordResetOutbox(manager, {
+          email: user.email,
+          name: user.fullName ?? user.username,
+          otp,
+        });
+      });
     }
     return this.messageResponse('messages.AUTH.FORGOT_PASSWORD_ACCEPTED');
   }
@@ -238,23 +222,6 @@ export class AuthService {
       message: this.i18n.t(messageKey),
       data: null,
     };
-  }
-
-  private async dispatchMailEventSafely(
-    eventName: (typeof MAIL_EVENT)[keyof typeof MAIL_EVENT],
-    payload: UserRegisteredEvent | PasswordResetRequestedEvent,
-    context: { userId: string; event: string },
-  ): Promise<void> {
-    try {
-      await this.eventEmitter.emitAsync(eventName, payload);
-    } catch (error: unknown) {
-      this.logger.error({
-        message: 'Failed to persist authentication email event',
-        ...context,
-        error: error instanceof Error ? error.message : String(error),
-        nextAction: 'Retry email delivery through the operational workflow',
-      });
-    }
   }
 
   async login(loginDto: LoginDto) {

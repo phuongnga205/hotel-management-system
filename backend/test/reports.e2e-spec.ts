@@ -230,6 +230,29 @@ describe('ReportsModule (e2e)', () => {
     ).toBe(0);
   });
 
+  it('recovers a missed report for the previous month idempotently', async () => {
+    // 2026-09-01 00:10 in Asia/Ho_Chi_Minh.
+    fakeClock.setSystemTime(new Date(Date.UTC(2026, 7, 31, 17, 10, 0)));
+
+    await Promise.all([
+      reportsService.recoverPreviousMonthReport(),
+      reportsService.recoverPreviousMonthReport(),
+    ]);
+
+    const dispatches = await dispatchRepository.findBy({
+      reportMonth: '2026-08',
+      recipientId: testAdmin.id,
+    });
+    expect(dispatches).toHaveLength(1);
+
+    const emailLogId = dispatches[0].emailLogId!;
+    expect(await outboxRepository.countBy({ emailLogId })).toBe(1);
+
+    await dispatchRepository.delete({ id: dispatches[0].id });
+    await outboxRepository.delete({ emailLogId });
+    await emailLogRepository.delete({ id: emailLogId });
+  }, 30_000);
+
   it('allows retry when queue dispatch fails but continues to next admin', async () => {
     // 2026-09-30 23:55 in Asia/Ho_Chi_Minh.
     const mockDate = new Date(Date.UTC(2026, 8, 30, 16, 55, 0));

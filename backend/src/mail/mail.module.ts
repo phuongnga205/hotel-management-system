@@ -11,13 +11,14 @@ import { MailService } from './mail.service';
 import { OutboxProcessor } from './outbox.processor';
 import { MailErrorSanitizer } from './mail-error.sanitizer';
 import { EmailReconciliationService } from './email-reconciliation.service';
-import { Booking } from '../bookings/entities/booking.entity';
-import { User } from '../users/entities/user.entity';
-import { MailEventsListener } from './mail-events.listener';
+import { ScheduleModule } from '@nestjs/schedule';
+import { MailPersistenceModule } from './mail-persistence.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([EmailLog, MailOutbox, Booking, User]),
+    TypeOrmModule.forFeature([EmailLog, MailOutbox]),
+    ScheduleModule.forRoot(),
+    MailPersistenceModule,
     BullModule.registerQueue({
       name: MAIL_QUEUE,
     }),
@@ -29,7 +30,6 @@ import { MailEventsListener } from './mail-events.listener';
     OutboxProcessor,
     MailErrorSanitizer,
     EmailReconciliationService,
-    MailEventsListener,
   ],
   exports: [MailService],
 })
