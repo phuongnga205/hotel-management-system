@@ -1,6 +1,5 @@
 import 'dotenv/config';
 import { ConfigService } from '@nestjs/config';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ConflictException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { I18nService } from 'nestjs-i18n';
@@ -10,6 +9,7 @@ import { Booking } from '../src/bookings/entities/booking.entity';
 import { Room } from '../src/rooms/entities/room.entity';
 import { RoomStatus } from '../src/rooms/enums/room-status.enum';
 import { User, UserStatus } from '../src/users/entities/user.entity';
+import { TransactionalMailService } from '../src/mail/transactional-mail.service';
 
 const configService = new ConfigService();
 const e2eDatabaseUrl = configService.get<string>(
@@ -37,9 +37,10 @@ describeWithDatabase('BookingsService overlap (e2e, real Postgres)', () => {
 
   const fakeI18n = { t: (key: string) => key } as unknown as I18nService;
   const fakeConfig = { get: () => undefined } as unknown as ConfigService;
-  const fakeEvents = {
-    emitAsync: jest.fn().mockResolvedValue([]),
-  } as unknown as EventEmitter2;
+  // create() (the only method this suite exercises) never sends mail —
+  // only accept()/reject() do — so a stub satisfying the constructor's
+  // type is enough, no method needs a real implementation.
+  const fakeMailService = {} as unknown as TransactionalMailService;
 
   beforeAll(async () => {
     dataSource = new DataSource({
@@ -59,7 +60,7 @@ describeWithDatabase('BookingsService overlap (e2e, real Postgres)', () => {
       dataSource,
       fakeI18n,
       fakeConfig,
-      fakeEvents,
+      fakeMailService,
     );
 
     const user = await dataSource.getRepository(User).save({

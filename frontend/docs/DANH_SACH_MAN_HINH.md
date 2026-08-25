@@ -151,7 +151,6 @@
 > "không có API nào dư/không nơi dùng" — không còn đúng, xem danh sách bên
 > dưới).
 
-<<<<<<< HEAD
 - `GET /rooms/:roomId/reviews` — đã dùng ở cả `HomePage.tsx` (carousel) và
   `RoomDetailPage.tsx` (danh sách đánh giá của phòng).
 - `GET /payments/me` — đã tiêu thụ trong `PaymentHistoryPage.tsx` qua
@@ -175,36 +174,6 @@
   tiêu thụ trong `BookRoomPage.tsx`.
 - `POST /mail/test`, `GET /mail/:id` (mục 12a ở doc BE) — route dev/test
   nội bộ, không guard, **không map vào màn hình FE nào cả theo thiết kế**
-=======
-- `GET /rooms/:roomId/reviews` — không còn TODO nữa theo nghĩa "chưa gọi
-  bao giờ": đã được `HomePage.tsx` gọi thật (carousel đánh giá phòng nổi
-  bật). Vẫn TODO đúng nghĩa ở `RoomDetailPage` vì **trang đó chưa tồn tại**
-  (mục C).
-- `GET /payments/me` — đã implement ở BE (mục 4a), FE chưa dựng trang gọi
-  tới (`PaymentHistoryPage.tsx`), **và cũng chưa có method nào trong
-  `payment.api.ts`** (chỉ có `adminList()`) — TODO còn treo từ trước, để
-  lại cho session sau.
-- `POST`/`DELETE /users/me/avatar` — đã implement ở BE, **chưa có method
-  nào trong `user.api.ts` lẫn UI trong `ProfilePage.tsx`** — API layer
-  cũng phải viết mới, không chỉ thiếu UI (mục D).
-- `POST /bookings/:id/pay` — đã có method thật (`bookingApi.pay()`) và đã
-  có entry point thật (nút "Pay" ở `BookingHistoryPage`) nhưng **trang đích
-  `BookingPaymentPage` chưa tồn tại** → dead link, ưu tiên cao (mục E).
-- `POST /reviews` — có method thật (`reviewApi.create()`) nhưng **không
-  màn nào gọi**, kể cả không có nút dẫn vào (mục E).
-- 🆕 `GET /rooms/available` (`roomApi.listAvailable()`) và `guests` query
-  trên cả `GET /rooms`/`GET /rooms/available` — đã có method + type thật
-  (`ListRoomsQuery.guests`, `ListAvailableRoomsQuery`, `api/types.ts`) và
-  `HomePage.tsx` đã build sẵn `?guests=` trong query string, nhưng **chưa
-  màn nào tiêu thụ** vì `RoomListPage` chưa tồn tại (mục C) — sẵn sàng ở
-  tầng data, chỉ chờ dựng UI.
-- 🆕 `guests` trên `Booking`/`CreateBookingPayload` (`api/types.ts`) — field
-  mới, `bookingApi.create()` đã nhận đúng type, nhưng **chưa màn nào gọi**
-  vì `BookRoomPage` chưa tồn tại (mục C) — tương tự các field khác đã sẵn
-  sàng ở tầng data, chờ dựng UI.
-- `POST /mail/test`, `GET /mail/:id` (mục 12a ở doc BE) — route kiểm tra
-  nội bộ đã khóa ADMIN, **không map vào màn hình FE nào cả theo thiết kế**
->>>>>>> main
   (không thuộc luồng nghiệp vụ chính thức) — khác các API "thiếu UI" khác ở
   trên, đây là **cố ý không có UI**.
 
