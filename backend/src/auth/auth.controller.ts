@@ -22,6 +22,10 @@ import {
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { ActivateAccountDto } from './dto/activate-account.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { AuthMessageResponseDto } from './dto/auth-message-response.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GetRawToken } from './decorators/get-token.decorator';
 
@@ -48,22 +52,56 @@ export class AuthController {
   @Header('Cache-Control', 'no-cache, no-store, max-age=0, must-revalidate')
   @Header('Pragma', 'no-cache')
   @Header('Expires', '0')
-  @ApiOperation({ summary: 'Đăng ký tài khoản người dùng mới' })
-  @ApiResponse({ status: 201, description: 'Đăng ký thành công' })
-  @ApiResponse({ status: 409, description: 'Email đã tồn tại' })
+  @ApiOperation({ summary: 'Register a new user account' })
+  @ApiResponse({ status: 201, description: 'Registration succeeded' })
+  @ApiResponse({ status: 409, description: 'Email already exists' })
   async register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
+  }
+
+  @Post('activate')
+  @UseGuards(ThrottlerGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Activate an account with a six-digit OTP' })
+  @ApiResponse({ status: 200, type: AuthMessageResponseDto })
+  @ApiResponse({ status: 400, description: 'OTP is invalid or expired' })
+  @ApiResponse({ status: 404, description: 'Account not found' })
+  activate(@Body() dto: ActivateAccountDto) {
+    return this.authService.activate(dto);
+  }
+
+  @Post('forgot-password')
+  @UseGuards(ThrottlerGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Request a password-reset OTP',
+    description:
+      'Always returns the same response to prevent account enumeration.',
+  })
+  @ApiResponse({ status: 200, type: AuthMessageResponseDto })
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto);
+  }
+
+  @Post('reset-password')
+  @UseGuards(ThrottlerGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reset a password with a six-digit OTP' })
+  @ApiResponse({ status: 200, type: AuthMessageResponseDto })
+  @ApiResponse({ status: 400, description: 'OTP is invalid or expired' })
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto);
   }
 
   @Post('login')
   @UseGuards(ThrottlerGuard)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Đăng nhập vào hệ thống' })
+  @ApiOperation({ summary: 'Sign in' })
   @ApiResponse({
     status: 200,
-    description: 'Đăng nhập thành công, trả về Access Token',
+    description: 'Sign-in succeeded and returns an access token',
   })
-  @ApiResponse({ status: 401, description: 'Thông tin đăng nhập không hợp lệ' })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async signInAction(
     @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) res: Response,
@@ -79,9 +117,9 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Thu hồi Token' })
-  @ApiResponse({ status: 200, description: 'Thành công' })
-  @ApiResponse({ status: 401, description: 'Token không hợp lệ' })
+  @ApiOperation({ summary: 'Revoke the current token' })
+  @ApiResponse({ status: 200, description: 'Token revoked' })
+  @ApiResponse({ status: 401, description: 'Invalid token' })
   async signOutAction(
     @GetRawToken() token: string,
     @Res({ passthrough: true }) res: Response,

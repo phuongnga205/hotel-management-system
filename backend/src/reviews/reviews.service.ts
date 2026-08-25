@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -18,15 +19,20 @@ import { PostgresErrorCode } from '../common/enums/postgres-error-code.enum';
 import { ReviewQueryDto } from './dto/review-query.dto';
 import { ReviewResponseDto } from './dto/review-response.dto';
 import { REVIEW_ADMIN_DELETE_REASON } from './reviews.constants';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { MAIL_EVENT, ReviewDeletedEvent } from '../mail/mail.events';
 
 @Injectable()
 export class ReviewsService {
+  private readonly logger = new Logger(ReviewsService.name);
+
   constructor(
     @InjectRepository(Review)
     private readonly reviewRepository: Repository<Review>,
     private readonly i18n: I18nService,
     @InjectRepository(Booking)
     private readonly bookingRepository: Repository<Booking>,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async create(userId: string, createReviewDto: CreateReviewDto) {
@@ -170,6 +176,20 @@ export class ReviewsService {
     review.deleteReason = REVIEW_ADMIN_DELETE_REASON;
 
     await this.reviewRepository.softRemove(review);
+    try {
+      await this.eventEmitter.emitAsync(
+        MAIL_EVENT.REVIEW_DELETED,
+        new ReviewDeletedEvent(review.id, review.userId),
+      );
+    } catch (error: unknown) {
+      this.logger.error({
+        message: 'Review deleted but email event persistence failed',
+        reviewId: review.id,
+        userId: review.userId,
+        error: error instanceof Error ? error.message : String(error),
+        nextAction: 'Retry delivery through the admin email workflow',
+      });
+    }
 
     return {
       statusCode: 200,

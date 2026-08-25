@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -40,9 +41,13 @@ import {
   DEFAULT_HOTEL_TIMEZONE,
   ENVIRONMENT_KEYS,
 } from '../config/environment.constants';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { BookingStatusChangedEvent, MAIL_EVENT } from '../mail/mail.events';
 
 @Injectable()
 export class BookingsService {
+  private readonly logger = new Logger(BookingsService.name);
+
   constructor(
     @InjectRepository(Booking)
     private readonly bookingsRepository: Repository<Booking>,
@@ -50,6 +55,7 @@ export class BookingsService {
     private readonly dataSource: DataSource,
     private readonly i18n: I18nService,
     private readonly configService: ConfigService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   // create() chạy hoàn toàn trong 1 transaction: expire hold cũ → check
@@ -239,7 +245,7 @@ export class BookingsService {
   }
 
   async cancel(id: string, userId: string, reason: CancelBookingDto) {
-    return this.dataSource.transaction(async (manager) => {
+    const result = await this.dataSource.transaction(async (manager) => {
       const bookingRepository = manager.getRepository(Booking);
       const booking = await bookingRepository.findOne({
         where: { id, userId },
@@ -266,6 +272,8 @@ export class BookingsService {
         message: this.i18n.t('messages.BOOKING.CANCEL_SUCCESS'),
       };
     });
+    await this.emitStatusChanged(id, BookingStatus.CANCELLED);
+    return result;
   }
 
   // Thanh toán + xác nhận booking trong cùng 1 transaction (2 thao tác ghi:
@@ -285,57 +293,71 @@ export class BookingsService {
   // Payment SUCCESS rồi) đều bị chặn — không cho trả tiền cho booking đã
   // "chết" hoặc trả trùng lần 2.
   async pay(id: string, userId: string, dto: PayBookingDto) {
-    return this.dataSource.transaction(async (manager) => {
-      const bookingRepository = manager.getRepository(Booking);
-      const booking = await bookingRepository.findOne({
-        where: { id, userId },
-        lock: { mode: 'pessimistic_write' },
-      });
-
-      if (!booking) {
-        throw new NotFoundException(this.i18n.t('messages.BOOKING.NOT_FOUND'));
-      }
-      // No-op trừ khi đang PENDING và hold đã hết hạn — tự expire rồi throw,
-      // không ảnh hưởng nhánh ACCEPTED bên dưới.
-      await this.assertHoldStillActive(manager, booking);
-
-      const paymentRepository = manager.getRepository(Payment);
-
-      if (booking.status === BookingStatus.ACCEPTED) {
-        const alreadyPaid = await paymentRepository.exists({
-          where: { bookingId: booking.id, status: PaymentStatus.SUCCESS },
+    const { response, statusChanged } = await this.dataSource.transaction(
+      async (manager) => {
+        const bookingRepository = manager.getRepository(Booking);
+        const booking = await bookingRepository.findOne({
+          where: { id, userId },
+          lock: { mode: 'pessimistic_write' },
         });
-        if (alreadyPaid) {
-          throw new ConflictException(
-            this.i18n.t('messages.BOOKING.ALREADY_PAID'),
+
+        if (!booking) {
+          throw new NotFoundException(
+            this.i18n.t('messages.BOOKING.NOT_FOUND'),
           );
         }
-      } else if (booking.status !== BookingStatus.PENDING) {
-        throw new ConflictException(this.i18n.t('messages.BOOKING.CANNOT_PAY'));
-      }
+        // No-op trừ khi đang PENDING và hold đã hết hạn — tự expire rồi throw,
+        // không ảnh hưởng nhánh ACCEPTED bên dưới.
+        await this.assertHoldStillActive(manager, booking);
 
-      await paymentRepository.save(
-        paymentRepository.create({
-          bookingId: booking.id,
-          amount: booking.totalPrice.toString(),
-          method: dto.method,
-          status: PaymentStatus.SUCCESS,
-          transactionId: randomUUID(),
-          paidAt: new Date(),
-        }),
-      );
+        const paymentRepository = manager.getRepository(Payment);
+        const transitionsToAccepted = booking.status === BookingStatus.PENDING;
 
-      if (booking.status === BookingStatus.PENDING) {
-        booking.status = BookingStatus.ACCEPTED;
-        booking.holdExpiresAt = null;
-        await bookingRepository.save(booking);
-      }
+        if (booking.status === BookingStatus.ACCEPTED) {
+          const alreadyPaid = await paymentRepository.exists({
+            where: { bookingId: booking.id, status: PaymentStatus.SUCCESS },
+          });
+          if (alreadyPaid) {
+            throw new ConflictException(
+              this.i18n.t('messages.BOOKING.ALREADY_PAID'),
+            );
+          }
+        } else if (booking.status !== BookingStatus.PENDING) {
+          throw new ConflictException(
+            this.i18n.t('messages.BOOKING.CANNOT_PAY'),
+          );
+        }
 
-      return {
-        statusCode: 201,
-        message: this.i18n.t('messages.BOOKING.PAY_SUCCESS'),
-      };
-    });
+        await paymentRepository.save(
+          paymentRepository.create({
+            bookingId: booking.id,
+            amount: booking.totalPrice.toString(),
+            method: dto.method,
+            status: PaymentStatus.SUCCESS,
+            transactionId: randomUUID(),
+            paidAt: new Date(),
+          }),
+        );
+
+        if (booking.status === BookingStatus.PENDING) {
+          booking.status = BookingStatus.ACCEPTED;
+          booking.holdExpiresAt = null;
+          await bookingRepository.save(booking);
+        }
+
+        return {
+          response: {
+            statusCode: 201,
+            message: this.i18n.t('messages.BOOKING.PAY_SUCCESS'),
+          },
+          statusChanged: transitionsToAccepted,
+        };
+      },
+    );
+    if (statusChanged) {
+      await this.emitStatusChanged(id, BookingStatus.ACCEPTED);
+    }
+    return response;
   }
 
   // ---------------------------------------------------------------------
@@ -410,7 +432,7 @@ export class BookingsService {
   }
 
   async accept(id: string) {
-    return this.dataSource.transaction(async (manager) => {
+    const result = await this.dataSource.transaction(async (manager) => {
       const bookingRepository = manager.getRepository(Booking);
       const booking = await bookingRepository.findOne({
         where: { id },
@@ -435,10 +457,12 @@ export class BookingsService {
         message: this.i18n.t('messages.BOOKING.ACCEPT_SUCCESS'),
       };
     });
+    await this.emitStatusChanged(id, BookingStatus.ACCEPTED);
+    return result;
   }
 
   async reject(id: string, dto: RejectBookingDto) {
-    return this.dataSource.transaction(async (manager) => {
+    const result = await this.dataSource.transaction(async (manager) => {
       const bookingRepository = manager.getRepository(Booking);
       const booking = await bookingRepository.findOne({
         where: { id },
@@ -463,6 +487,28 @@ export class BookingsService {
         message: this.i18n.t('messages.BOOKING.REJECT_SUCCESS'),
       };
     });
+    await this.emitStatusChanged(id, BookingStatus.REJECTED);
+    return result;
+  }
+
+  private async emitStatusChanged(
+    bookingId: string,
+    status: BookingStatus,
+  ): Promise<void> {
+    try {
+      await this.eventEmitter.emitAsync(
+        MAIL_EVENT.BOOKING_STATUS_CHANGED,
+        new BookingStatusChangedEvent(bookingId, status),
+      );
+    } catch (error: unknown) {
+      this.logger.error({
+        message: 'Booking status changed but email event persistence failed',
+        bookingId,
+        status,
+        error: error instanceof Error ? error.message : String(error),
+        nextAction: 'Retry delivery through the admin email workflow',
+      });
+    }
   }
 
   // Chạy mỗi phút để nhả các booking PENDING đã hết hạn giữ chỗ (xem

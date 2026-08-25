@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ConflictException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { I18nService } from 'nestjs-i18n';
@@ -36,6 +37,9 @@ describeWithDatabase('BookingsService overlap (e2e, real Postgres)', () => {
 
   const fakeI18n = { t: (key: string) => key } as unknown as I18nService;
   const fakeConfig = { get: () => undefined } as unknown as ConfigService;
+  const fakeEvents = {
+    emitAsync: jest.fn().mockResolvedValue([]),
+  } as unknown as EventEmitter2;
 
   beforeAll(async () => {
     dataSource = new DataSource({
@@ -55,6 +59,7 @@ describeWithDatabase('BookingsService overlap (e2e, real Postgres)', () => {
       dataSource,
       fakeI18n,
       fakeConfig,
+      fakeEvents,
     );
 
     const user = await dataSource.getRepository(User).save({

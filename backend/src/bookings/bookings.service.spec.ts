@@ -18,6 +18,7 @@ import { BookingsService } from './bookings.service';
 import { Booking } from './entities/booking.entity';
 import { BookingStatus } from './enums/booking-status.enum';
 import { BOOKING_HOLD_MINUTES } from './constants/booking.constants';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 function chainableQueryBuilder(overrides: Record<string, unknown> = {}) {
   const qb: Record<string, unknown> = {
@@ -149,6 +150,10 @@ describe('BookingsService', () => {
         {
           provide: ConfigService,
           useValue: { get: () => undefined },
+        },
+        {
+          provide: EventEmitter2,
+          useValue: { emitAsync: jest.fn().mockResolvedValue([]) },
         },
       ],
     }).compile();

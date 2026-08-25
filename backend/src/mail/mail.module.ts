@@ -11,10 +11,13 @@ import { MailService } from './mail.service';
 import { OutboxProcessor } from './outbox.processor';
 import { MailErrorSanitizer } from './mail-error.sanitizer';
 import { EmailReconciliationService } from './email-reconciliation.service';
+import { Booking } from '../bookings/entities/booking.entity';
+import { User } from '../users/entities/user.entity';
+import { MailEventsListener } from './mail-events.listener';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([EmailLog, MailOutbox]),
+    TypeOrmModule.forFeature([EmailLog, MailOutbox, Booking, User]),
     BullModule.registerQueue({
       name: MAIL_QUEUE,
     }),
@@ -26,6 +29,7 @@ import { EmailReconciliationService } from './email-reconciliation.service';
     OutboxProcessor,
     MailErrorSanitizer,
     EmailReconciliationService,
+    MailEventsListener,
   ],
   exports: [MailService],
 })

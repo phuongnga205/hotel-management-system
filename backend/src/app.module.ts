@@ -30,6 +30,7 @@ import {
   parseNetworkPort,
 } from './config/environment.constants';
 import { StatisticsModule } from './statistics/statistics.module';
+import { DomainEventsModule } from './common/events/domain-events.module';
 
 const DEFAULT_REDIS_PORT = 6379;
 
@@ -53,11 +54,16 @@ const DEFAULT_THROTTLE_LIMIT = 10;
     // Cần cho @Cron trong BookingsService (dọn các booking PENDING hết hạn
     // giữ chỗ) — lần đầu dùng @nestjs/schedule trong dự án.
     ScheduleModule.forRoot(),
+    DomainEventsModule,
 
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
+        const sslEnabled = configService.get<string | boolean>(
+          ENVIRONMENT_KEYS.DATABASE_SSL_ENABLED,
+          'true',
+        );
         const rawSsl = configService.get<string | boolean>(
           ENVIRONMENT_KEYS.DATABASE_SSL_REJECT_UNAUTHORIZED,
           'true',
@@ -66,9 +72,12 @@ const DEFAULT_THROTTLE_LIMIT = 10;
         return {
           type: 'postgres' as const,
           url: configService.getOrThrow<string>(ENVIRONMENT_KEYS.DATABASE_URL),
-          ssl: {
-            rejectUnauthorized: rawSsl === true || rawSsl === 'true',
-          },
+          ssl:
+            sslEnabled === true || sslEnabled === 'true'
+              ? {
+                  rejectUnauthorized: rawSsl === true || rawSsl === 'true',
+                }
+              : false,
           autoLoadEntities: true,
           synchronize:
             configService.get<string>(

@@ -68,7 +68,7 @@ export class OutboxProcessor {
         .setLock('pessimistic_write')
         .setOnLocked('skip_locked')
         .orderBy('outbox.createdAt', 'ASC')
-        .take(MAIL_QUEUE_BATCH_SIZE)
+        .limit(MAIL_QUEUE_BATCH_SIZE)
         .getMany();
 
       if (pendingOutbox.length === 0) return;
@@ -111,7 +111,11 @@ export class OutboxProcessor {
             html: payload.html,
           },
           {
-            jobId: `email-${emailLog.id}-generation-${emailLog.retryGeneration}`,
+            // The outbox UUID is stable when the same record is retried and
+            // changes when an admin explicitly creates a new retry outbox.
+            // This provides BullMQ idempotency without requiring another DB
+            // column or unique index.
+            jobId: `email-outbox-${outbox.id}`,
             attempts: MAIL_JOB.MAX_ATTEMPTS,
             backoff: { type: 'exponential', delay: MAIL_JOB.BACKOFF_DELAY_MS },
           },

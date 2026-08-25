@@ -52,7 +52,28 @@
     "INVALID_REVENUE_DATA": "Dữ liệu doanh thu không hợp lệ. Vui lòng liên hệ quản trị viên hệ thống."
   },
   "MAIL": {
-    "LOG_NOT_FOUND": "Không tìm thấy nhật ký email {id}."
+    "LOG_NOT_FOUND": "Không tìm thấy nhật ký email {id}.",
+    "GET_LOG_SUCCESS": "Lấy chi tiết nhật ký email thành công.",
+    "GET_LOGS_SUCCESS": "Lấy danh sách nhật ký email thành công.",
+    "QUEUE_ACCEPTED": "Đã tiếp nhận email vào hàng đợi gửi.",
+    "RETRY_INVALID_STATUS": "Chỉ có thể gửi lại email đang ở trạng thái thất bại.",
+    "RETRY_ACCEPTED": "Đã tiếp nhận yêu cầu gửi lại email.",
+    "ACTIVATION": {
+      "SUBJECT": "Mã kích hoạt tài khoản Hotel Management",
+      "BODY": "Xin chào {recipientName},\nMã kích hoạt tài khoản của bạn là: {otp}\nMã này sẽ hết hạn, vui lòng không chia sẻ cho người khác."
+    },
+    "PASSWORD_RESET": {
+      "SUBJECT": "Mã đặt lại mật khẩu Hotel Management",
+      "BODY": "Xin chào {recipientName},\nMã đặt lại mật khẩu của bạn là: {otp}\nMã này sẽ hết hạn, vui lòng không chia sẻ cho người khác."
+    },
+    "BOOKING_STATUS": {
+      "SUBJECT": "Cập nhật trạng thái đặt phòng #{bookingId}",
+      "BODY": "Xin chào {recipientName},\nĐặt phòng #{bookingId} cho phòng {roomNumber} đã chuyển sang trạng thái {status}."
+    },
+    "REVIEW_DELETED": {
+      "SUBJECT": "Thông báo đánh giá đã được gỡ",
+      "BODY": "Đánh giá của bạn đã được quản trị viên gỡ."
+    }
   },
   "PAYMENT": {
     "FIND_ALL_SUCCESS": "Lấy danh sách giao dịch thanh toán thành công."
@@ -92,7 +113,14 @@
     "UNAUTHORIZED": "Phiên đăng nhập không hợp lệ hoặc đã hết hạn.",
     "TOKEN_BLACKLISTED": "Token này đã bị vô hiệu hóa (đã đăng xuất).",
     "USER_ALREADY_EXISTS": "Người dùng với email, tài khoản hoặc số điện thoại này đã tồn tại.",
-    "USER_INACTIVE": "Tài khoản của bạn đã bị khóa hoặc chưa kích hoạt."
+    "USER_INACTIVE": "Tài khoản của bạn đã bị khóa hoặc chưa kích hoạt.",
+    "USER_NOT_FOUND": "Không tìm thấy tài khoản.",
+    "ALREADY_ACTIVATED": "Tài khoản đã được kích hoạt trước đó.",
+    "INVALID_OR_EXPIRED_OTP": "Mã OTP không hợp lệ hoặc đã hết hạn.",
+    "ACTIVATE_SUCCESS": "Kích hoạt tài khoản thành công.",
+    "FORGOT_PASSWORD_ACCEPTED": "Nếu email tồn tại, mã đặt lại mật khẩu đã được gửi.",
+    "RESET_PASSWORD_SUCCESS": "Đặt lại mật khẩu thành công.",
+    "INVALID_OTP_CONFIGURATION": "Cấu hình thời hạn OTP không hợp lệ."
   },
   "VALIDATION": {
     "IS_EMAIL": "Email không đúng định dạng.",
@@ -101,6 +129,7 @@
     "MAX_LENGTH": "{property} không được vượt quá {constraints.0} ký tự.",
     "IS_STRING": "{property} phải là chuỗi văn bản.",
     "IS_NUMBER_STRING": "{property} phải là một chuỗi số.",
+    "LENGTH": "{property} phải có đúng {constraints.0} ký tự.",
     "IS_INT": "{property} phải là số nguyên.",
     "IS_ENUM": "{property} không hợp lệ.",
     "MIN": "{property} phải lớn hơn hoặc bằng {constraints.0}.",
@@ -147,7 +176,7 @@
   },
   "REVIEWS": {
     "ALREADY_REVIEWED": "Ban đã review một lần rồi.",
-    "BOOKING_NOT_COMPLETED" :"Yêu cầu đặt phòng chưa hoàn thành.",
+    "BOOKING_NOT_COMPLETED": "Yêu cầu đặt phòng chưa hoàn thành.",
     "NOT_FOUND": "Không tìm thấy đánh giá.",
     "CREATE_SUCCESS": "Tạo đánh giá thành công.",
     "FIND_ALL_SUCCESS": "Lấy danh sách đánh giá thành công.",

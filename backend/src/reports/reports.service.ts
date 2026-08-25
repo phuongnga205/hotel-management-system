@@ -24,6 +24,7 @@ import { getMonthlyReportHtml } from '../mail/templates/monthly-report.template'
 import {
   ENVIRONMENT_KEYS,
   DEFAULT_REPORT_CRON,
+  DEFAULT_REPORT_TIME_ZONE,
 } from '../config/environment.constants';
 import { ReportEmailLogNotFoundError } from './errors/report-email-log-not-found.error';
 import { REPORT_CLOCK } from './report-clock.provider';
@@ -44,8 +45,6 @@ export class ReportsService implements OnModuleInit {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Payment)
     private readonly paymentRepository: Repository<Payment>,
-    @InjectRepository(MonthlyReportDispatch)
-    private readonly dispatchRepository: Repository<MonthlyReportDispatch>,
     private readonly mailService: MailService,
     private readonly dataSource: DataSource,
     private readonly i18n: I18nService,
@@ -62,8 +61,9 @@ export class ReportsService implements OnModuleInit {
         DEFAULT_REPORT_CRON,
       );
 
-      const timeZone = this.configService.getOrThrow<string>(
+      const timeZone = this.configService.get<string>(
         ENVIRONMENT_KEYS.REPORT_TIME_ZONE,
+        DEFAULT_REPORT_TIME_ZONE,
       );
 
       const job = new CronJob(
@@ -97,18 +97,17 @@ export class ReportsService implements OnModuleInit {
     try {
       const timeZone = this.configService.get<string>(
         ENVIRONMENT_KEYS.REPORT_TIME_ZONE,
+        DEFAULT_REPORT_TIME_ZONE,
       );
 
-      if (!timeZone) {
-        throw new Error(
-          'REPORT_TIME_ZONE is not configured. Monthly reports aborted.',
-        );
-      }
+      const reportPeriod = this.clock.now().setZone(timeZone);
 
-      const reportPeriod = this.clock
-        .now()
-        .setZone(timeZone)
-        .minus({ months: 1 });
+      // REPORT_CRON runs on days 28-31 because standard cron syntax has no
+      // dedicated "last day" operator. Only the real final calendar day may
+      // enqueue a report, preventing premature or duplicate monthly sends.
+      if (reportPeriod.day !== reportPeriod.daysInMonth) {
+        return;
+      }
 
       const reportMonth = reportPeriod.toFormat('yyyy-MM');
       const startDate = reportPeriod.startOf('month').toUTC().toJSDate();
@@ -131,8 +130,8 @@ export class ReportsService implements OnModuleInit {
       const totalBookings = parseInt(bookingSummary?.totalBookings || '0', 10);
 
       // Aggregate Payments (COUNT & SUM)
-      const revenueSummary = await this.dataSource
-        .createQueryBuilder(Payment, 'payment')
+      const revenueSummary = await this.paymentRepository
+        .createQueryBuilder('payment')
         .select('COUNT(DISTINCT payment.bookingId)', 'paidBookingsCount')
         .addSelect('COALESCE(SUM(payment.amount), 0)', 'totalRevenue')
         .where('payment.status = :status', { status: PaymentStatus.SUCCESS })

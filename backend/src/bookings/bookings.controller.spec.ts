@@ -7,6 +7,7 @@ import { BookingsController } from './bookings.controller';
 import { BookingsService } from './bookings.service';
 import { Booking } from './entities/booking.entity';
 import { Room } from '../rooms/entities/room.entity';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('BookingsController', () => {
   let controller: BookingsController;
@@ -30,6 +31,10 @@ describe('BookingsController', () => {
           useValue: { t: jest.fn((key: string) => key) },
         },
         { provide: ConfigService, useValue: { get: jest.fn() } },
+        {
+          provide: EventEmitter2,
+          useValue: { emitAsync: jest.fn().mockResolvedValue([]) },
+        },
       ],
     }).compile();
 

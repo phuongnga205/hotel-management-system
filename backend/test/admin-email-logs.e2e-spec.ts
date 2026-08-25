@@ -5,7 +5,7 @@ import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { User, UserRole, UserStatus } from '../src/users/entities/user.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import {
   EmailLog,
@@ -13,6 +13,7 @@ import {
   EmailType,
 } from '../src/mail/entities/email-log.entity';
 import * as bcrypt from 'bcrypt';
+import { MailOutbox } from '../src/mail/entities/mail-outbox.entity';
 
 function assertSafeE2eEnvironment(): void {
   if (process.env.NODE_ENV !== 'test') {
@@ -34,12 +35,17 @@ function assertSafeE2eEnvironment(): void {
 
   // Force TypeORM to use the ephemeral E2E database
   process.env.DATABASE_URL = rawUrl;
+  process.env.DATABASE_SSL_ENABLED =
+    process.env.E2E_DATABASE_SSL_ENABLED ?? 'false';
+  process.env.DATABASE_SSL_REJECT_UNAUTHORIZED =
+    process.env.E2E_DATABASE_SSL_REJECT_UNAUTHORIZED ?? 'true';
 }
 
 describe('Admin Email Logs (e2e)', () => {
   let app: INestApplication<App>;
   let userRepository: Repository<User>;
   let emailLogRepository: Repository<EmailLog>;
+  let dataSource: DataSource;
   let jwtService: JwtService;
   let adminToken: string;
   let userToken: string;
@@ -64,7 +70,9 @@ describe('Admin Email Logs (e2e)', () => {
     emailLogRepository = moduleFixture.get<Repository<EmailLog>>(
       getRepositoryToken(EmailLog),
     );
+    dataSource = moduleFixture.get(DataSource);
     jwtService = moduleFixture.get<JwtService>(JwtService);
+    const runSuffix = Date.now().toString();
 
     // Create test admin
     testAdmin = userRepository.create({
@@ -74,7 +82,7 @@ describe('Admin Email Logs (e2e)', () => {
       role: UserRole.ADMIN,
       status: UserStatus.ACTIVE,
       fullName: 'Admin Test',
-      phone: '0123456781',
+      phone: `01${runSuffix.slice(-8)}1`,
     });
     await userRepository.save(testAdmin);
     adminToken = jwtService.sign({
@@ -91,7 +99,7 @@ describe('Admin Email Logs (e2e)', () => {
       role: UserRole.USER,
       status: UserStatus.ACTIVE,
       fullName: 'User Test',
-      phone: '0123456782',
+      phone: `01${runSuffix.slice(-8)}2`,
     });
     await userRepository.save(testUser);
     userToken = jwtService.sign({
@@ -99,11 +107,21 @@ describe('Admin Email Logs (e2e)', () => {
       email: testUser.email,
       role: testUser.role,
     });
-  });
+  }, 30000);
 
   afterAll(async () => {
+    if (dataSource?.isInitialized) {
+      if (testEmailLog?.id) {
+        await dataSource
+          .getRepository(MailOutbox)
+          .delete({ emailLogId: testEmailLog.id });
+        await emailLogRepository.delete({ id: testEmailLog.id });
+      }
+      if (testUser?.id) await userRepository.delete({ id: testUser.id });
+      if (testAdmin?.id) await userRepository.delete({ id: testAdmin.id });
+    }
     await app?.close();
-  });
+  }, 30000);
 
   describe('GET /admin/email-logs', () => {
     it('should return 401 if unauthorized', () => {

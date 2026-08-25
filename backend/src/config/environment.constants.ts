@@ -1,4 +1,5 @@
 export const ENVIRONMENT_KEYS = {
+  DATABASE_SSL_ENABLED: 'DATABASE_SSL_ENABLED',
   DATABASE_SSL_REJECT_UNAUTHORIZED: 'DATABASE_SSL_REJECT_UNAUTHORIZED',
   DATABASE_URL: 'DATABASE_URL',
   DATABASE_SEEDING_ENABLED: 'DATABASE_SEEDING_ENABLED',
@@ -23,8 +24,8 @@ export const ENVIRONMENT_KEYS = {
   MAIL_USER: 'MAIL_USER',
   MAIL_PASS: 'MAIL_PASS',
   MAIL_FROM: 'MAIL_FROM',
+  OTP_TTL_SECONDS: 'OTP_TTL_SECONDS',
   REPORT_CRON: 'REPORT_CRON',
-  REPORT_RUN_ON_ANY_DAY: 'REPORT_RUN_ON_ANY_DAY',
   REPORT_TIME_ZONE: 'REPORT_TIME_ZONE',
   HOTEL_TIMEZONE: 'HOTEL_TIMEZONE',
 } as const;
@@ -38,8 +39,11 @@ export enum NodeEnvironment {
 export const DEFAULT_SERVER_PORT = 3000;
 export const DEFAULT_REDIS_HOST = 'localhost';
 export const DEFAULT_REDIS_PORT = 6379;
-export const DEFAULT_REPORT_CRON = '5 0 1 * *';
+// Cron cannot express "the last day of the month" directly. Run on days
+// 28-31 and let ReportsService reject dates that are not the actual last day.
+export const DEFAULT_REPORT_CRON = '55 23 28-31 * *';
 export const DEFAULT_REPORT_TIME_ZONE = 'Asia/Ho_Chi_Minh';
+export const DEFAULT_OTP_TTL_SECONDS = 600;
 
 export const MIN_NETWORK_PORT = 1;
 export const MAX_NETWORK_PORT = 65_535;

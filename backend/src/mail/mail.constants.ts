@@ -12,7 +12,7 @@ export enum MailJob {
 
 export const EMAIL_RECIPIENT_MAX_LENGTH = 255;
 export const EMAIL_TYPE_MAX_LENGTH = 50;
-export const EMAIL_STATUS_MAX_LENGTH = 20;
+export const EMAIL_STATUS_MAX_LENGTH = 30;
 
 export const EMAIL_SUBJECT_MAX_LENGTH = 200;
 export const EMAIL_TEXT_MAX_LENGTH = 20_000;

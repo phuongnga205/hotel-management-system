@@ -9,9 +9,8 @@ import {
   EmailType,
 } from '../src/mail/entities/email-log.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import AppDataSource from '../src/data-source';
 import {
   MonthlyReportDispatch,
   ReportDispatchStatus,
@@ -29,7 +28,7 @@ import { OutboxProcessor } from '../src/mail/outbox.processor';
 import { MAIL_ERROR_CODE } from '../src/mail/errors/mail-delivery.error';
 import { NodeEnvironment } from '../src/config/environment.constants';
 
-function assertSafeE2eEnvironment(): void {
+function assertSafeE2eEnvironment(): string {
   if (process.env.NODE_ENV !== NodeEnvironment.TEST) {
     throw new Error('E2E requires NODE_ENV=test');
   }
@@ -38,6 +37,15 @@ function assertSafeE2eEnvironment(): void {
 
   if (!rawUrl) {
     throw new Error('E2E_DATABASE_URL is required');
+  }
+
+  const databaseName = new URL(rawUrl).pathname.replace(/^\/+/, '');
+  if (!databaseName.endsWith('_e2e')) {
+    throw new Error('E2E database name must end with _e2e');
+  }
+
+  if (process.env.DATABASE_URL === rawUrl) {
+    throw new Error('E2E_DATABASE_URL must differ from DATABASE_URL');
   }
 
   if (
@@ -50,6 +58,11 @@ function assertSafeE2eEnvironment(): void {
 
   // Force TypeORM and ConfigService to use the E2E database
   process.env.DATABASE_URL = rawUrl;
+  process.env.DATABASE_SSL_ENABLED =
+    process.env.E2E_DATABASE_SSL_ENABLED ?? 'false';
+  process.env.DATABASE_SSL_REJECT_UNAUTHORIZED =
+    process.env.E2E_DATABASE_SSL_REJECT_UNAUTHORIZED ?? 'true';
+  return rawUrl;
 }
 
 class FakeReportClock implements ReportClock {
@@ -72,6 +85,7 @@ describe('ReportsModule (e2e)', () => {
   let dispatchRepository: Repository<MonthlyReportDispatch>;
   let outboxRepository: Repository<MailOutbox>;
   let outboxProcessor: OutboxProcessor;
+  let migrationDataSource: DataSource;
   let testAdmin: User;
   let fakeClock: FakeReportClock;
 
@@ -82,10 +96,25 @@ describe('ReportsModule (e2e)', () => {
   };
 
   beforeAll(async () => {
-    assertSafeE2eEnvironment();
-    await AppDataSource.initialize();
-    await AppDataSource.runMigrations();
-    await AppDataSource.destroy();
+    const e2eDatabaseUrl = assertSafeE2eEnvironment();
+    migrationDataSource = new DataSource({
+      type: 'postgres',
+      url: e2eDatabaseUrl,
+      ssl:
+        process.env.E2E_DATABASE_SSL_ENABLED === 'true'
+          ? {
+              rejectUnauthorized:
+                process.env.E2E_DATABASE_SSL_REJECT_UNAUTHORIZED !== 'false',
+            }
+          : false,
+      entities: [__dirname + '/../src/**/*.entity{.ts,.js}'],
+      migrations: [__dirname + '/../src/migrations/*{.ts,.js}'],
+      migrationsTransactionMode: 'each',
+    });
+    await migrationDataSource.initialize();
+    await migrationDataSource.dropDatabase();
+    await migrationDataSource.runMigrations();
+    await migrationDataSource.destroy();
 
     fakeClock = new FakeReportClock();
 
@@ -118,14 +147,6 @@ describe('ReportsModule (e2e)', () => {
     );
     outboxProcessor = moduleFixture.get<OutboxProcessor>(OutboxProcessor);
 
-    // Verify that the E2E database is completely clean before proceeding
-    const existingUsers = await userRepository.count();
-    if (existingUsers !== 0) {
-      throw new Error(
-        'E2E database must be empty before running reports suite',
-      );
-    }
-
     // Create a single test admin
     testAdmin = userRepository.create({
       username: `test_admin_rep_${Date.now()}`,
@@ -140,8 +161,15 @@ describe('ReportsModule (e2e)', () => {
   }, 30000);
 
   afterAll(async () => {
-    // Database is ephemeral, no need to hard delete items here.
     await app?.close();
+    if (migrationDataSource) {
+      if (!migrationDataSource.isInitialized) {
+        await migrationDataSource.initialize();
+      }
+      await migrationDataSource.dropDatabase();
+      await migrationDataSource.runMigrations();
+      await migrationDataSource.destroy();
+    }
   }, 30000);
 
   afterEach(() => {
@@ -149,8 +177,8 @@ describe('ReportsModule (e2e)', () => {
   });
 
   it('should generate monthly report and ensure idempotency (prevent double sending)', async () => {
-    // Set time to Sep 1, 2026 00:05. Report period will be 2026-08.
-    const mockDate = new Date(Date.UTC(2026, 8, 1, 0, 5, 0));
+    // 2026-08-31 23:55 in Asia/Ho_Chi_Minh.
+    const mockDate = new Date(Date.UTC(2026, 7, 31, 16, 55, 0));
     fakeClock.setSystemTime(mockDate);
 
     // Run concurrently 3 times
@@ -163,12 +191,9 @@ describe('ReportsModule (e2e)', () => {
     // Process outbox to trigger state change to QUEUED
     await outboxProcessor.processOutbox();
 
-    const dispatches = await dispatchRepository.find({
-      where: {
-        reportMonth: '2026-08',
-        recipientId: testAdmin.id,
-      },
-      take: 2,
+    const dispatches = await dispatchRepository.findBy({
+      reportMonth: '2026-08',
+      recipientId: testAdmin.id,
     });
 
     expect(dispatches).toHaveLength(1);
@@ -191,8 +216,23 @@ describe('ReportsModule (e2e)', () => {
     await emailLogRepository.delete({ id: emailLog!.id });
   }, 30000);
 
+  it('does not generate a report before the last day of the month', async () => {
+    // The cron also runs on day 30 in a 31-day month, but must not send yet.
+    fakeClock.setSystemTime(new Date(Date.UTC(2026, 7, 30, 16, 55, 0)));
+
+    await reportsService.generateMonthlyReport();
+
+    expect(
+      await dispatchRepository.countBy({
+        reportMonth: '2026-08',
+        recipientId: testAdmin.id,
+      }),
+    ).toBe(0);
+  });
+
   it('allows retry when queue dispatch fails but continues to next admin', async () => {
-    const mockDate = new Date(Date.UTC(2026, 9, 1, 0, 5, 0)); // Oct 1, 2026, target Sep 2026
+    // 2026-09-30 23:55 in Asia/Ho_Chi_Minh.
+    const mockDate = new Date(Date.UTC(2026, 8, 30, 16, 55, 0));
     fakeClock.setSystemTime(mockDate);
 
     // First time, simulate a failure in outbox creation by making the outbox throw manually
@@ -243,7 +283,8 @@ describe('ReportsModule (e2e)', () => {
   }, 30000);
 
   it('fails dispatch when Redis queue is unavailable', async () => {
-    const mockDate = new Date(Date.UTC(2026, 10, 1, 0, 5, 0));
+    // 2026-10-31 23:55 in Asia/Ho_Chi_Minh.
+    const mockDate = new Date(Date.UTC(2026, 9, 31, 16, 55, 0));
     fakeClock.setSystemTime(mockDate);
 
     // Mock BullMQ add to reject
@@ -251,12 +292,8 @@ describe('ReportsModule (e2e)', () => {
 
     await reportsService.generateMonthlyReport();
 
-    // Process outbox which should try and fail
-    try {
-      await outboxProcessor.processOutbox();
-    } catch {
-      // ignore
-    }
+    // First attempt fails and schedules an exponential-backoff retry.
+    await outboxProcessor.processOutbox();
 
     const dispatches = await dispatchRepository.find({
       where: {
@@ -273,16 +310,15 @@ describe('ReportsModule (e2e)', () => {
     });
     expect(emailLog).toBeDefined();
 
-    // Check it remains PENDING since Outbox will retry it up to MAX_ATTEMPTS.
-    // If it reaches max attempts, Outbox processor sets it to FAILED.
-    // Assuming outboxProcessor runs again to exhaust attempts:
-    for (let i = 0; i < 5; i++) {
+    // Move each scheduled retry into the past so the test does not wait for
+    // real exponential-backoff minutes. Two more failures exhaust 3 attempts.
+    for (let attempt = 1; attempt < 3; attempt += 1) {
+      await outboxRepository.update(
+        { emailLogId: emailLog!.id },
+        { nextAttemptAt: new Date(0) },
+      );
       mailQueueMock.add.mockRejectedValueOnce(new Error('Redis unavailable'));
-      try {
-        await outboxProcessor.processOutbox();
-      } catch {
-        // ignore
-      }
+      await outboxProcessor.processOutbox();
     }
 
     const exhaustedLog = await emailLogRepository.findOneBy({

@@ -12,6 +12,8 @@ import {
   ConflictException,
   ForbiddenException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ConfigService } from '@nestjs/config';
 
 jest.mock('bcrypt');
 
@@ -21,6 +23,7 @@ describe('AuthService', () => {
   let jwtService: any;
   let i18nService: any;
   let tokenUtil: any;
+  let eventEmitter: any;
 
   beforeEach(async () => {
     const mockUserRepository = {
@@ -37,7 +40,11 @@ describe('AuthService', () => {
     };
     const mockTokenUtil = {
       revokeAuthToken: jest.fn(),
+      saveOtp: jest.fn(),
+      consumeOtpIfMatches: jest.fn(),
     };
+    const mockEventEmitter = { emitAsync: jest.fn().mockResolvedValue([]) };
+    const mockConfigService = { get: jest.fn().mockReturnValue(600) };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -46,6 +53,8 @@ describe('AuthService', () => {
         { provide: JwtService, useValue: mockJwtService },
         { provide: I18nService, useValue: mockI18nService },
         { provide: TokenUtil, useValue: mockTokenUtil },
+        { provide: EventEmitter2, useValue: mockEventEmitter },
+        { provide: ConfigService, useValue: mockConfigService },
       ],
     }).compile();
 
@@ -54,6 +63,7 @@ describe('AuthService', () => {
     jwtService = module.get(JwtService);
     i18nService = module.get(I18nService);
     tokenUtil = module.get(TokenUtil);
+    eventEmitter = module.get(EventEmitter2);
   });
 
   afterEach(() => {
@@ -98,12 +108,21 @@ describe('AuthService', () => {
         ...registerDto,
         password: 'hashedPass',
       });
-      userRepository.save.mockResolvedValue(true);
+      userRepository.save.mockImplementation((user: User) =>
+        Promise.resolve({ id: '1', ...user }),
+      );
 
       const result = await service.register(registerDto);
 
       expect(bcrypt.hash).toHaveBeenCalledWith('pass', BCRYPT_SALT_ROUNDS);
       expect(userRepository.save).toHaveBeenCalled();
+      expect(tokenUtil.saveOtp).toHaveBeenCalledWith(
+        'EMAIL_VERIFICATION',
+        '1',
+        expect.stringMatching(/^\d{6}$/),
+        600,
+      );
+      expect(eventEmitter.emitAsync).toHaveBeenCalled();
       expect(result.message).toEqual('messages.AUTH.REGISTER_SUCCESS');
     });
 
@@ -129,6 +148,138 @@ describe('AuthService', () => {
       userRepository.save.mockRejectedValue(new Error('DB error'));
 
       await expect(service.register(registerDto)).rejects.toThrow('DB error');
+    });
+  });
+
+  describe('email OTP flows', () => {
+    const inactiveUser = {
+      id: '1',
+      email: 'test@mail.com',
+      username: 'test',
+      password: 'old-hash',
+      status: UserStatus.INACTIVE,
+    };
+
+    it('activates an inactive account with a valid OTP and consumes it', async () => {
+      userRepository.findOne.mockResolvedValue({ ...inactiveUser });
+      tokenUtil.consumeOtpIfMatches.mockResolvedValue(true);
+      userRepository.save.mockImplementation((user: User) =>
+        Promise.resolve(user),
+      );
+
+      const result = await service.activate({
+        email: inactiveUser.email,
+        otp: '123456',
+      });
+
+      expect(userRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ status: UserStatus.ACTIVE }),
+      );
+      expect(tokenUtil.consumeOtpIfMatches).toHaveBeenCalledWith(
+        'EMAIL_VERIFICATION',
+        inactiveUser.id,
+        '123456',
+      );
+      expect(result.statusCode).toBe(200);
+    });
+
+    it('rejects an invalid activation OTP', async () => {
+      userRepository.findOne.mockResolvedValue({ ...inactiveUser });
+      tokenUtil.consumeOtpIfMatches.mockResolvedValue(false);
+
+      await expect(
+        service.activate({ email: inactiveUser.email, otp: '000000' }),
+      ).rejects.toThrow('messages.AUTH.INVALID_OR_EXPIRED_OTP');
+      expect(userRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('returns the same forgot-password response for an unknown email', async () => {
+      userRepository.findOne.mockResolvedValue(null);
+
+      const result = await service.forgotPassword({
+        email: 'unknown@mail.com',
+      });
+
+      expect(result.message).toBe('messages.AUTH.FORGOT_PASSWORD_ACCEPTED');
+      expect(tokenUtil.saveOtp).not.toHaveBeenCalled();
+      expect(eventEmitter.emitAsync).not.toHaveBeenCalled();
+    });
+
+    it('creates a password-reset OTP and emits the mail event', async () => {
+      userRepository.findOne.mockResolvedValue({ ...inactiveUser });
+
+      await service.forgotPassword({ email: inactiveUser.email });
+
+      expect(tokenUtil.saveOtp).toHaveBeenCalledWith(
+        'PASSWORD_RESET',
+        inactiveUser.id,
+        expect.stringMatching(/^\d{6}$/),
+        600,
+      );
+      expect(eventEmitter.emitAsync).toHaveBeenCalled();
+    });
+
+    it('resets the password with a valid OTP and consumes it', async () => {
+      userRepository.findOne.mockResolvedValue({ ...inactiveUser });
+      tokenUtil.consumeOtpIfMatches.mockResolvedValue(true);
+      (bcrypt.hash as jest.Mock).mockResolvedValue('new-hash');
+      userRepository.save.mockImplementation((user: User) =>
+        Promise.resolve(user),
+      );
+
+      await service.resetPassword({
+        email: inactiveUser.email,
+        otp: '123456',
+        newPassword: 'new-password',
+      });
+
+      expect(userRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ password: 'new-hash' }),
+      );
+      expect(tokenUtil.consumeOtpIfMatches).toHaveBeenCalledWith(
+        'PASSWORD_RESET',
+        inactiveUser.id,
+        '123456',
+      );
+    });
+
+    it('does not reveal whether a reset-password email exists', async () => {
+      userRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.resetPassword({
+          email: 'unknown@mail.com',
+          otp: '123456',
+          newPassword: 'new-password',
+        }),
+      ).rejects.toThrow('messages.AUTH.INVALID_OR_EXPIRED_OTP');
+      expect(tokenUtil.consumeOtpIfMatches).not.toHaveBeenCalled();
+    });
+
+    it('keeps registration successful when mail event persistence fails', async () => {
+      (bcrypt.hash as jest.Mock).mockResolvedValue('hashedPass');
+      userRepository.create.mockReturnValue({
+        email: 'test@mail.com',
+        password: 'hashedPass',
+        username: 'test',
+      });
+      userRepository.save.mockResolvedValue({
+        id: '1',
+        email: 'test@mail.com',
+        password: 'hashedPass',
+        username: 'test',
+      });
+      eventEmitter.emitAsync.mockRejectedValueOnce(new Error('outbox down'));
+
+      await expect(
+        service.register({
+          email: 'test@mail.com',
+          password: 'pass',
+          username: 'test',
+        } as any),
+      ).resolves.toEqual(
+        expect.objectContaining({ message: 'messages.AUTH.REGISTER_SUCCESS' }),
+      );
     });
   });
 

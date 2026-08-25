@@ -10,10 +10,12 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { StringValue } from 'ms';
+import { DomainEventsModule } from '../common/events/domain-events.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User]),
+    DomainEventsModule,
 
     PassportModule.register({
       defaultStrategy: 'jwt',

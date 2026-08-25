@@ -6,12 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { I18nService } from 'nestjs-i18n';
-import {
-  DataSource,
-  FindOptionsWhere,
-  Repository,
-  EntityManager,
-} from 'typeorm';
+import { DataSource, Repository, EntityManager } from 'typeorm';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { EmailLogResponseDto } from './dto/email-log-response.dto';
@@ -20,6 +15,11 @@ import { ListEmailLogsDto } from './dto/list-email-logs.dto';
 import { EmailLog, EmailStatus } from './entities/email-log.entity';
 import { MailOutbox, OutboxStatus } from './entities/mail-outbox.entity';
 import { MAIL_JOB, MAIL_QUEUE } from './mail.constants';
+import { EmailLogListResponseDto } from './dto/email-log-list-response.dto';
+import {
+  EmailLogDetailResponseDto,
+  RetryEmailLogResponseDto,
+} from './dto/email-log-detail-response.dto';
 
 @Injectable()
 export class MailService {
@@ -53,7 +53,6 @@ export class MailService {
 
     const outbox = manager.create(MailOutbox, {
       emailLogId: savedEmailLog.id,
-      retryGeneration: savedEmailLog.retryGeneration,
       status: OutboxStatus.PENDING,
       payload: {
         to: dto.to,
@@ -75,7 +74,6 @@ export class MailService {
       MailOutbox,
       manager.create(MailOutbox, {
         emailLogId: emailLog.id,
-        retryGeneration: emailLog.retryGeneration,
         status: OutboxStatus.PENDING,
         payload: {
           to: emailLog.recipient,
@@ -105,7 +103,7 @@ export class MailService {
     );
   }
 
-  async queueMail(dto: SendMailDto): Promise<EmailLogResponseDto> {
+  async queueMail(dto: SendMailDto): Promise<EmailLogDetailResponseDto> {
     const emailLog = await this.dataSource.transaction(async (manager) => {
       return this.createOutbox(manager, dto);
     });
@@ -115,10 +113,14 @@ export class MailService {
       type: dto.type,
     });
 
-    return EmailLogResponseDto.fromEntity(emailLog);
+    return {
+      statusCode: 201,
+      message: this.i18n.t('messages.MAIL.QUEUE_ACCEPTED'),
+      data: EmailLogResponseDto.fromEntity(emailLog),
+    };
   }
 
-  async getEmailLog(id: string) {
+  async getEmailLog(id: string): Promise<EmailLogDetailResponseDto> {
     const emailLog = await this.emailLogRepository.findOneBy({ id });
     if (!emailLog) {
       throw new NotFoundException(
@@ -132,21 +134,20 @@ export class MailService {
     };
   }
 
-  async getEmailLogs(query: ListEmailLogsDto) {
+  async getEmailLogs(
+    query: ListEmailLogsDto,
+  ): Promise<EmailLogListResponseDto> {
     const { status, page, limit } = query;
-    const skip = (page - 1) * limit;
+    const queryBuilder = this.emailLogRepository
+      .createQueryBuilder('emailLog')
+      .orderBy('emailLog.createdAt', 'DESC')
+      .offset((page - 1) * limit)
+      .limit(limit);
 
-    const where: FindOptionsWhere<EmailLog> = {};
     if (status) {
-      where.status = status;
+      queryBuilder.andWhere('emailLog.status = :status', { status });
     }
-
-    const [logs, total] = await this.emailLogRepository.findAndCount({
-      where,
-      order: { createdAt: 'DESC' },
-      skip,
-      take: limit,
-    });
+    const [logs, total] = await queryBuilder.getManyAndCount();
 
     return {
       statusCode: 200,
@@ -161,7 +162,7 @@ export class MailService {
     };
   }
 
-  async retryEmailLog(id: string): Promise<{ message: string }> {
+  async retryEmailLog(id: string): Promise<RetryEmailLogResponseDto> {
     await this.dataSource.transaction(async (manager) => {
       const emailLog = await manager
         .getRepository(EmailLog)
@@ -191,7 +192,9 @@ export class MailService {
 
     this.logger.log(`Retrying email log ${id}`);
     return {
+      statusCode: 202,
       message: this.i18n.t('messages.MAIL.RETRY_ACCEPTED'),
+      data: null,
     };
   }
 }

@@ -24,9 +24,9 @@
 |---|---|---|---|
 | `pages/auth/LoginPage.tsx` | `/login` | `POST /auth/login` | Thành công → lưu token qua `axiosClient` (`setAccessToken`), redirect theo `?redirect=` hoặc `/`. ⚠️ Tên file thật là `LoginPage.tsx` export `{ LoginPage }` (named export, không phải default) — khớp cột này, chỉ ghi chú vì các trang admin dùng default export, khác convention. |
 | `pages/auth/RegisterPage.tsx` | `/register` | `POST /auth/register` | Submit xong hiện modal "kiểm tra email kích hoạt" — modal không gọi thêm API. |
-| `pages/auth/ActivatePage.tsx` | `/activate?email=` | `POST /auth/activate` (body `{ email, otp }`) | 🆕⚠️ **Đã lỗi thời — sửa lại theo OTP đã chốt** (dòng cũ ghi `ActivateAccountPage.tsx`, `/activate?token=`, `GET /auth/activate?token=` — kiểu link/token cũ không còn dùng, xem `frontend/docs/CAU_TRUC_ROUTE.md` mục "Quy ước chung"). Tên file thật cũng khác: `ActivatePage.tsx`, không phải `ActivateAccountPage.tsx`. Form nhập **email + mã OTP 6 số** (gửi qua email), `?email=` chỉ để prefill. Xong → redirect `/login` + toast. **BE hiện chưa implement `POST /auth/activate` thật** (chỉ có hợp đồng API, xem `backend/docs/DANH_SACH_API.md` mục 1) — trang gọi API này sẽ nhận lỗi khi tắt mock. |
-| `pages/auth/ForgotPasswordPage.tsx` | `/forgot-password` | `POST /auth/forgot-password` | 🚧 BE hiện chưa implement thật (chỉ có hợp đồng API, mục 1). |
-| `pages/auth/ResetPasswordPage.tsx` | `/reset-password?email=` | `POST /auth/reset-password` (body `{ email, otp, newPassword }`) | 🆕⚠️ **Đã lỗi thời, tương tự dòng trên** — dòng cũ ghi `?token=`, đã đổi sang OTP: đọc `email` từ query (chỉ prefill), user gõ tay `otp` + mật khẩu mới. Xong → redirect `/login` + toast. 🚧 BE hiện chưa implement thật. |
+| `pages/auth/ActivatePage.tsx` | `/activate?email=` | `POST /auth/activate` (body `{ email, otp }`) | Form nhập email + OTP 6 số, `?email=` chỉ để prefill. BE đã implement endpoint thật; thành công redirect `/login`. |
+| `pages/auth/ForgotPasswordPage.tsx` | `/forgot-password` | `POST /auth/forgot-password` | BE luôn trả cùng response dù email tồn tại hay không để chống dò tài khoản. |
+| `pages/auth/ResetPasswordPage.tsx` | `/reset-password?email=` | `POST /auth/reset-password` (body `{ email, otp, newPassword }`) | OTP lưu Redis có TTL; thành công redirect `/login`. |
 
 ## C. Rooms (public/user)
 
@@ -105,7 +105,7 @@
 
 | Page component | Route | API sử dụng | Ghi chú |
 |---|---|---|---|
-| `pages/admin/email-logs/AdminEmailLogListPage.tsx` | `/admin/email-logs` | `GET /admin/email-logs` | Filter theo `PENDING/SENT/FAILED` qua query param. |
+| `pages/admin/email-logs/AdminEmailLogListPage.tsx` | `/admin/email-logs` | `GET /admin/email-logs` | Filter theo `PENDING/SENT/FAILED/DELIVERED_UNCONFIRMED`, phân trang bằng `page`/`limit`; type có thêm `monthly-report`. |
 | `pages/admin/email-logs/AdminEmailLogDetailPage.tsx` | `/admin/email-logs/:logId` | `GET /admin/email-logs/:id`, `POST /admin/email-logs/:id/retry` | Nút "Gửi lại" chỉ hiện khi status `FAILED`. |
 
 ## L. Admin — Dashboard
@@ -158,8 +158,8 @@
   mới, `bookingApi.create()` đã nhận đúng type, nhưng **chưa màn nào gọi**
   vì `BookRoomPage` chưa tồn tại (mục C) — tương tự các field khác đã sẵn
   sàng ở tầng data, chờ dựng UI.
-- `POST /mail/test`, `GET /mail/:id` (mục 12a ở doc BE) — route dev/test
-  nội bộ, không guard, **không map vào màn hình FE nào cả theo thiết kế**
+- `POST /mail/test`, `GET /mail/:id` (mục 12a ở doc BE) — route kiểm tra
+  nội bộ đã khóa ADMIN, **không map vào màn hình FE nào cả theo thiết kế**
   (không thuộc luồng nghiệp vụ chính thức) — khác các API "thiếu UI" khác ở
   trên, đây là **cố ý không có UI**.
 - `GET /admin/statistics/bookings`, `GET /admin/statistics/revenue` — mục J

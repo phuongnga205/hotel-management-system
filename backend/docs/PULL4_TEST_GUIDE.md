@@ -2,7 +2,7 @@
 
 ## Muc tieu
 
-Pull 4 tu dong tao va gui bao cao hang thang cho admin vao ngay cuoi thang. He thong dung `email_logs` va BullMQ; khong can tao bang `mail_outbox` hoac `monthly_report_dispatches`.
+Pull 4 tu dong tong hop doanh thu cua thang hien tai va gui bao cao cho admin vao ngay cuoi thang. He thong dung `email_logs`, `mail_outbox`, `monthly_report_dispatches` va BullMQ de dam bao idempotency va giao email an toan.
 
 ## Test tu dong
 
@@ -11,10 +11,15 @@ Chay tu thu muc `backend`:
 ```bash
 npm run build
 npm test -- --runInBand --passWithNoTests
-NODE_ENV=test npm run test:e2e
+E2E_DATABASE_DESTRUCTIVE_ACK=hotel-management-e2e-only npm run test:e2e -- --runInBand
 ```
 
-E2E can Redis tai `localhost:6379` va database test rieng co ten chua `_test`. Khong dung database production cho E2E.
+E2E can Redis tai `localhost:6379` va database test rieng co ten ket thuc bang `_e2e`. Khong dung database production cho E2E. Truoc khi chay, dat bien xac nhan an toan:
+
+```env
+E2E_DATABASE_DESTRUCTIVE_ACK=hotel-management-e2e-only
+E2E_DATABASE_SSL_ENABLED=false
+```
 
 ## Test cron local
 
@@ -36,17 +41,15 @@ npm run start:dev
 Muc nay chi dung de test local, khong dung cau hinh nay cho production.
 
 1. Dam bao `.env` co SMTP that, Redis dang chay va `DATABASE_URL` tro den branch test.
-2. Tam thoi dat hai bien sau trong `.env`:
+2. Tam thoi dat cron sau trong `.env`:
 
 ```env
 REPORT_CRON="* * * * *"
-REPORT_RUN_ON_ANY_DAY="true"
 ```
 
-`REPORT_CRON="* * * * *"` cho cron chay moi phut. `REPORT_RUN_ON_ANY_DAY="true"`
-bo qua dieu kien chi chay vao ngay cuoi thang. Lan chay dau tien trong thang hien tai
-se tao email log va day email vao queue; cac lan sau khong gui trung cho cung admin
-nho co che idempotency theo `reportMonth`.
+`REPORT_CRON="* * * * *"` cho cron chay moi phut, nhung service van chi gui
+dung ngay cuoi thang theo `REPORT_TIME_ZONE`. Lan chay dau tien se tao email log va outbox;
+cac lan sau khong gui trung cho cung admin nho idempotency theo `reportMonth`.
 
 3. Khoi dong Redis va chay migration:
 
@@ -78,19 +81,22 @@ WHERE type = 'monthly-report'
 ORDER BY id DESC;
 ```
 
-`PENDING` nghia la email da vao queue, `SENT` nghia la SMTP gui thanh cong,
-`FAILED` nghia la gui that bai sau khi retry.
+`PENDING` nghia la email dang cho xu ly, `SENT` nghia la SMTP gui thanh cong,
+`FAILED` nghia la gui that bai sau khi retry, `DELIVERED_UNCONFIRMED` nghia
+la SMTP da chap nhan email nhung he thong phai reconcile lai trang thai.
 
 6. Sau khi test xong, khoi phuc `.env`:
 
 ```env
 REPORT_CRON="55 23 28-31 * *"
-REPORT_RUN_ON_ANY_DAY="false"
+REPORT_TIME_ZONE="Asia/Ho_Chi_Minh"
 ```
 
 Restart backend sau khi doi bien moi truong.
 
-Tren ngay khong phai ngay cuoi thang, code van bo qua. De test noi dung bao cao ngay lap tuc, co the dung ngay cuoi thang theo timezone `REPORT_TIME_ZONE` hoac goi `generateMonthlyReport()` trong test.
+Production mac dinh danh thuc luc 23:55 cac ngay 28-31 theo
+`REPORT_TIME_ZONE`; service kiem tra va chi gui vao ngay cuoi cung cua thang.
+De test noi dung bao cao, dung E2E voi `ReportClock` gia lap ngay cuoi thang.
 
 Log thanh cong mong doi:
 
@@ -123,6 +129,7 @@ Kiem tra `email_logs.status`:
 - `PENDING`: da tao log, dang cho worker.
 - `SENT`: SMTP gui thanh cong.
 - `FAILED`: gui that bai sau retry.
+- `DELIVERED_UNCONFIRMED`: SMTP da chap nhan, dang cho reconciliation.
 
 ## Khoi phuc cau hinh chuan
 
@@ -130,6 +137,7 @@ Truoc khi commit/push, `.env` phai tro ve:
 
 ```env
 REPORT_CRON="55 23 28-31 * *"
+REPORT_TIME_ZONE="Asia/Ho_Chi_Minh"
 ```
 
 File `.env` duoc gitignore, khong commit database URL, SMTP password hoac JWT secret.

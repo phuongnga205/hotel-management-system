@@ -14,6 +14,7 @@ import { CreateReviewDto } from './dto/create-review.dto';
 import { Review } from './entities/review.entity';
 import { ReviewsService } from './reviews.service';
 import { REVIEW_ADMIN_DELETE_REASON } from './reviews.constants';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('ReviewsService', () => {
   const i18n = { t: jest.fn((key: string) => key) };
@@ -29,6 +30,7 @@ describe('ReviewsService', () => {
   const bookingRepository = {
     findOne: jest.fn(),
   };
+  const eventEmitter = { emitAsync: jest.fn().mockResolvedValue([]) };
 
   let service: ReviewsService;
 
@@ -53,6 +55,7 @@ describe('ReviewsService', () => {
       reviewRepository as unknown as Repository<Review>,
       i18n as unknown as I18nService,
       bookingRepository as unknown as Repository<Booking>,
+      eventEmitter as unknown as EventEmitter2,
     );
   });
 
@@ -204,7 +207,7 @@ describe('ReviewsService', () => {
     });
 
     it('does not accept a client-supplied reason — always records the fixed admin reason', async () => {
-      const review = { id: '1' } as Review;
+      const review = { id: '1', userId: '2' } as Review;
       reviewRepository.findOne.mockResolvedValue(review);
       reviewRepository.softRemove.mockResolvedValue(review);
 

@@ -4,10 +4,10 @@ import { env } from '../config/env'
 import { authMockApi } from './mocks/auth.mock'
 import type {
   ActivatePayload,
+  AuthMessageResponse,
   ForgotPasswordPayload,
   LoginPayload,
   LoginResponse,
-  MessageResponse,
   RegisterPayload,
   RegisterResponse,
   ResetPasswordPayload,
@@ -22,15 +22,15 @@ const authRealApi = {
     const res = await axiosClient.post(API_ENDPOINTS.AUTH_REGISTER, data)
     return res.data
   },
-  activate: async (data: ActivatePayload): Promise<MessageResponse> => {
+  activate: async (data: ActivatePayload): Promise<AuthMessageResponse> => {
     const res = await axiosClient.post(API_ENDPOINTS.AUTH_ACTIVATE, data)
     return res.data
   },
-  forgotPassword: async (data: ForgotPasswordPayload): Promise<MessageResponse> => {
+  forgotPassword: async (data: ForgotPasswordPayload): Promise<AuthMessageResponse> => {
     const res = await axiosClient.post(API_ENDPOINTS.AUTH_FORGOT_PASSWORD, data)
     return res.data
   },
-  resetPassword: async (data: ResetPasswordPayload): Promise<MessageResponse> => {
+  resetPassword: async (data: ResetPasswordPayload): Promise<AuthMessageResponse> => {
     const res = await axiosClient.post(API_ENDPOINTS.AUTH_RESET_PASSWORD, data)
     return res.data
   },
