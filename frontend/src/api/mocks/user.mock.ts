@@ -9,6 +9,12 @@
 import type { ChangePasswordPayload, MessageResponse, UpdateProfilePayload, UserProfile } from '../types'
 import { getMockRole } from './mockSession'
 
+// Gia lap loi dung shape axios that (isAxiosError + response.status/data.message)
+// - getErrorStatusCode()/getErrorMessage() o api/errorMessage.ts dua vao axios.isAxiosError().
+function apiError(status: number, message: string) {
+  return Object.assign(new Error(message), { isAxiosError: true, response: { status, data: { message } } })
+}
+
 const MOCK_DELAY_MS = 500
 const MOCK_AVATAR_URL = 'https://i.pravatar.cc/150?img=11'
 
@@ -42,5 +48,20 @@ export const userMockApi = {
   },
   changePassword: async (_data: ChangePasswordPayload): Promise<MessageResponse> => {
     return mockDelay({ message: 'Đổi mật khẩu thành công (mock).' })
+  },
+  // Khop dung hanh vi that: 1 slot anh/user, upload sau de nguyen upload
+  // truoc (overwrite). Dung URL.createObjectURL - chi song trong phien
+  // trinh duyet hien tai (mat khi F5), chap nhan duoc cho muc dich demo -
+  // giong cach room.mock.ts addImage() dang lam voi anh phong.
+  uploadAvatar: async (file: File): Promise<UserProfile> => {
+    mockProfile = { ...mockProfile, avatarUrl: URL.createObjectURL(file) }
+    return mockDelay({ ...mockProfile, role: getMockRole() })
+  },
+  removeAvatar: async (): Promise<MessageResponse> => {
+    if (!mockProfile.avatarUrl) {
+      throw apiError(404, 'No avatar to remove (mock).')
+    }
+    mockProfile = { ...mockProfile, avatarUrl: null }
+    return mockDelay({ message: 'Avatar removed (mock).' })
   },
 }

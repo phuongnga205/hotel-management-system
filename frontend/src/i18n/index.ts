@@ -14,12 +14,16 @@ import enHome from './locales/en/home.json'
 import viHome from './locales/vi/home.json'
 import enBooking from './locales/en/booking.json'
 import viBooking from './locales/vi/booking.json'
+import enRooms from './locales/en/rooms.json'
+import viRooms from './locales/vi/rooms.json'
+import enPayment from './locales/en/payment.json'
+import viPayment from './locales/vi/payment.json'
 
 export const defaultNS = 'common'
 
 export const resources = {
-  en: { common: enCommon, auth: enAuth, profile: enProfile, admin: enAdmin, home: enHome, booking: enBooking },
-  vi: { common: viCommon, auth: viAuth, profile: viProfile, admin: viAdmin, home: viHome, booking: viBooking },
+  en: { common: enCommon, auth: enAuth, profile: enProfile, admin: enAdmin, home: enHome, booking: enBooking, rooms: enRooms, payment: enPayment },
+  vi: { common: viCommon, auth: viAuth, profile: viProfile, admin: viAdmin, home: viHome, booking: viBooking, rooms: viRooms, payment: viPayment },
 } as const
 
 i18n
@@ -29,7 +33,7 @@ i18n
     resources,
     fallbackLng: 'vi',
     defaultNS,
-    ns: ['common', 'auth', 'profile', 'admin', 'home', 'booking'],
+    ns: ['common', 'auth', 'profile', 'admin', 'home', 'booking', 'rooms', 'payment'],
     interpolation: {
       escapeValue: false, // React đã tự escape XSS rồi
     },

@@ -1,4 +1,5 @@
-import type { AdminPayment, ListAdminPaymentsQuery, PagedResult } from '../types'
+import type { AdminPayment, ListAdminPaymentsQuery, ListPaymentsQuery, PagedResult, UserPayment } from '../types'
+import { bookings } from './booking.mock'
 
 const MOCK_DELAY_MS = 400
 
@@ -63,6 +64,29 @@ const payments: AdminPayment[] = [
 ]
 
 export const paymentMockApi = {
+  // Khac adminList() ben duoi (doc tu 1 fixture `payments` tinh, tach rieng) -
+  // listMine() doc truc tiep tu `bookings` (booking.mock.ts) de phan anh dung
+  // hanh dong that trong phien (vd vua tra tien 1 booking qua BookingPaymentPage
+  // se thay ngay o day), khong bi "dong bang" o vai giao dich mau co san. Chi
+  // lay payment MOI NHAT cua moi booking (giong dung field `booking.payment`
+  // that - BE that co the co nhieu lan thu thanh toan/booking, mock don gian
+  // hoa chi giu 1 ban ghi, chap nhan duoc cho muc dich demo).
+  listMine: async (query: ListPaymentsQuery): Promise<PagedResult<UserPayment>> => {
+    let mine: UserPayment[] = bookings
+      .filter((b) => b.payment)
+      .map((b) => ({
+        ...b.payment!,
+        booking: b.room
+          ? { id: b.id, roomName: b.room.name, roomNumber: b.room.roomNumber, checkInDate: b.checkInDate, checkOutDate: b.checkOutDate }
+          : undefined,
+      }))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+    if (query.status) mine = mine.filter((p) => p.status === query.status)
+    if (query.method) mine = mine.filter((p) => p.method === query.method)
+
+    return mockDelay(paginate(mine, query.page, query.limit))
+  },
   adminList: async (query: ListAdminPaymentsQuery): Promise<PagedResult<AdminPayment>> => {
     let filtered = payments
     if (query.status) filtered = filtered.filter((p) => p.status === query.status)

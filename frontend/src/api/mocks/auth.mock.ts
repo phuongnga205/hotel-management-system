@@ -18,6 +18,7 @@ import type {
   ForgotPasswordPayload,
   LoginPayload,
   LoginResponse,
+  MessageResponse,
   RegisterPayload,
   RegisterResponse,
   ResetPasswordPayload,
@@ -71,5 +72,8 @@ export const authMockApi = {
   },
   resetPassword: async (_data: ResetPasswordPayload): Promise<AuthMessageResponse> => {
     return mockDelay({ statusCode: 200, message: 'Đổi mật khẩu thành công (mock).', data: null })
+  },
+  logout: async (): Promise<MessageResponse> => {
+    return mockDelay({ message: 'Đăng xuất thành công (mock).' })
   },
 }

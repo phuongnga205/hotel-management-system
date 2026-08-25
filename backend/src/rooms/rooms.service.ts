@@ -10,6 +10,7 @@ import { plainToInstance } from 'class-transformer';
 import {
   DataSource,
   EntityManager,
+  ILike,
   In,
   MoreThanOrEqual,
   Repository,
@@ -24,7 +25,7 @@ import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { buildRoomImagePublicId } from '../config/environment.constants';
 import { AddRoomImageDto } from './dto/add-room-image.dto';
 import { CreateRoomDto } from './dto/create-room.dto';
-import { ListRoomsDto } from './dto/list-rooms.dto';
+import { ListRoomsDto, RoomSortBy } from './dto/list-rooms.dto';
 import { ListPublicRoomsDto } from './dto/list-public-rooms.dto';
 import { FindAvailableRoomsDto } from './dto/find-available-rooms.dto';
 import { RoomImageResponseDto } from './dto/room-image-response.dto';
@@ -34,6 +35,7 @@ import { UpdateRoomPriceDto } from './dto/update-room-price.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { Room } from './entities/room.entity';
 import { RoomStatus } from './enums/room-status.enum';
+import { SortOrder } from '../common/enums/sort-order.enum';
 
 export interface PaginatedRooms {
   items: RoomResponseDto[];
@@ -89,8 +91,17 @@ export class RoomsService {
   // `status` trong query chỉ là filter thêm (optional), không truyền thì
   // trả về tất cả. Khác findPublicList() bên dưới luôn ép status=ACTIVE.
   async findAll(query: ListRoomsDto) {
-    const { page, limit, status } = query;
-    const data = await this.listRooms(page, limit, status);
+    const { page, limit, status, search, roomType, sortOrder, sortBy } = query;
+    const data = await this.listRooms(
+      page,
+      limit,
+      status,
+      undefined,
+      search,
+      sortOrder,
+      roomType,
+      sortBy,
+    );
 
     return {
       statusCode: 200,
@@ -117,6 +128,12 @@ export class RoomsService {
     limit: number,
     status?: RoomStatus,
     guests?: number,
+    search?: string,
+    // Chi truyen tu findAll() (admin) - findPublicList() khong truyen, giu
+    // nguyen thu tu id ASC cu (khong doi hanh vi public API).
+    sortOrder?: SortOrder,
+    roomType?: string,
+    sortBy?: RoomSortBy,
   ): Promise<PaginatedRooms> {
     const repository = this.dataSource.getRepository(Room);
 
@@ -125,13 +142,38 @@ export class RoomsService {
     // (roomAmenities, images) — rồi mới nạp quan hệ cho đúng trang id đó
     // bằng QueryBuilder, tuân Luật 4 (danh sách có Relations bắt buộc
     // QueryBuilder).
+    const baseWhere = {
+      ...(status ? { status } : {}),
+      ...(guests !== undefined ? { capacity: MoreThanOrEqual(guests) } : {}),
+      // Loc rieng theo loai phong (input Type o AdminRoomListPage) - khac
+      // `search` (gop chung roomNumber/name/roomType), 2 field co the dung
+      // cung luc (AND voi nhau).
+      ...(roomType ? { roomType: ILike(`%${roomType}%`) } : {}),
+    };
+    // TypeORM: mang cac object trong `where` la OR, tung object la AND - can
+    // OR giua roomNumber/name/roomType nhung van AND voi status/guests, nen
+    // phai nhan baseWhere ra 3 nhanh thay vi 1 object gop chung.
+    const where = search
+      ? [
+          { ...baseWhere, roomNumber: ILike(`%${search}%`) },
+          { ...baseWhere, name: ILike(`%${search}%`) },
+          { ...baseWhere, roomType: ILike(`%${search}%`) },
+        ]
+      : baseWhere;
+
+    // "price"/"capacity" phuc vu nut sap xep tang/giam rieng cho 2 cot do o
+    // AdminRoomListPage (khac dropdown "Newest/Oldest" sap theo createdAt).
+    const sortColumn: keyof Room =
+      sortBy === 'price'
+        ? 'pricePerNight'
+        : sortBy === 'capacity'
+          ? 'capacity'
+          : 'createdAt';
+
     const [ids, total] = await repository.findAndCount({
-      where: {
-        ...(status ? { status } : {}),
-        ...(guests !== undefined ? { capacity: MoreThanOrEqual(guests) } : {}),
-      },
+      where,
       select: { id: true },
-      order: { id: 'ASC' },
+      order: sortOrder ? { [sortColumn]: sortOrder } : { id: 'ASC' },
       take: limit,
       skip: (page - 1) * limit,
     });
@@ -147,7 +189,10 @@ export class RoomsService {
           )
           .leftJoinAndSelect('room.images', 'image', 'image.deletedAt IS NULL')
           .whereInIds(ids.map((room) => room.id))
-          .orderBy('room.id', 'ASC')
+          .orderBy(
+            sortOrder ? `room.${sortColumn}` : 'room.id',
+            sortOrder ?? 'ASC',
+          )
           .getMany()
       : [];
 
@@ -504,6 +549,30 @@ export class RoomsService {
     const imagePublicIds = await this.dataSource.transaction(
       async (manager) => {
         await this.assertRoomExists(manager.getRepository(Room), id);
+
+        // Chan xoa neu phong con booking PENDING/ACCEPTED (chua ket thuc
+        // vong doi). Day la mot "guard" bat buoc: Room.remove() la soft-delete
+        // (UPDATE deleted_at), khong phai DELETE FROM rooms that su, nen FK
+        // `bookings.room_id` (onDelete: RESTRICT) khong bao gio duoc kich
+        // hoat de bao ve o day - phai tu kiem tra thu cong. Thieu guard nay,
+        // xoa 1 phong dang co booking PENDING se lam accept()/reject() cua
+        // booking do vo sau nay: createStatusChangedOutbox() goi
+        // Room repository.findOneByOrFail() (loc deletedAt IS NULL mac dinh
+        // tren root entity) se nem EntityNotFoundError khong duoc bat, roi
+        // toan bo transaction accept()/reject() bi rollback - booking ket
+        // ket dinh PENDING vinh vien, khong ai xu ly duoc nua.
+        const activeBookingCount = await manager
+          .getRepository(Booking)
+          .countBy({
+            roomId: id,
+            status: In([BookingStatus.PENDING, BookingStatus.ACCEPTED]),
+          });
+        if (activeBookingCount > 0) {
+          throw new ConflictException(
+            this.i18n.t('messages.ROOM.HAS_ACTIVE_BOOKINGS'),
+          );
+        }
+
         const imageRepository = manager.getRepository(Image);
         const images = await imageRepository.find({
           where: { roomId: id },

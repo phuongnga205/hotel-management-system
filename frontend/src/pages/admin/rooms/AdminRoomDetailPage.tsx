@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'react-toastify'
 import PageHeader from '../../../components/PageHeader'
 import Card from '../../../components/Card'
 import { PageLoader } from '../../../components/common/PageLoader'
 import RoomTypeBadge from '../../../components/RoomTypeBadge'
 import ImageLightbox from '../../../components/ImageLightbox'
-import { Breadcrumb, StatusBadge, ROOM_STATUS_CONFIG } from '../../../components/admin'
+import Dropdown from '../../../components/Dropdown'
+import { Breadcrumb, ROOM_STATUS_CONFIG } from '../../../components/admin'
 import { ROUTES } from '../../../router/paths'
 import { roomApi } from '../../../api/room.api'
-import type { Room } from '../../../api/types'
+import { getErrorMessage } from '../../../api/errorMessage'
+import type { Room, RoomStatus } from '../../../api/types'
 
 export default function AdminRoomDetailPage() {
   const { t } = useTranslation('admin')
@@ -18,6 +21,7 @@ export default function AdminRoomDetailPage() {
   const [room, setRoom] = useState<Room | null>(null)
   const [loading, setLoading] = useState(true)
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
+  const [statusSaving, setStatusSaving] = useState(false)
 
   useEffect(() => {
     if (!roomId) return
@@ -46,6 +50,25 @@ export default function AdminRoomDetailPage() {
   const thumb = room.images?.find((i) => i.isThumbnail)?.imageUrl ?? room.images?.[0]?.imageUrl
   const otherImages = (room.images ?? []).filter((i) => !i.isThumbnail)
 
+  const statusOptions = Object.keys(ROOM_STATUS_CONFIG).map((key) => ({ value: key, label: t(ROOM_STATUS_CONFIG[key].labelKey) }))
+  const statusDots = Object.fromEntries(Object.entries(ROOM_STATUS_CONFIG).map(([key, cfg]) => [key, cfg.dot]))
+
+  const handleStatusChange = async (next: string) => {
+    if (next === room.status) return
+    const previous = room.status
+    setStatusSaving(true)
+    setRoom({ ...room, status: next as RoomStatus })
+    try {
+      const updated = await roomApi.update(room.id, { status: next as RoomStatus })
+      setRoom(updated)
+    } catch (err) {
+      setRoom({ ...room, status: previous })
+      toast.error(getErrorMessage(err, t('common.notFoundGeneric')))
+    } finally {
+      setStatusSaving(false)
+    }
+  }
+
   return (
     <div className="space-y-5">
       <Breadcrumb items={[{ label: t('rooms.list.title'), to: ROUTES.ADMIN.ROOMS }, { label: room.name }]} />
@@ -53,10 +76,19 @@ export default function AdminRoomDetailPage() {
       <PageHeader
         title={room.name}
         action={<button onClick={() => navigate(ROUTES.ADMIN.ROOM_EDIT(room.id))} className="px-5 py-2.5 text-sm font-semibold text-white bg-navy rounded-lg hover:opacity-90 transition-opacity">{t('rooms.detail.editRoom')}</button>}
+        showBack
       />
       <div className="flex items-center gap-3 -mt-6 mb-4">
         <RoomTypeBadge type={room.roomType} />
-        <StatusBadge status={room.status} config={ROOM_STATUS_CONFIG} />
+        <Dropdown
+          value={room.status}
+          onChange={handleStatusChange}
+          options={statusOptions}
+          statusDots={statusDots}
+          disabled={statusSaving}
+          size="sm"
+          className="w-40"
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">

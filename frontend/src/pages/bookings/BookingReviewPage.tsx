@@ -1,29 +1,124 @@
-// TODO(session sau): BookingReviewPage — /bookings/:bookingId/review (can AuthGuard)
-// Doc bat buoc doc truoc: frontend/docs/bridge.md muc 8, backend/docs/DANH_SACH_API.md muc 5,
-// frontend/docs/DANH_SACH_MAN_HINH.md muc E.
-//
-// - Khac BookingPaymentPage: hien tai KHONG co nut/link nao dan vao trang nay ca (BookingCard.tsx
-//   chua co onReview prop) - phai them nut "Viet danh gia" vao BookingCard.tsx/BookingHistoryPage.tsx
-//   TRUOC, chi hien khi du dieu kien (xem gach dau dong ke tiep), roi moi dung trang nay.
-// - Dieu kien de duoc review (BE tu kiem tra lai, nhung FE nen an nut neu chua du de tranh submit
-//   roi bi 400): booking thuoc ve chinh user, da ACCEPTED, da thanh toan thanh cong (payment.status
-//   === 'SUCCESS'), va da qua checkOutDate. Moi booking chi review duoc 1 lan (409 neu da review).
-// - Lay :bookingId tu useParams(). Form: rating (so nguyen 1-5, tai su dung
-//   components/StarRating.tsx), comment (optional, toi da 2000 ky tu).
-// - Submit -> reviewApi.create(bookingId, rating, comment) (POST /reviews) - roomId/userId BE tu
-//   suy ra tu booking, FE KHONG gui 2 field nay.
-// - Bat rieng:
-//   - 400: booking chua hoan thanh (chua ACCEPTED/chua thanh toan/chua checkout).
-//   - 404: khong tim thay booking cua user nay.
-//   - 409: booking da duoc review truoc do.
-// - Thanh cong -> toast + navigate ve ROUTES.BOOKINGS (/bookings).
-// - i18n: dung chung namespace 'booking', hoac tao 'review' rieng neu can nhieu key - nho dang ky
-//   trong i18n/index.ts neu tao file JSON moi.
-// - Sau khi dung xong: them nut "Viet danh gia" vao BookingCard.tsx (props onReview + dieu kien
-//   hien nhu tren), quay lai sua co 🚧 -> ✅ o dong BookingReviewPage trong CAU_TRUC_ROUTE.md va
-//   DANH_SACH_MAN_HINH.md, them ROUTES.BOOKING_REVIEW vao router/paths.ts + dang ky route trong
-//   router/index.tsx.
+import { useEffect, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import { toast } from 'react-toastify'
+import dayjs from 'dayjs'
+import PageHeader from '../../components/PageHeader'
+import Card from '../../components/Card'
+import FieldLabel from '../../components/FieldLabel'
+import inputBase from '../../components/inputBase'
+import StarRating from '../../components/StarRating'
+import { PageLoader } from '../../components/common/PageLoader'
+import { bookingApi } from '../../api/booking.api'
+import { reviewApi } from '../../api/review.api'
+import { getErrorMessage, getErrorStatusCode } from '../../api/errorMessage'
+import { HTTP_STATUS } from '../../constants/http'
+import { ROUTES } from '../../router/paths'
+import type { Booking } from '../../api/types'
+
+const COMMENT_MAX_LENGTH = 2000
 
 export function BookingReviewPage() {
-  return null
+  const { t } = useTranslation('booking')
+  const navigate = useNavigate()
+  const { bookingId } = useParams<{ bookingId: string }>()
+
+  const [booking, setBooking] = useState<Booking | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+
+  const [rating, setRating] = useState(0)
+  const [comment, setComment] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (!bookingId) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoading(true)
+    bookingApi
+      .getById(bookingId)
+      .then(setBooking)
+      .catch((err) => setLoadError(getErrorMessage(err, t('review.fetchError'))))
+      .finally(() => setLoading(false))
+  }, [bookingId, t])
+
+  const handleSubmit = async () => {
+    if (!bookingId || rating < 1) return
+    try {
+      setSubmitting(true)
+      await reviewApi.create(bookingId, rating, comment.trim() || undefined)
+      toast.success(t('review.createSuccess'))
+      navigate(ROUTES.BOOKINGS)
+    } catch (err) {
+      const status = getErrorStatusCode(err)
+      if (status === HTTP_STATUS.CONFLICT) {
+        toast.error(t('review.alreadyReviewed'))
+      } else if (status === HTTP_STATUS.BAD_REQUEST) {
+        toast.error(t('review.notEligible'))
+      } else {
+        toast.error(getErrorMessage(err, t('review.createError')))
+      }
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (loading) return <PageLoader />
+
+  if (loadError || !booking) {
+    return (
+      <div className="max-w-2xl mx-auto py-16 px-4 text-center">
+        <p className="text-danger text-sm">{loadError ?? t('review.notFound')}</p>
+      </div>
+    )
+  }
+
+  // Chi duoc review sau khi da o xong: ACCEPTED + da thanh toan thanh cong +
+  // qua checkOutDate - khop dung logic BE (backend/src/reviews/reviews.service.ts).
+  const isEligible =
+    booking.status === 'ACCEPTED' && booking.payment?.status === 'SUCCESS' && dayjs(booking.checkOutDate).isBefore(dayjs())
+
+  if (!isEligible) {
+    return (
+      <div className="max-w-2xl mx-auto py-16 px-4 text-center">
+        <p className="text-slate-500 text-sm">{t('review.notEligible')}</p>
+      </div>
+    )
+  }
+
+  const roomName = booking.room?.name ?? t('labels.unknownRoom')
+
+  return (
+    <div className="max-w-2xl mx-auto py-8 px-4 min-h-screen">
+      <PageHeader eyebrow={t('review.eyebrow')} title={t('review.title')} subtitle={roomName} showBack />
+
+      <Card className="p-6">
+        <div className="mb-6">
+          <FieldLabel>{t('review.ratingLabel')}</FieldLabel>
+          <StarRating rating={rating} size="lg" onChange={setRating} />
+        </div>
+
+        <div>
+          <FieldLabel optional>{t('review.commentLabel')}</FieldLabel>
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value.slice(0, COMMENT_MAX_LENGTH))}
+            placeholder={t('review.commentPlaceholder')}
+            rows={5}
+            className={inputBase}
+          />
+          <p className="text-xs text-slate-400 text-right mt-1">{comment.length}/{COMMENT_MAX_LENGTH}</p>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={rating < 1 || submitting}
+          className="w-full py-3 rounded-xl font-semibold text-sm text-white bg-navy transition-all hover:opacity-90 active:scale-95 disabled:opacity-50 mt-2"
+        >
+          {submitting ? t('review.processing') : t('review.submit')}
+        </button>
+      </Card>
+    </div>
+  )
 }

@@ -1,11 +1,12 @@
-# Sổ tay cho phiên sau — dựng nốt các màn hình User còn thiếu
+# Sổ tay màn hình User — nhật ký hoàn thiện + convention tham chiếu
 
-> File này **không lặp lại** nội dung đã có ở `bridge.md`/`DANH_SACH_API.md`/
-> `DANH_SACH_MAN_HINH.md`/`CAU_TRUC_ROUTE.md` — chỉ tổng hợp lại **thứ tự đọc,
-> convention bắt buộc, và các bẫy đã từng gặp** trong lúc build các màn admin
-> + `BookingHistoryPage` (mùa trước), để phiên sau không phải dò lại từ đầu
-> khi dựng nốt các màn User còn thiếu. Đọc file này **trước khi viết dòng
-> code đầu tiên**.
+> ✅ **Toàn bộ màn User trong danh sách gốc của file này đã dựng xong**
+> (xem mục 2), kể cả bug đăng xuất. File giờ đóng vai trò 2 việc: (1) nhật
+> ký ngắn gọn những gì đã làm, để phiên sau không phải đoán lại; (2) kho
+> convention/bẫy đã từng gặp (mục 3–6) vẫn còn giá trị tham chiếu cho bất kỳ
+> màn User mới nào dựng sau này (vd Payment History nâng cấp, admin quản lý
+> avatar...). File này **không lặp lại** nội dung đã có ở `bridge.md`/
+> `DANH_SACH_API.md`/`DANH_SACH_MAN_HINH.md`/`CAU_TRUC_ROUTE.md`.
 
 ## 1. Đọc gì trước, theo đúng thứ tự
 
@@ -25,26 +26,48 @@
    "Sơ đồ rút gọn" và "Việc cần làm khi implement" ở cuối file.
 5. **`frontend/docs/HUONG_DAN_I18N.md`** — quy tắc đặt key i18n.
 
-## 2. Các màn User còn thiếu (theo mức ưu tiên)
+## 2. Nhật ký hoàn thiện (trước đây là "các màn còn thiếu")
 
-| Màn | Route | Ưu tiên | Vì sao |
-|---|---|---|---|
-| `BookingPaymentPage.tsx` | `/bookings/:bookingId/payment` | 🔴 Cao nhất | Nút "Pay" ở `BookingHistoryPage`/`BookingCard` **đã navigate tới route này** — dead link đang tồn tại thật, người dùng bấm được nhưng không tới đâu. `bookingApi.pay()` đã sẵn sàng gọi thật. |
-| `RoomListPage.tsx` | `/rooms` | 🔴 Cao | Luồng nghiệp vụ lõi (tìm phòng), `HomePage.tsx` đã có nhiều link trỏ tới — dead link. |
-| `RoomDetailPage.tsx` | `/rooms/:roomId` | 🔴 Cao | Tương tự — dead link từ `HomePage.tsx`. |
-| `BookRoomPage.tsx` | `/rooms/:roomId/book` | 🔴 Cao | Tương tự — dead link từ `HomePage.tsx`. Xem mục 3 bên dưới (query carry-forward) trước khi code. |
-| `ChangePasswordPage.tsx` | `/profile/change-password` | 🟡 Trung bình | API đã sẵn (`userApi.changePassword()`), chỉ thiếu UI — hiện **không có cách nào** đổi mật khẩu khi đã đăng nhập. |
-| Avatar (thêm/thay/xoá) trong `ProfilePage.tsx` | — (không tách route) | 🟡 Trung bình | ⚠️ **Chưa có cả tầng API** — `user.api.ts` chưa có `uploadAvatar()`/`removeAvatar()`, `endpoints.ts` chưa có constant cho `POST`/`DELETE /users/me/avatar`. Phải viết từ API layer, không chỉ thêm UI. |
-| `BookingReviewPage.tsx` | `/bookings/:bookingId/review` | 🟢 Thấp hơn | Chưa có cả nút dẫn vào (khác `BookingPaymentPage` — có nút nhưng thiếu đích, ở đây thiếu cả nút). `reviewApi.create()` đã sẵn. |
-| `PaymentHistoryPage.tsx` | `/payments` | 🟢 Thấp hơn | ⚠️ **`payment.api.ts` chưa có `listMine()`** cho `GET /payments/me` (chỉ có `adminList()`) — cần viết thêm API layer trước. |
+Tất cả đã dựng xong, không còn màn User nào treo. Tóm tắt theo thứ tự làm:
 
-`ForbiddenPage`/`NotFoundPage` **đã xong** (không nằm trong danh sách này nữa).
+- **Rooms + Booking flow**: `BookingPaymentPage`/`RoomListPage`/
+  `RoomDetailPage`/`BookRoomPage` — `BookRoomPage`/`DateRangeBar` chỉ cho
+  chọn ngày từ hôm nay trở đi.
+- **`ChangePasswordPage.tsx`** — quyết định **không làm route riêng**, đổi
+  mật khẩu khi đã đăng nhập dùng tab "Security" có sẵn trong
+  `ProfilePage.tsx`, file stub đã xoá.
+- **Hold countdown + "Pay" đúng 2 tình huống hợp lệ**: `BookingCard.tsx`
+  hiện nút "Pay" cho cả PENDING + hold còn hạn (đồng hồ đếm ngược + viền
+  "urgency") lẫn ACCEPTED + chưa thanh toán — xem `constants/booking.ts`
+  (`BOOKING_HOLD_MINUTES`, PHẢI khớp hằng số BE) +
+  `components/bookings/HoldCountdown.tsx`.
+- **`BookingReviewPage.tsx`** + nút "Viết đánh giá" trên `BookingCard`
+  (gate đúng điều kiện `ReviewsService.create()` ở BE).
+- **`GET /reviews/me`** (BE, thêm mới — self-service, cùng pattern
+  `GET /bookings/me`/`GET /payments/me`) + `MyReviewsPage.tsx` (`/reviews`,
+  tab "My Reviews" ngang hàng "My Bookings").
+- **`PaymentHistoryPage.tsx`** (`/payments`, `paymentApi.listMine()`) —
+  mock đọc trực tiếp từ `bookings` (`booking.mock.ts`) thay vì fixture
+  tĩnh riêng, để phản ánh đúng hành động thật trong phiên.
+- **Phân quyền role thật ở FE**: `contexts/AuthProvider.tsx` +
+  `hooks/useAuth.ts` (xem `CAU_TRUC_ROUTE.md` mục "Auth/role state") —
+  `Header.tsx` hiện nav/dropdown khác nhau theo `isAdmin` (admin chỉ còn 1
+  tab "Admin Console", dropdown user thường có thêm "Payment History" ở
+  đúng chỗ "Admin" cũ từng nằm). `AdminGuard.tsx` đổi sang đọc `useAuth()`
+  thay vì tự fetch profile riêng mỗi lần vào `/admin/**`.
+- **Avatar (thêm/thay/xoá) trong `ProfilePage.tsx`** — màn cuối cùng còn
+  thiếu, giờ đã xong: `user.api.ts` có `uploadAvatar()`/`removeAvatar()`
+  (`POST`/`DELETE /users/me/avatar`), UI có nút "Change Avatar"/"Remove
+  Avatar", validate type/size client-side qua `constants/avatar.ts` (PHẢI
+  khớp `backend/src/config/avatar-upload.config.ts`), gọi `refreshUser()`
+  sau khi xong để avatar trên `Header.tsx` cập nhật ngay.
+- **Bug đăng xuất đã sửa**: `Header.tsx`/`AdminLayout.tsx` trước đây chỉ
+  `clearAccessToken()` phía client, **không gọi `POST /auth/logout`** — JWT
+  blacklist ở Redis không bao giờ được kích hoạt. Giờ cả 2 nơi gọi
+  `authApi.logout()` trước khi xoá token cục bộ (best-effort — lỗi mạng/
+  token hết hạn không được chặn hành động đăng xuất).
 
-> 🆕 **Bug khác đã phát hiện, chưa sửa** (không phải thiếu màn, mà là hành vi
-> sai): nút "Đăng xuất" (`Header.tsx`, `AdminLayout.tsx`) hiện chỉ
-> `clearAccessToken()` phía client, **không gọi `POST /auth/logout`** — JWT
-> blacklist ở Redis không bao giờ được kích hoạt. Sửa khi có dịp, không gấp
-> nhưng nên biết.
+`ForbiddenPage`/`NotFoundPage` đã xong từ trước, không nhắc lại ở đây.
 
 ## 3. Convention "mang query xuyên suốt" khi dựng luồng Rooms/Booking
 

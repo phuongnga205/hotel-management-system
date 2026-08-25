@@ -129,7 +129,7 @@ export default function AdminRoomCreatePage() {
     <div className="space-y-5">
       <Breadcrumb items={[{ label: t('rooms.list.title'), to: ROUTES.ADMIN.ROOMS }, { label: t('rooms.form.newBreadcrumb') }]} />
 
-      <PageHeader eyebrow={t('rooms.list.eyebrow')} title={t('rooms.form.createTitle')} />
+      <PageHeader eyebrow={t('rooms.list.eyebrow')} title={t('rooms.form.createTitle')} showBack />
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5 items-start">
         <div className="space-y-5">

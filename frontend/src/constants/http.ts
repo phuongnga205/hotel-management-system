@@ -3,6 +3,7 @@
  * Không gõ cứng số 401/403/... rải rác — luôn tham chiếu qua đây.
  */
 export const HTTP_STATUS = {
+  BAD_REQUEST: 400,
   UNAUTHORIZED: 401,
   CONFLICT: 409,
 } as const

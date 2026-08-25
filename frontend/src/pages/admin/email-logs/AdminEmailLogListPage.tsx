@@ -4,13 +4,13 @@ import { useTranslation } from 'react-i18next'
 import Dropdown from '../../../components/Dropdown'
 import PageHeader from '../../../components/PageHeader'
 import Card from '../../../components/Card'
+import Pagination from '../../../components/Pagination'
 import { PageLoader } from '../../../components/common/PageLoader'
 import { AdminTable, StatusBadge, EMAIL_LOG_STATUS_CONFIG } from '../../../components/admin'
 import { ROUTES } from '../../../router/paths'
 import { emailLogApi } from '../../../api/email-log.api'
 import { getErrorMessage } from '../../../api/errorMessage'
 import type { EmailLog, EmailStatus } from '../../../api/types'
-import Pagination from '../../../components/Pagination'
 
 const EMAIL_LOGS_PER_PAGE = 10
 
@@ -20,11 +20,11 @@ export default function AdminEmailLogListPage() {
   const { t, i18n } = useTranslation('admin')
   const navigate = useNavigate()
   const [statusFilter, setStatusFilter] = useState('ALL')
+  const [page, setPage] = useState(1)
   const [logs, setLogs] = useState<EmailLog[]>([])
+  const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [page, setPage] = useState(1)
-  const [total, setTotal] = useState(0)
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-with-loading-flag pattern, xem AdminBookingListPage.tsx

@@ -8,12 +8,14 @@ import { setAccessToken } from '../../api/axiosClient'
 import { getErrorMessage } from '../../api/errorMessage'
 import type { LoginPayload } from '../../api/types'
 import { ROUTES } from '../../router/paths'
+import { useAuth } from '../../hooks/useAuth'
 
 export const LoginPage = () => {
   const { t } = useTranslation(['auth'])
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [loading, setLoading] = useState(false)
+  const { refreshUser } = useAuth()
 
   const onFinish = async (values: LoginPayload) => {
     try {
@@ -22,8 +24,17 @@ export const LoginPage = () => {
 
       if (res.accessToken) {
         setAccessToken(res.accessToken)
+        // Bao AuthContext biet vua co token moi de fetch lai profile (role...)
+        // ngay, khong doi tro ve trang - Header/AdminGuard doc lai qua useAuth()
+        // se cap nhat dung ngay sau khi promise nay resolve.
+        await refreshUser()
         toast.success(t('auth:loginSuccess'))
-        const redirectUrl = searchParams.get('redirect') || ROUTES.HOME
+        // Khong co ?redirect= tuong minh (vd bi bounce tu 1 trang /admin/**
+        // cu the) -> tu quyet dinh trang mac dinh theo role, tranh admin
+        // dang nhap xong lai roi vao HomePage huong nguoi dung thuong (lay
+        // role tu chinh LoginResponse.user, khong doi state AuthContext cap
+        // nhat vi setState bat dong bo, co the chua kip o day).
+        const redirectUrl = searchParams.get('redirect') || (res.user.role === 'ADMIN' ? ROUTES.ADMIN.DASHBOARD : ROUTES.HOME)
         navigate(redirectUrl)
       }
     } catch (error: unknown) {
@@ -76,6 +87,12 @@ export const LoginPage = () => {
           <div className="auth-footer">
             <Link to={ROUTES.REGISTER} className="link-standard">
               {t('auth:dontHaveAccount')}
+            </Link>
+          </div>
+
+          <div className="auth-footer">
+            <Link to={ROUTES.HOME} className="link-standard">
+              {t('auth:backToHome')}
             </Link>
           </div>
         </Form>

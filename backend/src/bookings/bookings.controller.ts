@@ -25,6 +25,7 @@ import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { BookingHistoryQueryDto } from './dto/booking-history-query.dto';
 import { PayBookingDto } from './dto/pay-booking.dto';
 import { EntityIdParamDto } from '../common/dto/entity-id-param.dto';
+import { BookingStatus } from './enums/booking-status.enum';
 
 // Route ở đây là self-service cho chính khách hàng đã đăng nhập — mọi thao
 // tác đều scope theo userId lấy từ JWT (@GetUser), không tin userId từ
@@ -80,6 +81,12 @@ export class BookingsController {
     example: 10,
     description: 'Số bản ghi mỗi trang (tối đa 100)',
   })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: BookingStatus,
+    description: 'Lọc theo trạng thái booking',
+  })
   @ApiResponse({
     status: 200,
     description: 'Trả về danh sách booking của chính mình (đã phân trang)',
@@ -89,7 +96,12 @@ export class BookingsController {
     @GetUser('id') userId: string,
     @Query() query: BookingHistoryQueryDto,
   ) {
-    return this.bookingsService.findHistory(userId, query.page, query.limit);
+    return this.bookingsService.findHistory(
+      userId,
+      query.page,
+      query.limit,
+      query.status,
+    );
   }
 
   @ApiBearerAuth('access-token')

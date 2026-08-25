@@ -12,11 +12,14 @@ export const ROUTES = {
   RESET_PASSWORD: '/reset-password',
   PROFILE: '/profile',
   BOOKINGS: '/bookings',
+  REVIEWS: '/reviews',
+  PAYMENTS: '/payments',
+  BOOKING_PAYMENT: (bookingId: string) => `/bookings/${bookingId}/payment`,
+  BOOKING_REVIEW: (bookingId: string) => `/bookings/${bookingId}/review`,
   FORBIDDEN: '/403',
   NOT_FOUND: '/404',
+  SERVER_DOWN: '/server-down',
 
-  // Cong khai (chua co trang dich - se dung khi build man hinh danh sach/chi
-  // tiet/dat phong o mot phien lam viec sau, gio moi co Trang chu tro toi).
   ROOMS: '/rooms',
   ROOM_DETAIL: (roomId: string) => `/rooms/${roomId}`,
   BOOK_ROOM: (roomId: string) => `/rooms/${roomId}/book`,

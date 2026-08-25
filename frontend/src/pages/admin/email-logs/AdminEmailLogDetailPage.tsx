@@ -59,7 +59,7 @@ export default function AdminEmailLogDetailPage() {
     <div className="space-y-5 max-w-3xl">
       <Breadcrumb items={[{ label: t('emailLogs.list.title'), to: ROUTES.ADMIN.EMAIL_LOGS }, { label: log.id }]} />
 
-      <PageHeader eyebrow={t('emailLogs.list.eyebrow')} title={t('emailLogs.list.title')} action={<StatusBadge status={log.status} config={EMAIL_LOG_STATUS_CONFIG} />} />
+      <PageHeader eyebrow={t('emailLogs.list.eyebrow')} title={t('emailLogs.list.title')} action={<StatusBadge status={log.status} config={EMAIL_LOG_STATUS_CONFIG} />} showBack />
 
       <Card className="p-5">
         <h3 className="font-semibold text-navy text-sm uppercase tracking-wide mb-4">{t('emailLogs.detail.metadataTitle')}</h3>

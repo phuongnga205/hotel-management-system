@@ -1,9 +1,15 @@
-import type { AdminUpdateUserPayload, AdminUserListItem, ListAdminUsersQuery, PagedResult } from '../types'
+import type { AdminCreateUserPayload, AdminUpdateUserPayload, AdminUserListItem, ListAdminUsersQuery, PagedResult } from '../types'
 
 const MOCK_DELAY_MS = 350
 
 function mockDelay<T>(data: T, ms = MOCK_DELAY_MS): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(data), ms))
+}
+
+// Gia lap loi dung shape axios that (isAxiosError + response.status/data.message)
+// - getErrorStatusCode()/getErrorMessage() o api/errorMessage.ts dua vao axios.isAxiosError().
+function apiError(status: number, message: string) {
+  return Object.assign(new Error(message), { isAxiosError: true, response: { status, data: { message } } })
 }
 
 function paginate<T>(items: T[], page = 1, limit = 10): PagedResult<T> {
@@ -30,6 +36,26 @@ export const adminUserMockApi = {
       filtered = filtered.filter((u) => (u.fullName ?? '').toLowerCase().includes(q) || u.email.toLowerCase().includes(q))
     }
     return mockDelay(paginate(filtered, query.page, query.limit))
+  },
+  // Khop hanh vi that (email/username trung -> 409) va luon tao ACTIVE ngay,
+  // role mac dinh USER (xem backend/src/users/users.service.ts create()).
+  create: async (data: AdminCreateUserPayload): Promise<AdminUserListItem> => {
+    if (users.some((u) => u.email === data.email || u.username === data.username)) {
+      throw apiError(409, 'Email hoặc username đã tồn tại.')
+    }
+    const user: AdminUserListItem = {
+      id: `u${Date.now()}`,
+      username: data.username,
+      email: data.email,
+      fullName: null,
+      phone: data.phone ?? null,
+      avatarUrl: null,
+      role: 'USER',
+      status: 'ACTIVE',
+      createdAt: new Date().toISOString(),
+    }
+    users = [user, ...users]
+    return mockDelay(user)
   },
   getById: async (id: string): Promise<AdminUserListItem> => {
     const user = users.find((u) => u.id === id)

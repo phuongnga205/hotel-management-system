@@ -9,7 +9,8 @@
     "confirm": "Xác nhận",
     "loading": "Đang tải...",
     "search": "Tìm kiếm",
-    "name": "Họ tên"
+    "name": "Họ tên",
+    "back": "Quay lại"
   },
   "auth": {
     "login": "Đăng nhập",
@@ -25,7 +26,9 @@
     "home": "Trang chủ",
     "rooms": "Phòng",
     "myBookings": "Booking của tôi",
-    "admin": "Quản trị",
+    "reviews": "Đánh giá của tôi",
+    "adminConsole": "Trang Quản Trị",
+    "paymentHistory": "Lịch Sử Thanh Toán",
     "profile": "Tài khoản",
     "logout": "Đăng xuất"
   },
@@ -78,6 +81,15 @@
     "title": "Chỉ dành cho nhân viên",
     "desc": "Khu vực này chỉ dành cho nhân viên {{brand}}. Nếu bạn cho rằng đây là nhầm lẫn, vui lòng liên hệ lễ tân.",
     "cta": "Về trang chủ"
+  },
+  "serverDown": {
+    "eyebrow": "503 — Dịch vụ tạm ngưng",
+    "title": "Chúng tôi sẽ quay lại ngay",
+    "desc": "Hệ thống hiện không thể kết nối tới máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại sau giây lát.",
+    "cta": "Thử lại"
+  },
+  "adminPreview": {
+    "bookingDisabled": "Đây là bản xem trước trang công khai — thao tác đặt phòng bị vô hiệu hoá đối với tài khoản admin."
   },
   "footer": {
     "tagline": "Khách sạn hạng sang từng đoạt giải thưởng ngay trung tâm thành phố. Kiến tạo những trải nghiệm khó quên từ năm 2010.",

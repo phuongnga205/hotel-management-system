@@ -1,4 +1,4 @@
-import type { BookingStatistics, RevenueStatistics } from '../types'
+import type { RevenueBookingsStatistics, StatisticsBucket, StatisticsQuery } from '../types'
 
 const MOCK_DELAY_MS = 400
 
@@ -6,43 +6,49 @@ function mockDelay<T>(data: T, ms = MOCK_DELAY_MS): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(data), ms))
 }
 
-const bookingStats: BookingStatistics = {
-  totalBookings: 214,
-  byStatus: { PENDING: 18, ACCEPTED: 142, REJECTED: 12, CANCELLED: 34, EXPIRED: 8 },
-  monthly: [
-    { month: 'Jan', count: 18 },
-    { month: 'Feb', count: 22 },
-    { month: 'Mar', count: 31 },
-    { month: 'Apr', count: 24 },
-    { month: 'May', count: 38 },
-    { month: 'Jun', count: 45 },
-    { month: 'Jul', count: 52 },
-    { month: 'Aug', count: 41 },
-  ],
+function pad(value: number): string {
+  return String(value).padStart(2, '0')
 }
 
-const revenueStats: RevenueStatistics = {
-  totalRevenue: 812000,
-  monthly: [
-    { month: 'Jan', revenue: 62000 },
-    { month: 'Feb', revenue: 71000 },
-    { month: 'Mar', revenue: 84000 },
-    { month: 'Apr', revenue: 79000 },
-    { month: 'May', revenue: 96000 },
-    { month: 'Jun', revenue: 108000 },
-    { month: 'Jul', revenue: 121000 },
-    { month: 'Aug', revenue: 105000 },
-  ],
-  byRoomType: [
-    { roomType: 'Single', revenue: 18000 },
-    { roomType: 'Standard Twin', revenue: 42000 },
-    { roomType: 'Deluxe King', revenue: 178000 },
-    { roomType: 'Suite', revenue: 295000 },
-    { roomType: 'Penthouse', revenue: 162000 },
-  ],
+function daysInMonth(year: number, month: number): number {
+  return new Date(Date.UTC(year, month, 0)).getUTCDate()
+}
+
+/** Deterministic pseudo-random per label so re-fetches of the same query stay stable. */
+function seededAmount(label: string, max: number): number {
+  let hash = 0
+  for (let i = 0; i < label.length; i += 1) hash = (hash * 31 + label.charCodeAt(i)) >>> 0
+  return Math.round((hash % 1000) / 1000 * max)
+}
+
+function buildBuckets(query: StatisticsQuery): StatisticsBucket[] {
+  const labels: string[] =
+    query.period === 'DAY'
+      ? Array.from({ length: daysInMonth(query.year, query.month ?? 1) }, (_, i) => `${query.year}-${pad(query.month ?? 1)}-${pad(i + 1)}`)
+      : query.period === 'MONTH'
+        ? Array.from({ length: 12 }, (_, i) => `${query.year}-${pad(i + 1)}`)
+        : Array.from({ length: 4 }, (_, i) => `${query.year}-Q${i + 1}`)
+
+  return labels.map((label) => ({
+    label,
+    revenue: seededAmount(label, 130000).toFixed(2),
+    bookingCount: seededAmount(`count:${label}`, 55),
+  }))
 }
 
 export const statisticsMockApi = {
-  bookings: async (): Promise<BookingStatistics> => mockDelay(bookingStats),
-  revenue: async (): Promise<RevenueStatistics> => mockDelay(revenueStats),
+  getRevenueAndBookings: async (query: StatisticsQuery): Promise<RevenueBookingsStatistics> => {
+    const buckets = buildBuckets(query)
+    const totalRevenue = buckets.reduce((sum, b) => sum + Number(b.revenue), 0)
+    const totalBookings = buckets.reduce((sum, b) => sum + b.bookingCount, 0)
+    return mockDelay({
+      period: query.period,
+      year: query.year,
+      month: query.period === 'DAY' ? (query.month ?? null) : null,
+      totalRevenue: totalRevenue.toFixed(2),
+      totalBookings,
+      buckets,
+      isCached: false,
+    })
+  },
 }

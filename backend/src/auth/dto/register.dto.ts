@@ -4,6 +4,8 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Matches,
+  MaxLength,
   MinLength,
 } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
@@ -44,6 +46,12 @@ export class RegisterDto {
   @IsOptional()
   @IsString({
     message: i18nValidationMessage('messages.VALIDATION.IS_STRING'),
+  })
+  @MaxLength(20, {
+    message: i18nValidationMessage('messages.VALIDATION.MAX_LENGTH'),
+  })
+  @Matches(/^(0|\+84)\d{9,10}$/, {
+    message: i18nValidationMessage('messages.VALIDATION.INVALID_PHONE'),
   })
   phone?: string;
 }

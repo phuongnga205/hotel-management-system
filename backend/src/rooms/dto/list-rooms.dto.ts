@@ -1,9 +1,24 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, Max, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
 import { RoomStatus } from '../enums/room-status.enum';
+import { SortOrder } from '../../common/enums/sort-order.enum';
 import { ROOM_PAGINATION } from '../constants/room-pagination.constants';
+
+// Cot dung de sap xep, ngoai "createdAt" (mac dinh, moi nhat truoc) - "price"/
+// "capacity" phuc vu nut sap xep tang/giam rieng cho 2 cot do o AdminRoomListPage.
+export const ROOM_SORT_BY_VALUES = ['createdAt', 'price', 'capacity'] as const;
+export type RoomSortBy = (typeof ROOM_SORT_BY_VALUES)[number];
 
 // Dùng cho GET /admin/rooms
 export class ListRoomsDto {
@@ -41,4 +56,50 @@ export class ListRoomsDto {
     message: i18nValidationMessage('messages.VALIDATION.IS_ENUM'),
   })
   status?: RoomStatus;
+
+  @ApiPropertyOptional({
+    description: 'Tìm theo số phòng / tên phòng / loại phòng (khớp gần đúng)',
+    example: 'Deluxe',
+  })
+  @IsOptional()
+  @IsString({ message: i18nValidationMessage('messages.VALIDATION.IS_STRING') })
+  @MaxLength(100, {
+    message: i18nValidationMessage('messages.VALIDATION.MAX_LENGTH'),
+  })
+  search?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Lọc riêng theo loại phòng (khớp gần đúng) - khác `search` (search gộp cả roomNumber/name/roomType)',
+    example: 'Deluxe',
+  })
+  @IsOptional()
+  @IsString({ message: i18nValidationMessage('messages.VALIDATION.IS_STRING') })
+  @MaxLength(50, {
+    message: i18nValidationMessage('messages.VALIDATION.MAX_LENGTH'),
+  })
+  roomType?: string;
+
+  @ApiPropertyOptional({
+    enum: SortOrder,
+    default: SortOrder.DESC,
+    description: 'Chiều sắp xếp (mặc định mới nhất/giá trị lớn nhất trước)',
+  })
+  @IsOptional()
+  @IsEnum(SortOrder, {
+    message: i18nValidationMessage('messages.VALIDATION.IS_ENUM'),
+  })
+  sortOrder?: SortOrder = SortOrder.DESC;
+
+  @ApiPropertyOptional({
+    enum: ROOM_SORT_BY_VALUES,
+    default: 'createdAt',
+    description:
+      'Cột dùng để sắp xếp - mặc định thời gian tạo, có thể đổi sang giá/sức chứa',
+  })
+  @IsOptional()
+  @IsIn(ROOM_SORT_BY_VALUES, {
+    message: i18nValidationMessage('messages.VALIDATION.IS_ENUM'),
+  })
+  sortBy?: RoomSortBy = 'createdAt';
 }

@@ -1,0 +1,60 @@
+{
+  "list": {
+    "eyebrow": "Phòng & Suite",
+    "title": "Tìm Phòng Của Bạn",
+    "subtitleSearch": "Hiển thị các phòng còn trống theo ngày bạn đã chọn.",
+    "subtitleAll": "Xem toàn bộ danh sách phòng và suite của chúng tôi.",
+    "viewGrid": "Lưới",
+    "viewList": "Danh sách",
+    "empty": "Không tìm thấy phòng nào.",
+    "emptyDesc": "Hãy thử đổi ngày hoặc bộ lọc.",
+    "fetchError": "Không thể tải danh sách phòng. Vui lòng thử lại.",
+    "filters": {
+      "title": "Bộ lọc",
+      "priceRange": "Khoảng giá",
+      "minPrice": "Tối thiểu",
+      "maxPrice": "Tối đa",
+      "amenities": "Tiện nghi",
+      "amenitiesHint": "Chỉ áp dụng khi tìm theo ngày.",
+      "roomType": "Loại phòng",
+      "viewType": "Hướng nhìn",
+      "reset": "Xoá bộ lọc"
+    },
+    "viewTypeLabel": {
+      "CITY_VIEW": "Hướng thành phố",
+      "GARDEN_VIEW": "Hướng vườn",
+      "SEA_VIEW": "Hướng biển"
+    }
+  },
+  "detail": {
+    "eyebrow": "Chi Tiết Phòng",
+    "capacity": "Sức chứa",
+    "amenities": "Tiện nghi",
+    "description": "Giới Thiệu Phòng",
+    "reviews": "Đánh Giá Của Khách",
+    "noReviews": "Phòng này chưa có đánh giá nào.",
+    "noReviewsDesc": "Hãy là người đầu tiên chia sẻ trải nghiệm sau kỳ nghỉ của bạn.",
+    "bookThisRoom": "Đặt Phòng Này",
+    "loginToBook": "Đăng Nhập Để Đặt Phòng",
+    "notFound": "Không tìm thấy phòng.",
+    "loadError": "Không thể tải thông tin phòng."
+  },
+  "book": {
+    "eyebrow": "Đặt Chỗ Ở Của Bạn",
+    "title": "Đặt Phòng Này",
+    "checkInDate": "Ngày nhận phòng",
+    "checkOutDate": "Ngày trả phòng",
+    "guests": "Số lượng khách",
+    "guestOption": "{{count}} khách",
+    "note": "Yêu cầu đặc biệt",
+    "notePlaceholder": "Cho chúng tôi biết nếu bạn có yêu cầu đặc biệt (không bắt buộc).",
+    "guestsExceedCapacity": "Phòng này chỉ chứa tối đa {{capacity}} khách.",
+    "datesRequired": "Vui lòng chọn ngày nhận và trả phòng.",
+    "summaryGuests": "Số khách",
+    "submit": "Xác Nhận Đặt Phòng",
+    "conflictError": "Phòng này đã được đặt trong khoảng ngày bạn chọn. Vui lòng chọn ngày khác hoặc phòng khác.",
+    "createError": "Không thể tạo yêu cầu đặt phòng. Vui lòng thử lại.",
+    "createSuccess": "Gửi yêu cầu đặt phòng thành công!",
+    "backToRooms": "Quay lại danh sách phòng"
+  }
+}

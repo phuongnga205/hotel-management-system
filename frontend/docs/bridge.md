@@ -100,6 +100,31 @@ có `role`/`status`, self-service không tự đổi được 2 field này.
 **Đổi mật khẩu** (`ChangePasswordDto`): `currentPassword` (string,
 required), `newPassword` (string, tối thiểu 6 ký tự).
 
+> ✅ **Avatar — `POST`/`DELETE /users/me/avatar` đã implement (Cloudinary)
+> và FE đã dựng UI.** Upload: `multipart/form-data`, field `file`
+> (jpg/jpeg/png/webp, tối đa 5MB — `AvatarFileValidationPipe`, 400 nếu sai
+> định dạng/quá size), response `{statusCode, message, data: UserProfile}`
+> (envelope đầy đủ, avatar mới nằm ở `data.avatarUrl`). Xoá: không nhận
+> body, response chỉ `{statusCode, message}` (không có `data`), 404 nếu
+> chưa từng có avatar. 1 slot ảnh/user, `public_id` cố định theo userId +
+> `overwrite: true` (giống ảnh phòng, xem mục 4) — không cần lưu/tra
+> `public_id` cũ. FE: `userApi.uploadAvatar(file)`/`removeAvatar()`
+> (`frontend/src/api/user.api.ts`), validate type/size client-side trước
+> qua `constants/avatar.ts` (PHẢI khớp giới hạn BE ở
+> `backend/src/config/avatar-upload.config.ts`) chỉ để phản hồi nhanh hơn —
+> BE vẫn tự validate lại lần cuối. Cả 2 action gọi `refreshUser()`
+> (`hooks/useAuth.ts`) sau khi xong để avatar trên `Header.tsx` cập nhật
+> ngay, không cần F5.
+
+> ✅ **`role` giờ là nguồn phân quyền UI thật ở FE**, không chỉ để
+> `AdminGuard` chặn route sau khi điều hướng — `contexts/AuthProvider.tsx`
+> gọi `userApi.getProfile()` 1 lần lúc app mount (và lại sau khi login),
+> lưu vào `AuthContext`; `Header.tsx` đọc `isAdmin` qua `hooks/useAuth.ts`
+> để quyết định hiện nav/dropdown nào (xem
+> `frontend/docs/CAU_TRUC_ROUTE.md` mục "Auth/role state"). Hoạt động giống
+> nhau dù `VITE_USE_MOCK` là gì vì `userApi.getProfile()` đã có cặp
+> real+mock từ trước.
+
 
 ## 2. OTP xác thực trong Redis — nội bộ, FE không gọi trực tiếp
 
@@ -275,19 +300,22 @@ phải `403`, ở mọi route self-service (`GET/PATCH /bookings/:id`,
 | `paidAt` | `string \| null` (ISO datetime) | |
 | `createdAt` | `string` | |
 
-> **`POST /bookings/:id/pay` đã implement (mock, không phải stub nữa).**
-> Thanh toán mock luôn thành công ngay lập tức: tạo `Payment` (`status:
-> SUCCESS`) + tự động chuyển `booking.status → ACCEPTED` trong cùng 1
-> transaction — FE gọi xong 1 lần là coi như hoàn tất, không cần polling
-> hay chờ callback nào. `bookingApi.pay(id, { method })` đã có sẵn ở
-> `frontend/src/api/booking.api.ts` (và mock tương ứng ở
-> `frontend/src/api/mocks/booking.mock.ts`), nhưng **chưa có trang UI nào
-> gọi hàm này** — FE hiện chưa có trang booking nào cho customer (list/
-> detail/create/pay), chỉ mới có phần admin
-> (`pages/admin/bookings/AdminBooking{List,Detail}Page.tsx`). Xem
-> `component/BookingCard.tsx` — đã dựng sẵn nút "Pay" (`onPay` prop,
-> `canPay = status === 'ACCEPTED' && payment?.status !== 'SUCCESS'`) nhưng
-> **chưa được import/dùng ở đâu cả**, chỉ là khung chờ nối vào trang thật.
+> **`POST /bookings/:id/pay` đã implement (mock, không phải stub nữa) và
+> FE đã dựng UI đầy đủ.** Thanh toán mock luôn thành công ngay lập tức: tạo
+> `Payment` (`status: SUCCESS`) + tự động chuyển `booking.status → ACCEPTED`
+> trong cùng 1 transaction (case "PENDING + hold còn hạn") — hoặc chỉ tạo
+> thêm `Payment SUCCESS` mới, không đổi status (case "ACCEPTED + trả bù").
+> FE gọi xong 1 lần là coi như hoàn tất, không cần polling hay chờ callback
+> nào. `bookingApi.pay(id, { method })` (`frontend/src/api/booking.api.ts`)
+> được gọi từ `BookingPaymentPage.tsx` (`/bookings/:bookingId/payment`).
+> `components/bookings/BookingCard.tsx` hiện đúng nút "Pay" cho cả 2 tình
+> huống hợp lệ (`canPay = holdActive || (status === 'ACCEPTED' &&
+> !hasSuccessPayment)`, xem `backend/docs/DANH_SACH_API.md` mục 4) — kèm
+> đồng hồ đếm ngược `HoldCountdown.tsx` khi đang PENDING trong hạn giữ chỗ.
+> **`holdExpiresAt` không có trong response** (hoàn toàn nội bộ BE) — FE tự
+> suy ra từ `booking.createdAt + BOOKING_HOLD_MINUTES` (hằng số copy sang
+> `frontend/src/constants/booking.ts`, PHẢI khớp
+> `backend/src/bookings/constants/booking.constants.ts`).
 
 > 🆕 **2 API đọc danh sách payment, tách riêng — `PaymentsModule`
 > (`backend/src/payments/`) giờ có Controller/Service thật, không chỉ còn
@@ -314,12 +342,18 @@ phải `403`, ở mọi route self-service (`GET/PATCH /bookings/:id`,
 >   tin cần thiết. Việc **tạo** `Payment` vẫn nằm nguyên trong
 >   `BookingsService.pay()` (không phải `PaymentsService`) vì gắn liền 1
 >   transaction với đổi `booking.status`.
-> - **BE đã xong cả 2, FE mới dựng UI cho Admin** (bảng trong
->   `AdminRevenueStatsPage.tsx` + `PaymentDetailModal.tsx` xem chi tiết 1
->   dòng). **Trang `/payments` cho user (`PaymentHistoryPage.tsx`) chưa
->   dựng** — API `GET /payments/me` đã sẵn sàng dùng ngay, chỉ còn thiếu
->   UI, xem TODO ở `frontend/docs/DANH_SACH_MAN_HINH.md` mục E và
->   `frontend/docs/CAU_TRUC_ROUTE.md`. Chi tiết đầy đủ (mẫu response,
+> - **BE đã xong cả 2, FE đã dựng UI cho cả Admin lẫn User.** Admin: bảng
+>   trong `AdminRevenueStatsPage.tsx` + `PaymentDetailModal.tsx` xem chi
+>   tiết 1 dòng. User: `PaymentHistoryPage.tsx` (`/payments`, type FE
+>   `UserPayment`/`PaymentBookingSummary`/`ListPaymentsQuery` trong
+>   `api/types.ts`), gọi qua `paymentApi.listMine()`. Trang này **không có
+>   link riêng trên thanh nav** — truy cập qua mục "Payment History" trong
+>   dropdown profile (`Header.tsx`), **chỉ hiện với user thường** (admin
+>   không có mục này, xem `frontend/docs/CAU_TRUC_ROUTE.md` mục "Auth/role
+>   state"). Mock (`payment.mock.ts`) đọc `listMine()` trực tiếp từ mảng
+>   `bookings` (`booking.mock.ts`) thay vì fixture tĩnh riêng như
+>   `adminList()`, để phản ánh đúng hành động thật trong phiên (vừa trả
+>   tiền 1 booking → thấy ngay ở đây). Chi tiết đầy đủ (mẫu response,
 >   Swagger) xem `backend/docs/DANH_SACH_API.md` mục 4a và mục 11.
 
 ## 8. `reviews`
@@ -335,17 +369,36 @@ phải `403`, ở mọi route self-service (`GET/PATCH /bookings/:id`,
 | `deleteReason` | `string \| null` | — | chỉ có giá trị khi admin xoá review (`DELETE /admin/reviews/:id`), server tự gán `ADMIN_REMOVED` — **BE không nhận `deleteReason` từ body**. Email thông báo dùng body cố định, không hiển thị ID review hoặc lý do xoá. |
 | `createdAt` | `string` | — | |
 | `deletedAt` | `string \| null` | — | review **không được sửa**, chỉ tạo hoặc xoá (không có field `updatedAt`) |
-| `user` | `{ id, fullName, avatarUrl } \| undefined` | — | chỉ có khi API load kèm relation — `GET /rooms/:roomId/reviews` và `GET /admin/reviews` đều trả kèm, `POST /reviews` (response tạo mới) thì không |
+| `user` | `{ id, fullName, avatarUrl } \| undefined` | — | chỉ có khi API load kèm relation — `GET /rooms/:roomId/reviews`, `GET /reviews/me` và `GET /admin/reviews` đều trả kèm, `POST /reviews` (response tạo mới) thì không |
+| `room` | `{ id, name, roomNumber, thumbnailUrl } \| undefined` | — | **chỉ có ở `GET /reviews/me`** — 3 endpoint kia đã biết sẵn phòng nào qua URL/context nên không cần lặp lại field này |
 
-> 🆕 **`GET /rooms/:roomId/reviews` đã implement** — public, **không cần
-> JWT** (kể cả khách chưa đăng nhập). Trả `data.items[]` (mỗi item có kèm
-> `user`) + `total`/`page`/`limit`/`totalPages` như mọi list khác, đã lọc
-> theo đúng `roomId`. **FE chưa có trang nào gọi** — `RoomDetailPage`
-> (`/rooms/:roomId`) cần bổ sung phần hiển thị danh sách đánh giá, gọi
-> `reviewApi.listByRoom(roomId, query)` (đã có sẵn ở
-> `frontend/src/api/review.api.ts`). Xem
-> `frontend/docs/DANH_SACH_MAN_HINH.md` mục C và
-> `frontend/docs/CAU_TRUC_ROUTE.md` mục A.
+> ✅ **`GET /rooms/:roomId/reviews` đã implement, FE đã dùng** — public,
+> **không cần JWT** (kể cả khách chưa đăng nhập). Trả `data.items[]` (mỗi
+> item có kèm `user`) + `total`/`page`/`limit`/`totalPages` như mọi list
+> khác, đã lọc theo đúng `roomId`. Dùng ở `HomePage.tsx` (carousel đánh giá
+> phòng nổi bật) và `RoomDetailPage.tsx` (danh sách đánh giá của phòng) qua
+> `reviewApi.listByRoom(roomId, query)` (`frontend/src/api/review.api.ts`).
+>
+> ✅ **`POST /reviews` đã implement, FE đã dùng** — `BookingReviewPage.tsx`
+> (`/bookings/:bookingId/review`), điều kiện được review khớp đúng
+> `ReviewsService.create()` ở BE: booking `ACCEPTED` + có payment `SUCCESS`
+> + đã qua `checkOutDate`. Nút "Viết đánh giá" trên `BookingCard.tsx`
+> (`onReview`) chỉ hiện khi đủ 3 điều kiện này, tránh submit rồi bị `400`.
+> Bắt riêng `409` (đã review rồi) qua `getErrorStatusCode()`.
+>
+> 🆕 **`GET /reviews/me` (self-service, mới thêm ở BE)** — gộp đánh giá của
+> chính user hiện tại từ **mọi phòng** (không giới hạn 1 phòng cụ thể,
+> khác `GET /rooms/:roomId/reviews`), cùng pattern `*/me` với
+> `GET /bookings/me`/`GET /payments/me`. `userId` lấy từ JWT, không nhận từ
+> query. Response join kèm `room` (+ `room.images` để suy `thumbnailUrl`)
+> nên FE không cần gọi thêm request nào khác. Trước đây định để FE tự ghép
+> từ `GET /bookings/me` + gọi `GET /rooms/:roomId/reviews` cho từng phòng
+> khác nhau (N+1 request) — đã bỏ hướng đó, làm hẳn 1 API riêng cho gọn.
+> FE dùng ở `MyReviewsPage.tsx` (`/reviews`, tab "My Reviews" ngang hàng
+> "My Bookings" trên header) qua `reviewApi.listMine()`. Xem
+> `backend/docs/DANH_SACH_API.md` mục 5,
+> `frontend/docs/DANH_SACH_MAN_HINH.md` mục E2 và
+> `frontend/docs/CAU_TRUC_ROUTE.md`.
 
 ## 9. `email_logs` (chỉ Admin xem, qua `GET /admin/email-logs*`)
 

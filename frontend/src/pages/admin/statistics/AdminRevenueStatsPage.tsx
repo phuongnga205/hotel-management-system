@@ -1,20 +1,21 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import PageHeader from '../../../components/PageHeader'
 import Card from '../../../components/Card'
 import Dropdown from '../../../components/Dropdown'
 import Pagination from '../../../components/Pagination'
 import { PageLoader } from '../../../components/common/PageLoader'
-import { StatTile, AdminTable, PaymentDetailModal } from '../../../components/admin'
+import { StatTile, AdminTable, PaymentDetailModal, StatisticsPeriodControls } from '../../../components/admin'
 import PaymentBadge from '../../../components/PaymentBadge'
 import { colors } from '../../../tokens/colors'
 import { ROUTES } from '../../../router/paths'
 import { statisticsApi } from '../../../api/statistics.api'
 import { paymentApi } from '../../../api/payment.api'
 import { getErrorMessage } from '../../../api/errorMessage'
-import type { AdminPayment, PaymentMethod, PaymentStatus, RevenueStatistics } from '../../../api/types'
+import { formatBucketLabel, bestRevenueBucket } from '../../../utils/statisticsBucket'
+import type { AdminPayment, PaymentMethod, PaymentStatus, RevenueBookingsStatistics, StatisticsQuery } from '../../../api/types'
 
 const TRANSACTIONS_PER_PAGE = 10
 
@@ -24,8 +25,8 @@ const PAYMENT_METHODS: PaymentMethod[] = ['CASH', 'BANK_TRANSFER', 'CREDIT_CARD'
 
 export default function AdminRevenueStatsPage() {
   const { t } = useTranslation('admin')
-  const [stats, setStats] = useState<RevenueStatistics | null>(null)
-  const [totalBookings, setTotalBookings] = useState(0)
+  const [query, setQuery] = useState<StatisticsQuery>({ period: 'MONTH', year: new Date().getFullYear() })
+  const [stats, setStats] = useState<RevenueBookingsStatistics | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const [statusFilter, setStatusFilter] = useState('ALL')
@@ -38,10 +39,13 @@ export default function AdminRevenueStatsPage() {
   const [selectedPayment, setSelectedPayment] = useState<AdminPayment | null>(null)
 
   useEffect(() => {
-    Promise.all([statisticsApi.revenue(), statisticsApi.bookings()])
-      .then(([rs, bs]) => { setStats(rs); setTotalBookings(bs.totalBookings) })
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setStats(null)
+    statisticsApi
+      .getRevenueAndBookings(query)
+      .then(setStats)
       .catch((err) => setError(getErrorMessage(err, t('common.notFoundGeneric'))))
-  }, [t])
+  }, [query, t])
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -61,17 +65,18 @@ export default function AdminRevenueStatsPage() {
   if (error) return <p className="text-danger text-sm">{error}</p>
   if (!stats) return <PageLoader />
 
-  const avgMonthly = stats.monthly.length > 0 ? Math.round(stats.totalRevenue / stats.monthly.length) : 0
-  const bestMonth = stats.monthly.reduce((a, b) => (a.revenue > b.revenue ? a : b), stats.monthly[0])
+  const chartData = stats.buckets.map((b) => ({ label: formatBucketLabel(b.label, stats.period), revenue: Number(b.revenue) }))
+  const bestBucket = bestRevenueBucket(stats.buckets)
+  const totalRevenue = Number(stats.totalRevenue)
+  const avgPerBucket = stats.buckets.length > 0 ? Math.round(totalRevenue / stats.buckets.length) : 0
+  const maxBucketRevenue = Math.max(1, ...stats.buckets.map((b) => Number(b.revenue)))
 
   const tiles = [
-    { label: t('statistics.revenue.tileTotal'), value: `$${(stats.totalRevenue / 1000).toFixed(0)}k`, color: colors.navy },
-    { label: t('statistics.revenue.tileAvgMonthly'), value: `$${(avgMonthly / 1000).toFixed(0)}k`, color: colors.gold },
-    { label: t('statistics.revenue.tileBestMonth'), value: bestMonth?.month ?? '—', color: colors.success },
-    { label: t('statistics.revenue.tileTotalBookings'), value: totalBookings, color: colors.accent },
+    { label: t('statistics.revenue.tileTotal'), value: `$${(totalRevenue / 1000).toFixed(0)}k`, color: colors.navy },
+    { label: t('statistics.revenue.tileAvgPerPeriod'), value: `$${(avgPerBucket / 1000).toFixed(0)}k`, color: colors.gold },
+    { label: t('statistics.revenue.tileBestPeriod'), value: bestBucket ? formatBucketLabel(bestBucket.label, stats.period) : '—', color: colors.success },
+    { label: t('statistics.revenue.tileTotalBookings'), value: stats.totalBookings, color: colors.accent },
   ]
-
-  const maxMonthlyRevenue = Math.max(1, ...stats.monthly.map((m) => m.revenue))
 
   const statusOptions = [
     { value: 'ALL', label: t('statistics.revenue.statusAll') },
@@ -94,6 +99,8 @@ export default function AdminRevenueStatsPage() {
         }
       />
 
+      <StatisticsPeriodControls query={query} onChange={setQuery} />
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {tiles.map((s) => (
           <StatTile key={s.label} label={s.label} value={s.value} color={s.color} />
@@ -104,7 +111,7 @@ export default function AdminRevenueStatsPage() {
         <Card className="p-5 lg:col-span-2">
           <h3 className="font-semibold text-navy text-sm mb-4">{t('statistics.revenue.trendChartTitle')}</h3>
           <ResponsiveContainer width="100%" height={240}>
-            <AreaChart data={stats.monthly}>
+            <AreaChart data={chartData}>
               <defs>
                 <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={colors.navy} stopOpacity={0.15} />
@@ -112,7 +119,7 @@ export default function AdminRevenueStatsPage() {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke={colors.border} />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fill: colors.muted }} axisLine={false} tickLine={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 11, fill: colors.muted }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 11, fill: colors.muted }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${v / 1000}k`} />
               <Tooltip formatter={(v) => [`$${Number(v).toLocaleString()}`, t('statistics.revenue.tileTotal')]} />
               <Area type="monotone" dataKey="revenue" stroke={colors.navy} strokeWidth={2} fill="url(#revGrad)" dot={{ r: 4, fill: colors.gold }} />
@@ -120,29 +127,16 @@ export default function AdminRevenueStatsPage() {
           </ResponsiveContainer>
         </Card>
 
-        <Card className="p-5">
-          <h3 className="font-semibold text-navy text-sm mb-4">{t('statistics.revenue.byRoomTypeChartTitle')}</h3>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={stats.byRoomType}>
-              <CartesianGrid strokeDasharray="3 3" stroke={colors.border} />
-              <XAxis dataKey="roomType" tick={{ fontSize: 11, fill: colors.muted }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: colors.muted }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${v / 1000}k`} />
-              <Tooltip formatter={(v) => [`$${Number(v).toLocaleString()}`, t('statistics.revenue.tileTotal')]} />
-              <Bar dataKey="revenue" fill={colors.gold} radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </Card>
-
-        <Card className="p-5">
-          <h3 className="font-semibold text-navy text-sm mb-4">{t('statistics.revenue.monthlyBreakdownTitle')}</h3>
+        <Card className="p-5 lg:col-span-2">
+          <h3 className="font-semibold text-navy text-sm mb-4">{t('statistics.revenue.breakdownTitle')}</h3>
           <div className="space-y-2">
-            {stats.monthly.map((d) => (
-              <div key={d.month} className="flex items-center gap-3">
-                <span className="text-xs text-slate-500 w-8 shrink-0">{d.month}</span>
+            {stats.buckets.map((b) => (
+              <div key={b.label} className="flex items-center gap-3">
+                <span className="text-xs text-slate-500 w-14 shrink-0">{formatBucketLabel(b.label, stats.period)}</span>
                 <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
-                  <div className="h-full rounded-full bg-navy" style={{ width: `${(d.revenue / maxMonthlyRevenue) * 100}%` }} />
+                  <div className="h-full rounded-full bg-navy" style={{ width: `${(Number(b.revenue) / maxBucketRevenue) * 100}%` }} />
                 </div>
-                <span className="text-xs font-semibold text-navy w-16 text-right">${(d.revenue / 1000).toFixed(0)}k</span>
+                <span className="text-xs font-semibold text-navy w-16 text-right">${(Number(b.revenue) / 1000).toFixed(0)}k</span>
               </div>
             ))}
           </div>

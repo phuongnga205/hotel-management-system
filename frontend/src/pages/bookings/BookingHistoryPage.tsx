@@ -112,12 +112,12 @@ export function BookingHistoryPage() {
     }
   }
 
-  // /bookings/:id/payment chua duoc dung route (BookingPaymentPage chua
-  // duoc dung) - xem frontend/docs/CAU_TRUC_ROUTE.md muc B, ghi chu
-  // "BookingPaymentPage". Giu dieu huong nay vi day dung thiet ke da chot,
-  // chi con thieu trang dich (gap da duoc ghi nhan rieng).
   const handlePay = (booking: Booking) => {
-    navigate(`${ROUTES.BOOKINGS}/${booking.id}/payment`)
+    navigate(ROUTES.BOOKING_PAYMENT(booking.id))
+  }
+
+  const handleReview = (booking: Booking) => {
+    navigate(ROUTES.BOOKING_REVIEW(booking.id))
   }
 
   const tabs = [
@@ -142,7 +142,7 @@ export function BookingHistoryPage() {
       ) : (
         <div className={`flex flex-col transition-opacity ${loading ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
           {bookings.map((booking) => (
-            <BookingCard key={booking.id} booking={booking} onEditDates={setEditBooking} onCancel={setCancelTarget} onPay={handlePay} />
+            <BookingCard key={booking.id} booking={booking} onEditDates={setEditBooking} onCancel={setCancelTarget} onPay={handlePay} onReview={handleReview} />
           ))}
           <Pagination page={page} total={total} perPage={PER_PAGE} onChange={setPage} />
         </div>

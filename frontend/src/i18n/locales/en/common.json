@@ -9,7 +9,8 @@
     "confirm": "Confirm",
     "loading": "Loading...",
     "search": "Search",
-    "name": "Name"
+    "name": "Name",
+    "back": "Back"
   },
   "auth": {
     "login": "Log in",
@@ -25,7 +26,9 @@
     "home": "Home",
     "rooms": "Rooms",
     "myBookings": "My Bookings",
-    "admin": "Admin",
+    "reviews": "My Reviews",
+    "adminConsole": "Admin Console",
+    "paymentHistory": "Payment History",
     "profile": "Profile",
     "logout": "Log out"
   },
@@ -78,6 +81,15 @@
     "title": "Staff only",
     "desc": "This area is reserved for {{brand}} staff. If you believe this is an error, please contact the concierge.",
     "cta": "Return to Home"
+  },
+  "serverDown": {
+    "eyebrow": "503 — Service Unavailable",
+    "title": "We'll be right back",
+    "desc": "We're having trouble reaching our servers. Please check your connection and try again in a moment.",
+    "cta": "Try Again"
+  },
+  "adminPreview": {
+    "bookingDisabled": "This is a preview of the public site — booking actions are disabled for admin accounts."
   },
   "footer": {
     "tagline": "Award-winning luxury hotel in the heart of the city. Crafting unforgettable experiences since 2010.",

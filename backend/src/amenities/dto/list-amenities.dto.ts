@@ -1,6 +1,13 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Max, Min } from 'class-validator';
+import {
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
 import { AMENITY_PAGINATION } from '../amenity.constants';
 
@@ -29,4 +36,15 @@ export class ListAmenitiesDto {
     message: i18nValidationMessage('messages.VALIDATION.MAX'),
   })
   limit: number = AMENITY_PAGINATION.DEFAULT_LIMIT;
+
+  @ApiPropertyOptional({
+    description: 'Tìm theo tên tiện nghi (khớp gần đúng)',
+    example: 'Wi-Fi',
+  })
+  @IsOptional()
+  @IsString({ message: i18nValidationMessage('messages.VALIDATION.IS_STRING') })
+  @MaxLength(100, {
+    message: i18nValidationMessage('messages.VALIDATION.MAX_LENGTH'),
+  })
+  search?: string;
 }

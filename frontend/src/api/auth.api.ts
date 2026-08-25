@@ -8,6 +8,7 @@ import type {
   ForgotPasswordPayload,
   LoginPayload,
   LoginResponse,
+  MessageResponse,
   RegisterPayload,
   RegisterResponse,
   ResetPasswordPayload,
@@ -32,6 +33,13 @@ const authRealApi = {
   },
   resetPassword: async (data: ResetPasswordPayload): Promise<AuthMessageResponse> => {
     const res = await axiosClient.post(API_ENDPOINTS.AUTH_RESET_PASSWORD, data)
+    return res.data
+  },
+  // Thu hoi token phia BE (Redis blacklist qua TokenUtil.revokeAuthToken) -
+  // PHAI goi truoc khi xoa token o localStorage, khong thi BE khong con biet
+  // token nao de thu hoi (interceptor lay Bearer token tu localStorage).
+  logout: async (): Promise<MessageResponse> => {
+    const res = await axiosClient.post(API_ENDPOINTS.AUTH_LOGOUT)
     return res.data
   },
 }

@@ -9,8 +9,10 @@ export const API_ENDPOINTS = {
   AUTH_ACTIVATE: '/auth/activate',
   AUTH_FORGOT_PASSWORD: '/auth/forgot-password',
   AUTH_RESET_PASSWORD: '/auth/reset-password',
+  AUTH_LOGOUT: '/auth/logout',
   USERS_ME: '/users/me',
   USERS_ME_PASSWORD: '/users/me/password',
+  USERS_ME_AVATAR: '/users/me/avatar',
 
   ROOMS: '/rooms',
   ROOMS_AVAILABLE: '/rooms/available',
@@ -19,6 +21,7 @@ export const API_ENDPOINTS = {
   ADMIN_ROOMS: '/admin/rooms',
   ADMIN_ROOMS_EXPORT: '/admin/rooms/export',
   ADMIN_ROOM_DETAIL: (id: string) => `/admin/rooms/${id}`,
+  ADMIN_ROOM_PRICE: (id: string) => `/admin/rooms/${id}/price`,
   ADMIN_ROOM_IMAGES: (roomId: string) => `/admin/rooms/${roomId}/images`,
   ADMIN_ROOM_IMAGE_DETAIL: (roomId: string, imageId: string) => `/admin/rooms/${roomId}/images/${imageId}`,
   ADMIN_ROOM_IMAGE_THUMBNAIL: (roomId: string, imageId: string) => `/admin/rooms/${roomId}/images/${imageId}/thumbnail`,
@@ -40,6 +43,7 @@ export const API_ENDPOINTS = {
   ADMIN_BOOKING_REJECT: (id: string) => `/admin/bookings/${id}/reject`,
 
   REVIEWS: '/reviews',
+  REVIEWS_ME: '/reviews/me',
   ROOM_REVIEWS: (roomId: string) => `/rooms/${roomId}/reviews`,
 
   ADMIN_REVIEWS: '/admin/reviews',
@@ -52,8 +56,10 @@ export const API_ENDPOINTS = {
   ADMIN_USERS: '/admin/users',
   ADMIN_USER_DETAIL: (id: string) => `/admin/users/${id}`,
 
-  ADMIN_STATISTICS_BOOKINGS: '/admin/statistics/bookings',
-  ADMIN_STATISTICS_REVENUE: '/admin/statistics/revenue',
+  // Không có tiền tố /admin (khác các route quản trị khác) — quyết định có
+  // chủ đích, xem backend/docs/DANH_SACH_API.md mục 11.
+  STATISTICS_REVENUE_BOOKINGS: '/statistics/revenue-bookings',
 
+  PAYMENTS_ME: '/payments/me',
   ADMIN_PAYMENTS: '/admin/payments',
 } as const

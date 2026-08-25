@@ -11,23 +11,25 @@ import { ROUTES } from '../../router/paths'
 import { statisticsApi } from '../../api/statistics.api'
 import { bookingApi } from '../../api/booking.api'
 import { getErrorMessage } from '../../api/errorMessage'
-import type { Booking, BookingStatistics, RevenueStatistics } from '../../api/types'
+import { formatBucketLabel } from '../../utils/statisticsBucket'
+import type { Booking, RevenueBookingsStatistics } from '../../api/types'
 
 export default function AdminDashboardPage() {
   const { t, i18n } = useTranslation('admin')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [bookingStats, setBookingStats] = useState<BookingStatistics | null>(null)
-  const [revenueStats, setRevenueStats] = useState<RevenueStatistics | null>(null)
+  const [stats, setStats] = useState<RevenueBookingsStatistics | null>(null)
   const [recentBookings, setRecentBookings] = useState<Booking[]>([])
 
   useEffect(() => {
     let cancelled = false
-    Promise.all([statisticsApi.bookings(), statisticsApi.revenue(), bookingApi.adminList({ page: 1, limit: 5 })])
-      .then(([bs, rs, recent]) => {
+    Promise.all([
+      statisticsApi.getRevenueAndBookings({ period: 'MONTH', year: new Date().getFullYear() }),
+      bookingApi.adminList({ page: 1, limit: 5 }),
+    ])
+      .then(([statsRes, recent]) => {
         if (cancelled) return
-        setBookingStats(bs)
-        setRevenueStats(rs)
+        setStats(statsRes)
         setRecentBookings(recent.items)
       })
       .catch((err) => { if (!cancelled) setError(getErrorMessage(err, t('common.notFoundGeneric'))) })
@@ -36,35 +38,27 @@ export default function AdminDashboardPage() {
   }, [t])
 
   if (loading) return <PageLoader />
-  if (error || !bookingStats || !revenueStats) return <p className="text-danger text-sm">{error}</p>
+  if (error || !stats) return <p className="text-danger text-sm">{error}</p>
 
-  const statusData = (Object.entries(bookingStats.byStatus) as [keyof typeof bookingStats.byStatus, number][]).map(([status, count]) => ({
-    status,
-    count,
-  }))
+  const revenueChartData = stats.buckets.map((b) => ({ label: formatBucketLabel(b.label, stats.period), revenue: Number(b.revenue) }))
+  const bookingsChartData = stats.buckets.map((b) => ({ label: formatBucketLabel(b.label, stats.period), count: b.bookingCount }))
 
   return (
     <div className="space-y-6">
       <PageHeader eyebrow={t('dashboard.eyebrow')} title={t('dashboard.title')} />
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-        <StatTile label={t('dashboard.totalRevenue')} value={`$${(revenueStats.totalRevenue / 1000).toFixed(0)}k`} color={colors.navy} />
-        <StatTile
-          label={t('dashboard.newBookings')}
-          value={String(bookingStats.totalBookings)}
-          sub={t('dashboard.pendingBookingsSub', { count: bookingStats.byStatus.PENDING })}
-          color={colors.gold}
-        />
-        <StatTile label={t('statistics.bookings.tileAccepted')} value={String(bookingStats.byStatus.ACCEPTED)} color={colors.success} />
+        <StatTile label={t('dashboard.totalRevenue')} value={`$${(Number(stats.totalRevenue) / 1000).toFixed(0)}k`} color={colors.navy} />
+        <StatTile label={t('dashboard.newBookings')} value={String(stats.totalBookings)} color={colors.gold} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <Card className="p-5">
           <h3 className="font-semibold text-navy text-sm mb-4">{t('dashboard.monthlyRevenue')}</h3>
           <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={revenueStats.monthly}>
+            <LineChart data={revenueChartData}>
               <CartesianGrid strokeDasharray="3 3" stroke={colors.border} />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fill: colors.muted }} axisLine={false} tickLine={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 11, fill: colors.muted }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 11, fill: colors.muted }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${v / 1000}k`} />
               <Tooltip formatter={(v) => [`$${Number(v).toLocaleString()}`, t('dashboard.totalRevenue')]} />
               <Line type="monotone" dataKey="revenue" stroke={colors.navy} strokeWidth={2} dot={{ r: 4, fill: colors.gold }} />
@@ -73,12 +67,12 @@ export default function AdminDashboardPage() {
         </Card>
 
         <Card className="p-5">
-          <h3 className="font-semibold text-navy text-sm mb-4">{t('statistics.bookings.statusBreakdownTitle')}</h3>
+          <h3 className="font-semibold text-navy text-sm mb-4">{t('dashboard.bookingsTrend')}</h3>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={statusData}>
+            <BarChart data={bookingsChartData}>
               <CartesianGrid strokeDasharray="3 3" stroke={colors.border} />
-              <XAxis dataKey="status" tick={{ fontSize: 11, fill: colors.muted }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: colors.muted }} axisLine={false} tickLine={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 11, fill: colors.muted }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: colors.muted }} axisLine={false} tickLine={false} allowDecimals={false} />
               <Tooltip />
               <Bar dataKey="count" fill={colors.navy} radius={[4, 4, 0, 0]} />
             </BarChart>

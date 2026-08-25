@@ -308,9 +308,10 @@ guests` (trước đây chỉ `nights × pricePerNight`, không phụ thuộc s�
 > **Đã implement ở BE — `PaymentsController`**
 > (`backend/src/payments/payments.controller.ts`, tách khỏi
 > `AdminPaymentsController` cùng pattern `BookingsController`/
-> `AdminBookingsController`). **FE chưa dựng UI cho endpoint này** — xem TODO
-> ở `frontend/docs/DANH_SACH_MAN_HINH.md` mục E và
-> `frontend/docs/CAU_TRUC_ROUTE.md` (`/payments`), để lại cho session sau.
+> `AdminBookingsController`). ✅ **FE đã dựng UI** — `PaymentHistoryPage.tsx`
+> (`/payments`, `paymentApi.listMine()`), xem
+> `frontend/docs/DANH_SACH_MAN_HINH.md` mục E và
+> `frontend/docs/CAU_TRUC_ROUTE.md`.
 >
 > - KHÔNG scope theo 1 booking cụ thể — trả **toàn bộ** payment của user
 >   hiện tại, gộp từ mọi booking họ từng có (giống cách `GET /bookings/me`
@@ -362,13 +363,14 @@ guests` (trước đây chỉ `nights × pricePerNight`, không phụ thuộc s�
 
 ## 5. Reviews (user)
 
-| Chức năng                         | Method | URL                             | Quyền        | Auth      |
-| --------------------------------- | ------ | ------------------------------- | ------------ | --------- |
-| Tạo đánh giá cho phòng đã đặt     | POST   | `/api/v1/reviews`               | User         | JWT       |
-| Xem đánh giá công khai theo phòng | GET    | `/api/v1/rooms/:roomId/reviews` | Guest / User | Không cần |
+| Chức năng | Method | URL | Quyền | Auth |
+|---|---|---|---|---|
+| Tạo đánh giá cho phòng đã đặt | POST | `/api/v1/reviews` | User | JWT |
+| Xem đánh giá của chính mình (mọi phòng) | GET | `/api/v1/reviews/me` | User | JWT |
+| Xem đánh giá công khai theo phòng | GET | `/api/v1/rooms/:roomId/reviews` | Guest / User | Không cần |
 
 > **Đã implement**, tách controller trong `ReviewsModule`:
-> `ReviewsController` (`POST /reviews`, cần JWT),
+> `ReviewsController` (`POST /reviews` + `GET /reviews/me`, cần JWT),
 > `RoomReviewsController` (`GET /rooms/:roomId/reviews`, public — **không**
 > gắn `JwtAuthGuard`, kể cả khách chưa đăng nhập cũng gọi được),
 > `AdminReviewsController` (mục 10). Dùng chung envelope
@@ -379,12 +381,21 @@ guests` (trước đây chỉ `nights × pricePerNight`, không phụ thuộc s�
 > `/rooms` nhưng sở hữu bởi `ReviewsModule`** (đọc thẳng `Review`
 > repository), không phải `RoomsModule`.
 >
-> **🆕 TODO FE**: endpoint đã sẵn sàng, nhưng chưa có trang nào gọi —
-> `RoomDetailPage` (`/rooms/:roomId`) cần thêm phần hiển thị danh sách đánh
-> giá của phòng (phân trang), gọi `reviewApi.listByRoom(roomId, query)` (đã
-> có sẵn ở `frontend/src/api/review.api.ts`, chỉ chưa được dùng ở page
-> nào). Xem `frontend/docs/DANH_SACH_MAN_HINH.md` mục C và
-> `frontend/docs/CAU_TRUC_ROUTE.md` mục A.
+> **🆕 `GET /reviews/me`**: self-service, scope theo `userId` lấy từ JWT
+> (`@GetUser`, không nhận từ query — cùng nguyên tắc với
+> `GET /bookings/me`/`GET /payments/me`), gộp đánh giá của user hiện tại từ
+> **mọi phòng** (không giới hạn 1 phòng cụ thể, khác `GET /rooms/:roomId/reviews`).
+> Thêm vì lúc đầu định để FE tự ghép từ `GET /bookings/me` +
+> `GET /rooms/:roomId/reviews` cho từng phòng khác nhau (N+1 request, không
+> có field nào định danh "review của tôi" ngoài suy luận qua `bookingId`) —
+> quyết định làm hẳn 1 API riêng cho gọn và đúng chuẩn `*/me` đã có, thay vì
+> để FE gánh logic ghép nối. Response giờ có thêm field `room` (optional —
+> `{id, name, roomNumber, thumbnailUrl}`, chỉ có ở endpoint này vì các
+> endpoint kia đã biết sẵn phòng nào qua URL/context) trong
+> `ReviewResponseDto`, join kèm `room.images` để không phải gọi thêm request
+> lấy ảnh đại diện phòng riêng (tránh N+1). FE tiêu thụ ở `MyReviewsPage.tsx`
+> (`/reviews`, tab "My Reviews" ngang hàng "My Bookings" trên header) qua
+> `reviewApi.listMine()`.
 
 ---
 
@@ -547,12 +558,91 @@ guests` (trước đây chỉ `nights × pricePerNight`, không phụ thuộc s�
 
 ## 11. Admin — Statistics
 
-| Chức năng                                                                                | Method | URL                                 | Quyền | Auth                    |
-| ---------------------------------------------------------------------------------------- | ------ | ----------------------------------- | ----- | ----------------------- |
-| Thống kê booking (theo tháng/quý/loại phòng/trạng thái)                                  | GET    | `/api/v1/admin/statistics/bookings` | Admin | JWT + RolesGuard(ADMIN) |
-| Thống kê doanh thu (theo thời gian/loại phòng)                                           | GET    | `/api/v1/admin/statistics/revenue`  | Admin | JWT + RolesGuard(ADMIN) |
-| Danh sách giao dịch thanh toán (dùng ở bảng "Transactions" trong màn Revenue Statistics) | GET    | `/api/v1/admin/payments`            | Admin | JWT + RolesGuard(ADMIN) |
+| Chức năng | Method | URL | Quyền | Auth |
+|---|---|---|---|---|
+| Thống kê doanh thu + số booking, gộp theo ngày/tháng/quý | GET | `/api/v1/statistics/revenue-bookings` | Admin | JWT + RolesGuard(ADMIN) |
+| Danh sách giao dịch thanh toán (dùng ở bảng "Transactions" trong màn Revenue Statistics) | GET | `/api/v1/admin/payments` | Admin | JWT + RolesGuard(ADMIN) |
 
+> ⚠️ **Đã implement, nhưng lệch hợp đồng cũ trong docs này** —
+> `StatisticsModule`/`StatisticsController`
+> (`backend/src/statistics/statistics.controller.ts`) đã lên code thật, khác
+> với 2 route `GET /admin/statistics/bookings` và
+> `GET /admin/statistics/revenue` từng ghi ở bản docs trước (chưa implement
+> lúc đó). Khác biệt chính so với hợp đồng cũ:
+> - **1 route gộp** `GET /statistics/revenue-bookings` trả cả doanh thu lẫn
+>   số booking cùng lúc (không tách 2 endpoint `bookings`/`revenue` riêng).
+> - **✅ Đã chốt: không cần tiền tố `/admin`** — route là
+>   `/statistics/revenue-bookings`, vẫn khoá `RolesGuard(ADMIN)` ở cấp
+>   controller nên bảo mật không đổi; chỉ khác namespace URL so với các
+>   controller quản trị khác. Đây là quyết định giữ nguyên (không sửa lại
+>   theo `/admin/**`), không còn là điểm cần team quyết — FE (`API_ENDPOINTS`,
+>   xem dưới) đã cập nhật khớp route này.
+> - **Không có breakdown theo loại phòng** (`byRoomType`) — chỉ gộp theo thời
+>   gian (`period`: `DAY`/`MONTH`/`QUARTER`), không lọc/gộp theo `roomType`
+>   hay `status` như mô tả cũ.
+> - Query bắt buộc: `period` (`DAY`/`MONTH`/`QUARTER`), `year`. `month` bắt
+>   buộc khi `period=DAY` (validate qua `StatisticsMonthValidator`), không
+>   dùng khi `period` là `MONTH`/`QUARTER`.
+> - Response trả **đủ nhãn (label) cho toàn bộ khoảng thời gian** (12 tháng,
+>   4 quý, hoặc đủ số ngày trong tháng) kể cả bucket không có dữ liệu (revenue
+>   `"0.00"`, `bookingCount` 0) — FE không cần tự điền khoảng trống.
+> - `totalRevenue`/`bucket.revenue` là **string** dạng tiền tệ 2 chữ số thập
+>   phân (vd `"12500000.00"`), tính bằng `bigint` ở minor units để tránh sai
+>   số dấu phẩy động — FE parse bằng `Number()`/thư viện decimal khi hiển thị,
+>   không cộng trừ trực tiếp trên string.
+>   - "Doanh thu" chỉ tính `Payment.status = SUCCESS`, gộp theo `paidAt`.
+>   - "Booking" đếm mọi booking chưa xoá mềm bất kể `status`, gộp theo
+>     `createdAt`.
+> - `isCached: boolean` — response được cache ở Redis theo
+>   `period:year:month:timezone` (TTL cấu hình qua
+>   `STATISTICS_CACHE_TTL_SECONDS`, mặc định 300s), dùng lock để tránh
+>   nhiều request cùng lúc tính lại 1 khoảng thời gian (dogpile). Nếu Redis
+>   lỗi, trả `503 Service Unavailable` thay vì query thẳng DB không cache —
+>   có chủ đích để tránh spam truy vấn nặng.
+>
+> Mẫu response (`period=MONTH&year=2026`):
+> ```jsonc
+> {
+>   "statusCode": 200,
+>   "message": "...",
+>   "data": {
+>     "period": "MONTH",
+>     "year": 2026,
+>     "month": null,
+>     "totalRevenue": "12500000.00",
+>     "totalBookings": 24,
+>     "buckets": [
+>       { "label": "2026-01", "revenue": "0.00", "bookingCount": 0 },
+>       { "label": "2026-08", "revenue": "12500000.00", "bookingCount": 24 }
+>     ],
+>     "isCached": false
+>   }
+> }
+> ```
+>
+> ✅ **FE đã cập nhật theo hợp đồng mới.**
+> `frontend/src/api/statistics.api.ts` gọi 1 hàm gộp
+> `getRevenueAndBookings(query)` → `STATISTICS_REVENUE_BOOKINGS` =
+> `/statistics/revenue-bookings` (`frontend/src/api/endpoints.ts`), type
+> `RevenueBookingsStatistics`/`StatisticsQuery`/`StatisticsBucket`
+> (`frontend/src/api/types.ts`) khớp đúng response BE (không còn
+> `BookingStatistics`/`RevenueStatistics` kiểu cũ với `byStatus`/
+> `byRoomType`). Mock (`statisticsMockApi`) cũng sinh `buckets` theo đúng
+> `period`/`year`/`month`.
+> - `AdminBookingStatsPage.tsx`/`AdminRevenueStatsPage.tsx` dùng chung 1
+>   component chọn kỳ mới `StatisticsPeriodControls`
+>   (`frontend/src/components/admin/StatisticsPeriodControls.tsx`) để chọn
+>   `period`/`year`/`month`, mỗi trang tự gọi API với query riêng (không
+>   share state, giống pattern phân trang "Transactions" ở trang revenue).
+> - Vì BE không trả breakdown theo `status`/`roomType`, 2 chart cũ dựa trên
+>   dữ liệu đó (status pie ở trang booking, room-type bar ở trang revenue)
+>   đã bỏ, thay bằng chart theo `buckets` (đúng dữ liệu BE có: số booking/
+>   doanh thu theo từng mốc thời gian trong kỳ đã chọn).
+> - `AdminDashboardPage.tsx` cũng đổi theo: bỏ 2 tile
+>   "Accepted"/pending-sub và chart "Status Breakdown" (không còn dữ liệu
+>   nguồn), thay chart phân bổ trạng thái bằng "Bookings Trend" dựng từ
+>   cùng `buckets` đã gọi cho chart doanh thu — không cần thêm request.
+>
 > **Đã implement — `PaymentsController`/`PaymentsService`**
 > (`backend/src/payments/payments.controller.ts` /
 > `payments.service.ts`). Chỉ có API đọc danh sách, **không có** API xem chi
@@ -691,9 +781,11 @@ guests` (trước đây chỉ `nights × pricePerNight`, không phụ thuộc s�
 - [ ] Áp dụng namespace `/admin/**` cho toàn bộ controller quản trị
       (`AdminRoomsController`, `AdminBookingsController`,
       `AdminReviewsController`, `AdminUsersController`,
-      `AdminStatisticsController`, `AdminEmailLogsController`), tách khỏi
-      controller public (`RoomsController`, `BookingsController`,
-      `ReviewsController`).
+      `AdminEmailLogsController`), tách khỏi controller public
+      (`RoomsController`, `BookingsController`, `ReviewsController`). Riêng
+      Statistics **cố ý ngoại lệ**: `StatisticsController` ở `/statistics/**`
+      (không `/admin/statistics/**`), xem mục 11 — đã chốt giữ nguyên, không
+      cần sửa lại theo namespace này.
 - [x] Bổ sung các endpoint booking Admin còn 🚧: danh sách, chi tiết,
       accept/reject — đã implement, xem mục 8.
 - [x] Bổ sung endpoint còn 🚧: danh sách review Admin (`GET /admin/reviews`)
@@ -711,10 +803,10 @@ guests` (trước đây chỉ `nights × pricePerNight`, không phụ thuộc s�
       `DELETE /admin/rooms/:id/amenities/:amenityId` — có sẵn trong code từ
       trước nhưng thiếu dòng trong bảng mục 6, đã bổ sung sau khi đối chiếu
       lại `AdminRoomsController`.
-- [ ] `GET /admin/statistics/bookings`, `GET /admin/statistics/revenue`
-      (mục 11) — **chưa có module/controller nào trong code** (không có
-      `StatisticsModule` trong `app.module.ts`). Để nguyên trong docs như
-      hợp đồng API, việc implement dời sang 1 PR BE riêng.
+- [x] Thống kê doanh thu + booking cho Admin — đã implement, gộp thành 1
+      route `GET /statistics/revenue-bookings` (không tách `bookings`/
+      `revenue`, không nằm dưới `/admin/**` — quyết định giữ nguyên, xem mục
+      11). FE đã cập nhật theo route + response shape mới.
 - [x] `POST /mail/test`, `GET /mail/:id` (mục 12a) đã khóa ADMIN.
 - [x] Emit đủ 5 event gửi mail: `UserRegistered`, `PasswordResetRequested`,
       `BookingStatusChanged`, `ReviewDeleted`, + cron báo cáo doanh thu —
@@ -732,8 +824,8 @@ guests` (trước đây chỉ `nights × pricePerNight`, không phụ thuộc s�
 - [x] `GET /admin/payments` (danh sách giao dịch thanh toán cho Admin) đã
       implement — xem mục 11.
 - [x] `GET /payments/me` (lịch sử thanh toán của chính user) đã implement ở
-      BE — xem mục 4a. **FE chưa dựng UI** (route `/payments`,
-      `PaymentHistoryPage.tsx`), để lại TODO cho session sau.
+      BE — xem mục 4a. FE đã dựng UI (route `/payments`,
+      `PaymentHistoryPage.tsx`, `paymentApi.listMine()`).
 - [ ] Đối chiếu lại với `frontend/docs/CAU_TRUC_ROUTE.md` sau khi đổi
       namespace admin — đã rà, xem mục "Đối chiếu với FE" bên dưới.
 - [ ] Viết chung 1 `ResponseInterceptor` (bọc `{statusCode, message, data}`
@@ -770,9 +862,14 @@ tài liệu route FE (không đổi cấu trúc route):
 - Trang chi tiết phòng `/rooms/:roomId` (public) — nếu chốt dùng thêm
   `GET /rooms/:id/reviews`, không cần thêm route FE mới, chỉ là 1 API được
   gọi thêm trong cùng trang.
-- `/admin/statistics/revenue` → ngoài `GET /admin/statistics/revenue`, giờ
-  gọi thêm `GET /admin/payments` cho bảng "Transactions" — không cần route
-  FE mới, cùng 1 trang `AdminRevenueStatsPage`.
-- `/payments` (FE, user) 🚧 — `GET /payments/me` đã implement ở BE (mục 4a),
-  nhưng route + trang FE tương ứng **chưa dựng**, chỉ mới ghi TODO (xem
+- `/admin/statistics/revenue` (route FE) → BE thật là
+  `GET /statistics/revenue-bookings` (1 route gộp, không phải
+  `/admin/statistics/revenue`, xem mục 11), gọi kèm `GET /admin/payments`
+  cho bảng "Transactions" — route FE không đổi, chỉ đổi API FE gọi bên
+  trong cùng 1 trang `AdminRevenueStatsPage`. ✅ FE đã sửa theo route mới.
+- `/admin/statistics/bookings` (route FE, trang `AdminBookingStatsPage`) →
+  BE thật cũng là `GET /statistics/revenue-bookings` (cùng 1 route gộp với
+  trang revenue ở trên, không có route `bookings` riêng) — ✅ FE đã sửa.
+- `/payments` (FE, user) ✅ — `GET /payments/me` đã implement ở BE (mục 4a),
+  route + trang FE tương ứng đã dựng (`PaymentHistoryPage.tsx`, xem
   `frontend/docs/CAU_TRUC_ROUTE.md`).

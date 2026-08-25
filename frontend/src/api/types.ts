@@ -87,6 +87,11 @@ export interface ListQuery {
   limit?: number
 }
 
+// Dung chung cho moi query list o Admin ho tro sap xep theo thoi gian tao
+// (moi nhat/cu nhat truoc) - khop enum SortOrder o BE
+// (backend/src/common/enums/sort-order.enum.ts).
+export type SortOrder = 'ASC' | 'DESC'
+
 export interface PagedResult<T> {
   items: T[]
   total: number
@@ -154,6 +159,11 @@ export interface UpdateRoomPayload {
   status?: RoomStatus
 }
 
+// Cot dung de sap xep o GET /admin/rooms - khop RoomSortBy o BE
+// (backend/src/rooms/dto/list-rooms.dto.ts). "price"/"capacity" phuc vu nut
+// sap xep tang/giam rieng cho 2 cot do o AdminRoomListPage.
+export type RoomSortBy = 'createdAt' | 'price' | 'capacity'
+
 export interface ListRoomsQuery extends ListQuery {
   search?: string
   status?: RoomStatus
@@ -162,6 +172,11 @@ export interface ListRoomsQuery extends ListQuery {
   // (admin khong can tim theo suc chua), du type nay dang dung chung cho ca
   // 2 (xem room.api.ts).
   guests?: number
+  // Cac field duoi day chi BE /admin/rooms ho tro (GET /rooms cong khai bo qua).
+  sortOrder?: SortOrder
+  // Loc rieng theo loai phong - khac `search` (gop chung roomNumber/name/roomType).
+  roomType?: string
+  sortBy?: RoomSortBy
 }
 
 // Khop FindAvailableRoomsDto o BE (GET /rooms/available) - truoc day chua
@@ -193,6 +208,10 @@ export interface CreateAmenityPayload {
 export interface UpdateAmenityPayload {
   name?: string
   description?: string
+}
+
+export interface ListAmenitiesQuery extends ListQuery {
+  search?: string
 }
 
 // --- bookings ---
@@ -232,6 +251,12 @@ export interface Booking {
   room?: BookingRoomSummary
   user?: BookingUserSummary
   payment?: Payment
+  // true khi booking nay da TUNG co 1 review, ke ca review do sau bi admin
+  // xoa mem (Review.bookingId la unique constraint khong loc theo deletedAt,
+  // xem backend/src/reviews/entities/review.entity.ts) - dung de FE an nut
+  // "Write Review" thay vi de user bam lai va an loi 409 ALREADY_REVIEWED.
+  // Chi GET /bookings/me (findHistory) tra ve field nay.
+  hasReviewed?: boolean
 }
 
 export interface CreateBookingPayload {
@@ -252,6 +277,7 @@ export interface UpdateBookingPayload {
 export interface ListBookingsQuery extends ListQuery {
   status?: BookingStatus
   search?: string
+  sortOrder?: SortOrder
 }
 
 // Khop CancelBookingDto o BE (PATCH /bookings/:id/cancel) - cung ten field
@@ -288,6 +314,26 @@ export interface Payment {
   createdAt: string
 }
 
+// --- self-service payments (GET /payments/me, khac /admin/payments -
+// khong kem thong tin khach vi user tu biet do la chinh minh, xem
+// backend/docs/DANH_SACH_API.md muc 4a) ---
+export interface PaymentBookingSummary {
+  id: string
+  roomName: string
+  roomNumber: string
+  checkInDate: string
+  checkOutDate: string
+}
+
+export interface UserPayment extends Payment {
+  booking?: PaymentBookingSummary
+}
+
+export interface ListPaymentsQuery extends ListQuery {
+  status?: PaymentStatus
+  method?: PaymentMethod
+}
+
 // --- admin payments (GET /admin/payments, dung o man Statistics > Revenue -
 // xem backend/docs/DANH_SACH_API.md muc 11) ---
 export interface AdminPaymentBookingSummary {
@@ -322,8 +368,25 @@ export interface Review {
   user?: BookingUserSummary
 }
 
+export interface PublicReviewAuthor {
+  fullName: string | null
+  avatarUrl: string | null
+}
+
+export interface PublicReview {
+  id: string
+  rating: number
+  comment: string | null
+  createdAt: string
+  author?: PublicReviewAuthor
+}
+
 export interface ListReviewsQuery extends ListQuery {
   roomId?: string
+  // Admin (GET /admin/reviews) va findAllForUser() (GET /reviews/me) deu
+  // doc field nay - findByRoom() (GET /rooms/:roomId/reviews, cong khai)
+  // van hardcode moi nhat truoc.
+  sortOrder?: SortOrder
 }
 
 // --- email logs ---
@@ -354,6 +417,7 @@ export interface ListAdminUsersQuery extends ListQuery {
   search?: string
   role?: UserRole
   status?: UserStatus
+  sortOrder?: SortOrder
 }
 
 export interface AdminUpdateUserPayload {
@@ -363,30 +427,42 @@ export interface AdminUpdateUserPayload {
   status?: UserStatus
 }
 
+// Khop CreateUserDto o BE (POST /admin/users) - tai khoan tao qua duong nay
+// luon duoc kich hoat ngay (status=ACTIVE), khong nhan status/role tu FE
+// (role mac dinh USER o BE, doi lai qua adminUserApi.update() sau khi tao).
+export interface AdminCreateUserPayload {
+  email: string
+  password: string
+  username: string
+  phone?: string
+}
+
 // --- statistics ---
-export interface BookingStatisticsSeriesPoint {
-  month: string
-  count: number
+// Khớp `GET /statistics/revenue-bookings` (backend/src/statistics) — 1 route
+// gộp trả cả doanh thu lẫn số booking, gộp theo ngày/tháng/quý.
+export type StatisticsPeriod = 'DAY' | 'MONTH' | 'QUARTER'
+
+export interface StatisticsQuery {
+  period: StatisticsPeriod
+  year: number
+  /** Bắt buộc khi period = DAY, bỏ qua với MONTH/QUARTER. */
+  month?: number
 }
 
-export interface BookingStatistics {
+export interface StatisticsBucket {
+  /** vd "2026-08" (MONTH), "2026-Q3" (QUARTER), "2026-08-24" (DAY). */
+  label: string
+  /** Số tiền dạng string 2 chữ số thập phân, vd "12500000.00". */
+  revenue: string
+  bookingCount: number
+}
+
+export interface RevenueBookingsStatistics {
+  period: StatisticsPeriod
+  year: number
+  month: number | null
+  totalRevenue: string
   totalBookings: number
-  byStatus: Record<BookingStatus, number>
-  monthly: BookingStatisticsSeriesPoint[]
-}
-
-export interface RevenueStatisticsSeriesPoint {
-  month: string
-  revenue: number
-}
-
-export interface RevenueByRoomType {
-  roomType: string
-  revenue: number
-}
-
-export interface RevenueStatistics {
-  totalRevenue: number
-  monthly: RevenueStatisticsSeriesPoint[]
-  byRoomType: RevenueByRoomType[]
+  buckets: StatisticsBucket[]
+  isCached: boolean
 }

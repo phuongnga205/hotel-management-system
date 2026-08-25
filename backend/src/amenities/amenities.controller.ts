@@ -51,6 +51,12 @@ export class AmenitiesController {
     example: 10,
     description: 'Số bản ghi mỗi trang (tối đa 100)',
   })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Tìm theo tên tiện nghi (khớp gần đúng)',
+  })
   @ApiResponse({
     status: 200,
     description: 'Trả về danh sách tiện nghi (đã phân trang)',

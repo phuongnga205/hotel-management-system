@@ -126,7 +126,7 @@ describe('AuthService', () => {
         password: 'hashedPass',
       });
       userRepository.save.mockImplementation((user: User) =>
-        Promise.resolve({ id: '1', ...user }),
+        Promise.resolve({ ...user, id: '1' }),
       );
 
       const result = await service.register(registerDto);

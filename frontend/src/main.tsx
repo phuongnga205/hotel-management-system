@@ -10,6 +10,7 @@ import { router } from './router'
 import { ToastContainer } from 'react-toastify'
 import React from 'react'
 import { colors, withAlpha } from './tokens/colors'
+import { AuthProvider } from './contexts/AuthProvider'
 
 interface ErrorBoundaryProps {
   children: ReactNode
@@ -56,8 +57,10 @@ createRoot(document.getElementById('root')!).render(
           },
         }}
       >
-        <RouterProvider router={router} />
-        <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
+        <AuthProvider>
+          <RouterProvider router={router} />
+          <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
+        </AuthProvider>
       </ConfigProvider>
     </ErrorBoundary>
   </StrictMode>,

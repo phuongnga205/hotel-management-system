@@ -1,7 +1,12 @@
 import { useTranslation } from 'react-i18next'
+import dayjs from 'dayjs'
 import DatePicker from './Calendar'
 import Dropdown from './Dropdown'
 import { colors } from '../tokens/colors'
+
+// Chi cho tim/dat phong tu hom nay tro di - khong co ly do hop le nao de
+// tim phong trong ngay da qua.
+const todayYmd = () => dayjs().format('YYYY-MM-DD')
 
 interface DateRangeBarProps {
   checkIn: string
@@ -43,6 +48,7 @@ export default function DateRangeBar({
             value={checkIn}
             onChange={onCheckInChange}
             placeholder={t('dateRangeBar.checkInPlaceholder')}
+            minDate={todayYmd()}
             rangeStart={checkIn}
             rangeEnd={checkOut}
           />
@@ -56,7 +62,7 @@ export default function DateRangeBar({
             value={checkOut}
             onChange={onCheckOutChange}
             placeholder={t('dateRangeBar.checkOutPlaceholder')}
-            minDate={checkIn || undefined}
+            minDate={checkIn || todayYmd()}
             rangeStart={checkIn}
             rangeEnd={checkOut}
           />

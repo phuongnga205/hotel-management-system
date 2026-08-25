@@ -21,6 +21,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
 import { EntityIdParamDto } from '../common/dto/entity-id-param.dto';
+import { SortOrder } from '../common/enums/sort-order.enum';
 
 @ApiTags('Admin - Reviews')
 @ApiBearerAuth('access-token')
@@ -45,6 +46,12 @@ export class AdminReviewsController {
     type: Number,
     example: 10,
     description: 'Số bản ghi mỗi trang (tối đa 100)',
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    enum: SortOrder,
+    description: 'Sắp xếp theo thời gian tạo (mặc định DESC - mới nhất trước)',
   })
   @ApiResponse({
     status: 200,

@@ -31,14 +31,17 @@
     "night": "đêm",
     "total": "Tổng cộng",
     "pastStay": "Đã qua",
+    "reviewed": "Đã đánh giá",
     "reason": "Lý do",
-    "unknownRoom": "Phòng"
+    "unknownRoom": "Phòng",
+    "holdCountdown": "Còn {{time}} để thanh toán"
   },
   "buttons": {
     "payNow": "Thanh toán ngay",
     "editDates": "Đổi ngày",
     "cancelBooking": "Huỷ phòng",
-    "keepBooking": "Giữ đặt phòng"
+    "keepBooking": "Giữ đặt phòng",
+    "writeReview": "Viết đánh giá"
   },
   "modal": {
     "editDatesTitle": "Đổi Ngày Nhận/Trả Phòng",
@@ -60,5 +63,47 @@
     "updateError": "Không thể cập nhật ngày",
     "cancelError": "Không thể huỷ đặt phòng",
     "dateConflict": "Phòng đã được đặt trong khoảng thời gian này. Vui lòng chọn ngày khác."
+  },
+  "payment": {
+    "eyebrow": "Hoàn Tất Thanh Toán",
+    "title": "Thanh Toán Đặt Phòng",
+    "methodLabel": "Chọn Phương Thức Thanh Toán",
+    "method": {
+      "CASH": "Tiền mặt tại khách sạn",
+      "BANK_TRANSFER": "Chuyển khoản ngân hàng",
+      "CREDIT_CARD": "Thẻ tín dụng",
+      "VNPAY": "VNPay"
+    },
+    "summaryGuests": "Số khách",
+    "summaryDates": "Ngày lưu trú",
+    "submit": "Thanh Toán Ngay",
+    "processing": "Đang xử lý…",
+    "notFound": "Không tìm thấy đặt phòng.",
+    "fetchError": "Không thể tải thông tin đặt phòng.",
+    "conflictError": "Đặt phòng này không thể thanh toán được nữa — có thể đã được thanh toán, đã huỷ, bị từ chối, hoặc đã hết thời gian giữ chỗ.",
+    "payError": "Thanh toán thất bại. Vui lòng thử lại.",
+    "paySuccess": "Thanh toán thành công!"
+  },
+  "review": {
+    "eyebrow": "Chia Sẻ Trải Nghiệm",
+    "title": "Viết Đánh Giá",
+    "ratingLabel": "Đánh Giá Của Bạn",
+    "commentLabel": "Nhận Xét Của Bạn",
+    "commentPlaceholder": "Chia sẻ trải nghiệm kỳ nghỉ của bạn (không bắt buộc).",
+    "submit": "Gửi Đánh Giá",
+    "processing": "Đang gửi…",
+    "notFound": "Không tìm thấy đặt phòng.",
+    "fetchError": "Không thể tải thông tin đặt phòng.",
+    "notEligible": "Đặt phòng này chưa đủ điều kiện đánh giá — cần được chấp nhận, đã thanh toán và đã qua ngày trả phòng.",
+    "alreadyReviewed": "Bạn đã đánh giá kỳ nghỉ này rồi.",
+    "createError": "Không thể gửi đánh giá. Vui lòng thử lại.",
+    "createSuccess": "Cảm ơn bạn đã đánh giá!"
+  },
+  "myReviews": {
+    "title": "Đánh Giá Của Tôi",
+    "subtitle": "Toàn bộ đánh giá bạn đã viết cho những kỳ nghỉ đã qua.",
+    "empty": "Chưa có đánh giá nào.",
+    "emptyDesc": "Đánh giá bạn viết sau khi hoàn tất kỳ nghỉ sẽ hiển thị ở đây.",
+    "fetchError": "Không thể tải danh sách đánh giá. Vui lòng thử lại."
   }
 }

@@ -31,7 +31,8 @@
     "AVAILABLE_SUCCESS": "Tìm phòng còn trống thành công.",
     "INVALID_DATE_RANGE": "Ngày check-out phải sau ngày check-in.",
     "INVALID_PRICE_RANGE": "Giá tối thiểu phải nhỏ hơn hoặc bằng giá tối đa.",
-    "THUMBNAIL_SET_SUCCESS": "Cập nhật ảnh đại diện thành công."
+    "THUMBNAIL_SET_SUCCESS": "Cập nhật ảnh đại diện thành công.",
+    "HAS_ACTIVE_BOOKINGS": "Không thể xóa phòng này vì vẫn còn booking đang chờ hoặc đã được chấp nhận."
   },
   "AMENITY": {
     "NOT_FOUND": "Không tìm thấy tiện nghi.",
@@ -181,6 +182,7 @@
     "CREATE_SUCCESS": "Tạo đánh giá thành công.",
     "FIND_ALL_SUCCESS": "Lấy danh sách đánh giá thành công.",
     "FIND_BY_ROOM_SUCCESS": "Lấy danh sách đánh giá của phòng thành công.",
+    "FIND_MINE_SUCCESS": "Lấy danh sách đánh giá của bạn thành công.",
     "DELETE_SUCCESS": "Review xóa thành công."
   }
 }

@@ -6,7 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { plainToInstance } from 'class-transformer';
 import { I18nService } from 'nestjs-i18n';
-import { QueryFailedError, Repository } from 'typeorm';
+import { ILike, QueryFailedError, Repository } from 'typeorm';
 import { AmenityResponseDto } from './dto/amenity-response.dto';
 import { CreateAmenityDto } from './dto/create-amenity.dto';
 import { ListAmenitiesDto } from './dto/list-amenities.dto';
@@ -39,8 +39,9 @@ export class AmenitiesService {
   }
 
   async findAll(query: ListAmenitiesDto) {
-    const { page, limit } = query;
+    const { page, limit, search } = query;
     const [amenities, total] = await this.repository.findAndCount({
+      where: search ? { name: ILike(`%${search}%`) } : {},
       order: { id: 'ASC' },
       skip: (page - 1) * limit,
       take: limit,

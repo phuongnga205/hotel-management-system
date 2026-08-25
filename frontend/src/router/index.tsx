@@ -7,8 +7,16 @@ import { ForgotPasswordPage } from '../pages/auth/ForgotPasswordPage'
 import { ResetPasswordPage } from '../pages/auth/ResetPasswordPage'
 import { ProfilePage } from '../pages/profile/ProfilePage'
 import { BookingHistoryPage } from '../pages/bookings/BookingHistoryPage'
+import { BookingPaymentPage } from '../pages/bookings/BookingPaymentPage'
+import { BookingReviewPage } from '../pages/bookings/BookingReviewPage'
+import { MyReviewsPage } from '../pages/reviews/MyReviewsPage'
+import { PaymentHistoryPage } from '../pages/payments/PaymentHistoryPage'
+import RoomListPage from '../pages/rooms/RoomListPage'
+import RoomDetailPage from '../pages/rooms/RoomDetailPage'
+import BookRoomPage from '../pages/rooms/BookRoomPage'
 import NotFoundPage from '../pages/NotFoundPage'
 import ForbiddenPage from '../pages/ForbiddenPage'
+import ServerDownPage from '../pages/ServerDownPage'
 import { PublicLayout } from '../components/layouts/PublicLayout'
 import { AuthGuard } from '../components/layouts/AuthGuard'
 import { AdminGuard } from '../components/layouts/AdminGuard'
@@ -59,8 +67,20 @@ export const router = createBrowserRouter([
         element: <HomePage />,
       },
       {
+        path: ROUTES.ROOMS,
+        element: <RoomListPage />,
+      },
+      {
+        path: ROUTES.ROOM_DETAIL(':roomId'),
+        element: <RoomDetailPage />,
+      },
+      {
         path: ROUTES.FORBIDDEN,
         element: <ForbiddenPage />,
+      },
+      {
+        path: ROUTES.SERVER_DOWN,
+        element: <ServerDownPage />,
       },
       {
         element: <AuthGuard />,
@@ -72,6 +92,26 @@ export const router = createBrowserRouter([
           {
             path: ROUTES.BOOKINGS,
             element: <BookingHistoryPage />,
+          },
+          {
+            path: ROUTES.REVIEWS,
+            element: <MyReviewsPage />,
+          },
+          {
+            path: ROUTES.PAYMENTS,
+            element: <PaymentHistoryPage />,
+          },
+          {
+            path: ROUTES.BOOKING_PAYMENT(':bookingId'),
+            element: <BookingPaymentPage />,
+          },
+          {
+            path: ROUTES.BOOKING_REVIEW(':bookingId'),
+            element: <BookingReviewPage />,
+          },
+          {
+            path: ROUTES.BOOK_ROOM(':roomId'),
+            element: <BookRoomPage />,
           },
         ]
       },

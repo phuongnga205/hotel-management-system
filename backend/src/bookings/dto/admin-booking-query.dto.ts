@@ -11,6 +11,7 @@ import {
 } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
 import { BookingStatus } from '../enums/booking-status.enum';
+import { SortOrder } from '../../common/enums/sort-order.enum';
 import {
   BOOKING_PAGINATION,
   BOOKING_SEARCH_MAX_LENGTH,
@@ -62,4 +63,15 @@ export class AdminBookingQueryDto {
     message: i18nValidationMessage('messages.VALIDATION.MAX_LENGTH'),
   })
   search?: string;
+
+  @ApiPropertyOptional({
+    enum: SortOrder,
+    default: SortOrder.DESC,
+    description: 'Sắp xếp theo thời gian tạo booking (mặc định mới nhất trước)',
+  })
+  @IsOptional()
+  @IsEnum(SortOrder, {
+    message: i18nValidationMessage('messages.VALIDATION.IS_ENUM'),
+  })
+  sortOrder?: SortOrder = SortOrder.DESC;
 }

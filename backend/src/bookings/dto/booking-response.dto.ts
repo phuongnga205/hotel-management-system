@@ -53,10 +53,19 @@ export class BookingResponseDto {
   room?: BookingRoomSummaryDto;
   user?: BookingUserSummaryDto;
   payment?: BookingPaymentSummaryDto;
+  // true khi booking nay da tung co 1 review (ke ca review do sau bi admin
+  // xoa mem) - Review.bookingId la unique constraint khong loc theo
+  // deletedAt, nen review da xoa mem van chan viec tao lai. Ten field co
+  // "-ed" (trang thai lich su) thay vi "hasReview" (nghe nhu "dang co review
+  // hien thi") de tranh nham lan: FE dua vao day de an nut "Write Review"
+  // thay vi de user bam lai va an loi 409 ALREADY_REVIEWED. Mac dinh false
+  // khi khong truyen extra.hasReviewed (cac cho goi DTO nay chua can thong
+  // tin nay).
+  hasReviewed: boolean = false;
 
   constructor(
     booking: Booking,
-    extra?: { room?: Room; payment?: Payment | null },
+    extra?: { room?: Room; payment?: Payment | null; hasReviewed?: boolean },
   ) {
     this.id = booking.id;
     this.status = booking.status;
@@ -68,6 +77,7 @@ export class BookingResponseDto {
     this.note = booking.note ?? null;
     this.cancelReason = booking.cancelReason ?? null;
     this.createdAt = booking.createdAt;
+    this.hasReviewed = extra?.hasReviewed ?? false;
 
     const room = booking.room ?? extra?.room;
     if (room) {

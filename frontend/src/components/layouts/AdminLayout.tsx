@@ -5,6 +5,7 @@ import type { MenuProps } from 'antd'
 import { GlobalOutlined, DownOutlined } from '@ant-design/icons'
 import { ROUTES } from '../../router/paths'
 import { clearAccessToken } from '../../api/axiosClient'
+import { authApi } from '../../api/auth.api'
 
 const NAV_ITEMS: { to: string; key: string; end?: boolean }[] = [
   { to: ROUTES.ADMIN.DASHBOARD, key: 'dashboard', end: true },
@@ -21,7 +22,14 @@ const NAV_ITEMS: { to: string; key: string; end?: boolean }[] = [
 export const AdminLayout = () => {
   const { t, i18n } = useTranslation('admin')
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Goi BE thu hoi token (Redis blacklist) TRUOC khi xoa token cuc bo -
+    // best-effort, khong chan hanh dong dang xuat neu request that bai.
+    try {
+      await authApi.logout()
+    } catch {
+      // im lang - van dang xuat cuc bo du BE khong phan hoi duoc.
+    }
     clearAccessToken()
     window.location.href = ROUTES.HOME
   }

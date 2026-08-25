@@ -1,38 +1,65 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'react-toastify'
 import PageHeader from '../../../components/PageHeader'
 import Card from '../../../components/Card'
+import Pagination from '../../../components/Pagination'
 import StarRating from '../../../components/StarRating'
+import Dropdown from '../../../components/Dropdown'
 import { PageLoader } from '../../../components/common/PageLoader'
 import { ConfirmModal, StatusBadge, REVIEW_STATUS_CONFIG } from '../../../components/admin'
 import { reviewApi } from '../../../api/review.api'
 import { getErrorMessage } from '../../../api/errorMessage'
-import type { Review } from '../../../api/types'
+import type { Review, SortOrder } from '../../../api/types'
+
+const PER_PAGE = 10
 
 export default function AdminReviewListPage() {
   const { t, i18n } = useTranslation('admin')
+  const [page, setPage] = useState(1)
+  const [sortOrder, setSortOrder] = useState<SortOrder>('DESC')
   const [reviews, setReviews] = useState<Review[]>([])
+  const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null)
 
-  useEffect(() => {
+  const load = () => {
+    setLoading(true)
     reviewApi
-      .adminList({ page: 1, limit: 100 })
-      .then((res) => setReviews(res.items))
+      .adminList({ page, limit: PER_PAGE, sortOrder })
+      .then((res) => { setReviews(res.items); setTotal(res.total) })
       .catch((err) => setError(getErrorMessage(err, t('common.notFoundGeneric'))))
       .finally(() => setLoading(false))
-  }, [t])
+  }
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-with-loading-flag pattern, xem AdminBookingListPage.tsx
+  useEffect(load, [page, sortOrder, t])
+
+  const sortOptions = [
+    { value: 'DESC', label: t('common.sortNewest') },
+    { value: 'ASC', label: t('common.sortOldest') },
+  ]
 
   const handleDelete = async (id: string) => {
-    await reviewApi.adminRemove(id)
-    setReviews((prev) => prev.filter((r) => r.id !== id))
-    setShowDeleteModal(null)
+    try {
+      await reviewApi.adminRemove(id)
+      setShowDeleteModal(null)
+      load()
+    } catch (err) {
+      // Truoc day khong catch - loi tu BE (vd 404) nem thang ra ngoai,
+      // modal dung im khong dong, khong co toast nao bao loi ca.
+      toast.error(getErrorMessage(err, t('common.notFoundGeneric')))
+    }
   }
 
   return (
     <div className="space-y-5">
-      <PageHeader eyebrow={t('reviews.list.eyebrow')} title={t('reviews.list.title')} subtitle={t('reviews.list.subtitle', { count: reviews.length })} />
+      <PageHeader eyebrow={t('reviews.list.eyebrow')} title={t('reviews.list.title')} subtitle={t('reviews.list.subtitle', { count: total })} />
+
+      <div className="flex items-center justify-end gap-3">
+        <Dropdown value={sortOrder} onChange={(v) => { setSortOrder(v as SortOrder); setPage(1) }} options={sortOptions} size="sm" className="w-40" />
+      </div>
 
       {loading ? (
         <PageLoader fullPage={false} />
@@ -71,6 +98,7 @@ export default function AdminReviewListPage() {
           {reviews.length === 0 && (
             <div className="p-16 text-center text-slate-400 text-sm">{t('reviews.list.empty')}</div>
           )}
+          <Pagination page={page} total={total} perPage={PER_PAGE} onChange={setPage} />
         </Card>
       )}
 
