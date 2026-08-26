@@ -44,13 +44,27 @@
     "REMOVE_SUCCESS": "Amenity removed successfully."
   },
   "STATISTICS": {
-    "INVALID_PERIOD": "Period must be DAY, MONTH, or QUARTER.",
+    "INVALID_PERIOD": "Period must be DAY, MONTH, QUARTER, or YEAR.",
     "INVALID_YEAR": "Year must be an integer between 2000 and 2100.",
-    "INVALID_MONTH": "Month is required for daily statistics and is not allowed for monthly or quarterly statistics.",
+    "INVALID_MONTH": "Month is required for daily statistics and is not allowed for other periods.",
     "CACHE_UNAVAILABLE": "Statistics cache is temporarily unavailable. Please try again later.",
     "INVALID_CACHE_CONFIGURATION": "Statistics cache configuration is invalid. Please contact the system administrator.",
     "GENERATION_IN_PROGRESS": "Statistics are being generated. Please try again shortly.",
-    "INVALID_REVENUE_DATA": "Revenue data is invalid. Please contact the system administrator."
+    "INVALID_REVENUE_DATA": "Revenue data is invalid. Please contact the system administrator.",
+    "EXPORT": {
+      "SUMMARY_SHEET": "Summary",
+      "BREAKDOWN_SHEET": "Breakdown",
+      "METRIC": "Metric",
+      "VALUE": "Value",
+      "PERIOD": "Period",
+      "YEAR": "Year",
+      "MONTH": "Month",
+      "TOTAL_REVENUE": "Total revenue",
+      "TOTAL_BOOKINGS": "Total bookings",
+      "TIME": "Time",
+      "REVENUE": "Revenue",
+      "BOOKINGS": "Bookings"
+    }
   },
   "MAIL": {
     "LOG_NOT_FOUND": "Email log {id} not found.",

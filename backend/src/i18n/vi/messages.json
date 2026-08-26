@@ -44,13 +44,27 @@
     "REMOVE_SUCCESS": "Xóa tiện nghi thành công."
   },
   "STATISTICS": {
-    "INVALID_PERIOD": "Chu kỳ thống kê phải là DAY, MONTH hoặc QUARTER.",
+    "INVALID_PERIOD": "Chu kỳ thống kê phải là DAY, MONTH, QUARTER hoặc YEAR.",
     "INVALID_YEAR": "Năm phải là số nguyên từ 2000 đến 2100.",
-    "INVALID_MONTH": "Tháng là bắt buộc khi thống kê theo ngày và không được phép khi thống kê theo tháng hoặc quý.",
+    "INVALID_MONTH": "Tháng là bắt buộc khi thống kê theo ngày và không được phép với các chu kỳ khác.",
     "CACHE_UNAVAILABLE": "Bộ nhớ đệm thống kê tạm thời không khả dụng. Vui lòng thử lại sau.",
     "INVALID_CACHE_CONFIGURATION": "Cấu hình bộ nhớ đệm thống kê không hợp lệ. Vui lòng liên hệ quản trị viên hệ thống.",
     "GENERATION_IN_PROGRESS": "Dữ liệu thống kê đang được xử lý. Vui lòng thử lại sau ít phút.",
-    "INVALID_REVENUE_DATA": "Dữ liệu doanh thu không hợp lệ. Vui lòng liên hệ quản trị viên hệ thống."
+    "INVALID_REVENUE_DATA": "Dữ liệu doanh thu không hợp lệ. Vui lòng liên hệ quản trị viên hệ thống.",
+    "EXPORT": {
+      "SUMMARY_SHEET": "Tổng quan",
+      "BREAKDOWN_SHEET": "Chi tiết",
+      "METRIC": "Chỉ số",
+      "VALUE": "Giá trị",
+      "PERIOD": "Chu kỳ",
+      "YEAR": "Năm",
+      "MONTH": "Tháng",
+      "TOTAL_REVENUE": "Tổng doanh thu",
+      "TOTAL_BOOKINGS": "Tổng lượt đặt phòng",
+      "TIME": "Thời gian",
+      "REVENUE": "Doanh thu",
+      "BOOKINGS": "Lượt đặt phòng"
+    }
   },
   "MAIL": {
     "LOG_NOT_FOUND": "Không tìm thấy nhật ký email {id}.",

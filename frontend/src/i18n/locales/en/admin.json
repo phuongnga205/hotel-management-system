@@ -285,8 +285,17 @@
       "periodDay": "Day",
       "periodMonth": "Month",
       "periodQuarter": "Quarter",
+      "periodYear": "Year",
       "year": "Year",
-      "month": "Month"
+      "month": "Month",
+      "exportExcel": "Export Excel",
+      "exporting": "Exporting…"
+    },
+    "export": {
+      "breakdownSheet": "Breakdown",
+      "time": "Time",
+      "revenue": "Revenue",
+      "bookings": "Bookings"
     },
     "bookings": {
       "eyebrow": "Analytics",

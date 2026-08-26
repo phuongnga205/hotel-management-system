@@ -1,4 +1,6 @@
 import type { RevenueBookingsStatistics, StatisticsBucket, StatisticsQuery } from '../types'
+import { STATISTICS_EXPORT_MIME_TYPE, STATISTICS_PERIOD } from '../../constants/statistics'
+import i18n from '../../i18n'
 
 const MOCK_DELAY_MS = 400
 
@@ -23,11 +25,13 @@ function seededAmount(label: string, max: number): number {
 
 function buildBuckets(query: StatisticsQuery): StatisticsBucket[] {
   const labels: string[] =
-    query.period === 'DAY'
+    query.period === STATISTICS_PERIOD.DAY
       ? Array.from({ length: daysInMonth(query.year, query.month ?? 1) }, (_, i) => `${query.year}-${pad(query.month ?? 1)}-${pad(i + 1)}`)
-      : query.period === 'MONTH'
+      : query.period === STATISTICS_PERIOD.MONTH
         ? Array.from({ length: 12 }, (_, i) => `${query.year}-${pad(i + 1)}`)
-        : Array.from({ length: 4 }, (_, i) => `${query.year}-Q${i + 1}`)
+        : query.period === STATISTICS_PERIOD.QUARTER
+          ? Array.from({ length: 4 }, (_, i) => `${query.year}-Q${i + 1}`)
+          : [String(query.year)]
 
   return labels.map((label) => ({
     label,
@@ -44,11 +48,31 @@ export const statisticsMockApi = {
     return mockDelay({
       period: query.period,
       year: query.year,
-      month: query.period === 'DAY' ? (query.month ?? null) : null,
+      month: query.period === STATISTICS_PERIOD.DAY ? (query.month ?? null) : null,
       totalRevenue: totalRevenue.toFixed(2),
       totalBookings,
       buckets,
       isCached: false,
+    })
+  },
+  exportRevenueAndBookings: async (query: StatisticsQuery): Promise<Blob> => {
+    const statistics = await statisticsMockApi.getRevenueAndBookings(query)
+    const { Workbook } = await import('exceljs')
+    const workbook = new Workbook()
+    const worksheet = workbook.addWorksheet(i18n.t('admin:statistics.export.breakdownSheet'))
+    worksheet.columns = [
+      { header: i18n.t('admin:statistics.export.time'), key: 'time', width: 18 },
+      { header: i18n.t('admin:statistics.export.revenue'), key: 'revenue', width: 20 },
+      { header: i18n.t('admin:statistics.export.bookings'), key: 'bookings', width: 16 },
+    ]
+    worksheet.addRows(statistics.buckets.map((bucket) => ({
+      time: bucket.label,
+      revenue: bucket.revenue,
+      bookings: bucket.bookingCount,
+    })))
+    const content = await workbook.xlsx.writeBuffer()
+    return new Blob([content as BlobPart], {
+      type: STATISTICS_EXPORT_MIME_TYPE.EXCEL,
     })
   },
 }

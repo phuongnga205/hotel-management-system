@@ -59,6 +59,7 @@ export const API_ENDPOINTS = {
   // Không có tiền tố /admin (khác các route quản trị khác) — quyết định có
   // chủ đích, xem backend/docs/DANH_SACH_API.md mục 11.
   STATISTICS_REVENUE_BOOKINGS: '/statistics/revenue-bookings',
+  STATISTICS_REVENUE_BOOKINGS_EXPORT: '/statistics/revenue-bookings/export',
 
   PAYMENTS_ME: '/payments/me',
   ADMIN_PAYMENTS: '/admin/payments',

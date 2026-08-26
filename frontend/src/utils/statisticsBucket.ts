@@ -1,16 +1,18 @@
 import type { StatisticsBucket, StatisticsPeriod } from '../api/types'
+import { STATISTICS_PERIOD } from '../constants/statistics'
 
 const MONTH_SHORT_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 /** Shortens a bucket `label` from the statistics API for chart axes/lists. */
 export function formatBucketLabel(label: string, period: StatisticsPeriod): string {
-  if (period === 'MONTH') {
+  if (period === STATISTICS_PERIOD.MONTH) {
     const month = Number(label.split('-')[1])
     return MONTH_SHORT_NAMES[month - 1] ?? label
   }
-  if (period === 'QUARTER') {
+  if (period === STATISTICS_PERIOD.QUARTER) {
     return label.split('-')[1] ?? label
   }
+  if (period === STATISTICS_PERIOD.YEAR) return label
   // DAY -> "YYYY-MM-DD", show just the day number.
   return label.split('-')[2] ?? label
 }

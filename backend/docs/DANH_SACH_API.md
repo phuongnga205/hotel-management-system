@@ -560,7 +560,8 @@ guests` (trước đây chỉ `nights × pricePerNight`, không phụ thuộc s�
 
 | Chức năng | Method | URL | Quyền | Auth |
 |---|---|---|---|---|
-| Thống kê doanh thu + số booking, gộp theo ngày/tháng/quý | GET | `/api/v1/statistics/revenue-bookings` | Admin | JWT + RolesGuard(ADMIN) |
+| Thống kê doanh thu + số booking, gộp theo ngày/tháng/quý/năm | GET | `/api/v1/statistics/revenue-bookings` | Admin | JWT + RolesGuard(ADMIN) |
+| Xuất thống kê doanh thu + số booking ra Excel theo kỳ đã chọn | GET | `/api/v1/statistics/revenue-bookings/export` | Admin | JWT + RolesGuard(ADMIN) |
 | Danh sách giao dịch thanh toán (dùng ở bảng "Transactions" trong màn Revenue Statistics) | GET | `/api/v1/admin/payments` | Admin | JWT + RolesGuard(ADMIN) |
 
 > ⚠️ **Đã implement, nhưng lệch hợp đồng cũ trong docs này** —
@@ -578,11 +579,18 @@ guests` (trước đây chỉ `nights × pricePerNight`, không phụ thuộc s�
 >   theo `/admin/**`), không còn là điểm cần team quyết — FE (`API_ENDPOINTS`,
 >   xem dưới) đã cập nhật khớp route này.
 > - **Không có breakdown theo loại phòng** (`byRoomType`) — chỉ gộp theo thời
->   gian (`period`: `DAY`/`MONTH`/`QUARTER`), không lọc/gộp theo `roomType`
+>   gian (`period`: `DAY`/`MONTH`/`QUARTER`/`YEAR`), không lọc/gộp theo `roomType`
 >   hay `status` như mô tả cũ.
-> - Query bắt buộc: `period` (`DAY`/`MONTH`/`QUARTER`), `year`. `month` bắt
+> - Query bắt buộc: `period` (`DAY`/`MONTH`/`QUARTER`/`YEAR`), `year`. `month` bắt
 >   buộc khi `period=DAY` (validate qua `StatisticsMonthValidator`), không
->   dùng khi `period` là `MONTH`/`QUARTER`.
+>   dùng khi `period` là `MONTH`/`QUARTER`/`YEAR`.
+> - `period=YEAR&year=2026` trả một bucket tổng hợp cho riêng năm 2026. Đây
+>   là báo cáo tổng năm, không phải biểu đồ so sánh nhiều năm; API không nhận
+>   `fromYear`/`toYear`.
+> - Endpoint `/statistics/revenue-bookings/export` dùng cùng DTO và cùng
+>   kết quả đã cache với endpoint JSON. File `.xlsx` gồm sheet `Summary`
+>   (tổng doanh thu, tổng booking, kỳ đã chọn) và `Breakdown` (doanh thu,
+>   booking theo từng bucket thời gian).
 > - Response trả **đủ nhãn (label) cho toàn bộ khoảng thời gian** (12 tháng,
 >   4 quý, hoặc đủ số ngày trong tháng) kể cả bucket không có dữ liệu (revenue
 >   `"0.00"`, `bookingCount` 0) — FE không cần tự điền khoảng trống.

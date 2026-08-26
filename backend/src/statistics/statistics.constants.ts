@@ -41,10 +41,12 @@ export const STATISTICS_DATE_TRUNC_UNIT: Record<StatisticsPeriod, string> = {
   [StatisticsPeriod.DAY]: 'day',
   [StatisticsPeriod.MONTH]: 'month',
   [StatisticsPeriod.QUARTER]: 'quarter',
+  [StatisticsPeriod.YEAR]: 'year',
 };
 
 export const STATISTICS_BUCKET_FORMAT: Record<StatisticsPeriod, string> = {
   [StatisticsPeriod.DAY]: 'YYYY-MM-DD',
   [StatisticsPeriod.MONTH]: 'YYYY-MM',
   [StatisticsPeriod.QUARTER]: 'YYYY-"Q"Q',
+  [StatisticsPeriod.YEAR]: 'YYYY',
 };
