@@ -1,22 +1,25 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { MailProcessor } from './mail.processor';
+import { MailProcessor, SendMailJobData } from './mail.processor';
 import { ConfigService } from '@nestjs/config';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { EmailLog, EmailStatus } from './entities/email-log.entity';
-import { DataSource } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { MailErrorSanitizer } from './mail-error.sanitizer';
 import { RedisUtil } from '../token/redis.util';
 import { MailDeliveryError } from './errors/mail-delivery.error';
 import { MAIL_RECONCILIATION } from './mail.constants';
+import { Job } from 'bullmq';
+
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 
 describe('MailProcessor', () => {
   let processor: MailProcessor;
-  let dataSourceMock: any;
-  let emailLogRepoMock: any;
-  let mailErrorSanitizerMock: any;
-  let redisUtilMock: any;
-  let configServiceMock: any;
-  let managerMock: any;
+  let dataSourceMock: Record<string, jest.Mock>;
+  let emailLogRepoMock: Record<string, jest.Mock>;
+  let mailErrorSanitizerMock: Record<string, jest.Mock>;
+  let redisUtilMock: Record<string, jest.Mock>;
+  let configServiceMock: Record<string, jest.Mock>;
+  let managerMock: Record<string, jest.Mock>;
 
   const originalFetch = global.fetch;
 
@@ -26,7 +29,11 @@ describe('MailProcessor', () => {
     };
 
     dataSourceMock = {
-      transaction: jest.fn().mockImplementation((cb) => cb(managerMock)),
+      transaction: jest
+        .fn()
+        .mockImplementation((cb: (manager: unknown) => unknown) =>
+          cb(managerMock),
+        ),
     };
 
     emailLogRepoMock = {
@@ -53,10 +60,22 @@ describe('MailProcessor', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MailProcessor,
-        { provide: ConfigService, useValue: configServiceMock },
-        { provide: getRepositoryToken(EmailLog), useValue: emailLogRepoMock },
-        { provide: DataSource, useValue: dataSourceMock },
-        { provide: MailErrorSanitizer, useValue: mailErrorSanitizerMock },
+        {
+          provide: ConfigService,
+          useValue: configServiceMock,
+        },
+        {
+          provide: getRepositoryToken(EmailLog),
+          useValue: emailLogRepoMock,
+        },
+        {
+          provide: DataSource,
+          useValue: dataSourceMock,
+        },
+        {
+          provide: MailErrorSanitizer,
+          useValue: mailErrorSanitizerMock,
+        },
         { provide: RedisUtil, useValue: redisUtilMock },
       ],
     }).compile();
@@ -69,22 +88,24 @@ describe('MailProcessor', () => {
   });
 
   const createJobMock = (
-    data: any = {},
+    data: Record<string, unknown> = {},
     attemptsMade = 0,
     maxAttempts = 3,
-  ): any => ({
-    data: {
-      emailLogId: 'test-email-log-id',
-      retryGeneration: 1,
-      to: 'test@example.com',
-      subject: 'Test Subject',
-      text: 'Test text',
-      html: '<p>Test html</p>',
-      ...data,
-    },
-    attemptsMade,
-    opts: { attempts: maxAttempts },
-  });
+  ): Job<SendMailJobData> => {
+    return {
+      data: {
+        emailLogId: 'test-email-log-id',
+        retryGeneration: 1,
+        to: 'test@example.com',
+        subject: 'Test Subject',
+        text: 'Test text',
+        html: '<p>Test html</p>',
+        ...data,
+      },
+      attemptsMade,
+      opts: { attempts: maxAttempts },
+    } as unknown as Job<SendMailJobData>;
+  };
 
   it('should send email via Brevo and update status to SENT', async () => {
     global.fetch = jest.fn().mockResolvedValue({
@@ -98,7 +119,6 @@ describe('MailProcessor', () => {
 
     expect(result).toBe('<brevo-msg-123>');
 
-    // Verify fetch was called with correct Brevo payload
     expect(global.fetch).toHaveBeenCalledWith(
       'https://api.brevo.com/v3/smtp/email',
       expect.objectContaining({
@@ -109,13 +129,16 @@ describe('MailProcessor', () => {
         }),
       }),
     );
-
-    // Verify idempotency key in the body
-    const callArgs = (global.fetch as jest.Mock).mock.calls[0];
-    const body = JSON.parse(callArgs[1].body);
-    expect(body.headers['X-Idempotency-Key']).toBe(
-      'email/test-email-log-id/1',
-    );
+    const fetchMock = global.fetch as jest.MockedFunction<typeof global.fetch>;
+    const callArgs = fetchMock.mock.calls[0];
+    if (callArgs && callArgs[1] && typeof callArgs[1] === 'object') {
+      const init = callArgs[1];
+      if (typeof init.body === 'string') {
+        const body = JSON.parse(init.body) as Record<string, unknown>;
+        const headers = body.headers as Record<string, string>;
+        expect(headers['X-Idempotency-Key']).toBe('email/test-email-log-id/1');
+      }
+    }
 
     expect(managerMock.update).toHaveBeenCalledWith(
       EmailLog,
@@ -165,7 +188,6 @@ describe('MailProcessor', () => {
         }),
     });
 
-    // attemptsMade = 2 means this is the 3rd (and final) attempt
     const job = createJobMock({}, 2, 3);
     await expect(processor.process(job)).rejects.toThrow(MailDeliveryError);
 
@@ -186,7 +208,6 @@ describe('MailProcessor', () => {
       json: () => Promise.resolve({ messageId: '<brevo-msg-456>' }),
     });
 
-    // First call to dataSource.transaction (for marking SENT) will fail
     dataSourceMock.transaction.mockRejectedValueOnce(
       new Error('DB connection lost'),
     );
@@ -213,11 +234,11 @@ describe('MailProcessor', () => {
     expect(
       () =>
         new MailProcessor(
-          badConfigMock as any,
-          emailLogRepoMock,
-          dataSourceMock,
-          mailErrorSanitizerMock,
-          redisUtilMock,
+          badConfigMock as unknown as ConfigService,
+          emailLogRepoMock as unknown as Repository<EmailLog>,
+          dataSourceMock as unknown as DataSource,
+          mailErrorSanitizerMock as unknown as MailErrorSanitizer,
+          redisUtilMock as unknown as RedisUtil,
         ),
     ).toThrow('Missing environment variable: BREVO_API_KEY');
   });

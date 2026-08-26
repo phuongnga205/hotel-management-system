@@ -10,32 +10,65 @@ export class MailErrorSanitizer {
    * Brevo trả về JSON: { "code": "unauthorized", "message": "..." }
    * và HTTP status code tương ứng được gắn vào error.statusCode.
    */
-  toPublicCode(error: any): string {
+  toPublicCode(error: unknown): string {
     if (!error) return MAIL_ERROR_CODE.DELIVERY_FAILED;
 
-    const message = (
-      error.message || String(error)
-    ).toLowerCase();
+    let message = '';
+    let code = '';
+    let statusCode: number | undefined;
 
-    const code = (error.code || '').toLowerCase();
+    if (typeof error === 'object' && error !== null) {
+      const errObj = error as Record<string, unknown>;
+      message =
+        typeof errObj.message === 'string' ? errObj.message.toLowerCase() : '';
+      code = typeof errObj.code === 'string' ? errObj.code.toLowerCase() : '';
+      statusCode =
+        typeof errObj.statusCode === 'number' ? errObj.statusCode : undefined;
+    } else {
+      message =
+        typeof error === 'string' ||
+        typeof error === 'number' ||
+        typeof error === 'boolean'
+          ? String(error).toLowerCase()
+          : '';
+    }
 
     // 401 / 403 hoặc Brevo trả code "unauthorized"
-    if (code === 'unauthorized' || message.includes('auth') || error.statusCode === 401 || error.statusCode === 403) {
+    if (
+      code.includes('unauthorized') ||
+      message.includes('auth') ||
+      statusCode === 401 ||
+      statusCode === 403
+    ) {
       return MAIL_ERROR_CODE.PROVIDER_AUTH_FAILED;
     }
 
     // 429 Too Many Requests
-    if (code === 'too_many_requests' || message.includes('rate limit') || error.statusCode === 429) {
+    if (
+      code === 'too_many_requests' ||
+      message.includes('rate limit') ||
+      statusCode === 429
+    ) {
       return MAIL_ERROR_CODE.PROVIDER_RATE_LIMITED;
     }
 
     // Brevo "invalid_parameter" thường do email recipient sai format
-    if (code === 'invalid_parameter' || message.includes('recipient') || message.includes('rejected') || message.includes('invalid')) {
+    if (
+      code === 'invalid_parameter' ||
+      message.includes('recipient') ||
+      message.includes('rejected') ||
+      message.includes('invalid')
+    ) {
       return MAIL_ERROR_CODE.RECIPIENT_REJECTED;
     }
 
     // 5xx hoặc network timeout
-    if (message.includes('timeout') || message.includes('etimedout') || message.includes('econnreset') || (error.statusCode && error.statusCode >= 500)) {
+    if (
+      message.includes('timeout') ||
+      message.includes('etimedout') ||
+      message.includes('econnreset') ||
+      (statusCode && statusCode >= 500)
+    ) {
       return MAIL_ERROR_CODE.PROVIDER_UNAVAILABLE;
     }
 

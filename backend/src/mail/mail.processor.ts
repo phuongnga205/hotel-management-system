@@ -7,11 +7,7 @@ import { DataSource, Repository } from 'typeorm';
 import { EmailLog, EmailStatus } from './entities/email-log.entity';
 import { ReportDispatchStatus } from '../reports/entities/monthly-report-dispatch.entity';
 import { MonthlyReportDispatch } from '../reports/entities/monthly-report-dispatch.entity';
-import {
-  MAIL_JOB,
-  MAIL_QUEUE,
-  MAIL_RECONCILIATION,
-} from './mail.constants';
+import { MAIL_JOB, MAIL_QUEUE, MAIL_RECONCILIATION } from './mail.constants';
 import { ENVIRONMENT_KEYS } from '../config/environment.constants';
 import {
   MailDeliveryError,
@@ -20,7 +16,7 @@ import {
 import { MailErrorSanitizer } from './mail-error.sanitizer';
 import { RedisUtil } from '../token/redis.util';
 
-interface SendMailJobData {
+export interface SendMailJobData {
   emailLogId: string;
   retryGeneration: number;
   to: string;
@@ -83,7 +79,7 @@ export class MailProcessor extends WorkerHost {
       const response = await fetch(BREVO_API_URL, {
         method: 'POST',
         headers: {
-          'accept': 'application/json',
+          accept: 'application/json',
           'api-key': this.brevoApiKey,
           'content-type': 'application/json',
         },
@@ -99,14 +95,21 @@ export class MailProcessor extends WorkerHost {
         }),
       });
 
-      const body = await response.json();
+      const body = (await response.json()) as Record<string, unknown>;
 
-      if (!response.ok || !body.messageId) {
-        const error: any = new Error(
-          body.message || `Brevo API error: HTTP ${response.status}`,
-        );
+      if (!response.ok || typeof body.messageId !== 'string') {
+        const msg =
+          typeof body.message === 'string'
+            ? body.message
+            : `Brevo API error: HTTP ${response.status}`;
+        const error = new Error(msg) as Error & {
+          statusCode?: number;
+          code?: string;
+        };
         error.statusCode = response.status;
-        error.code = body.code;
+        if (typeof body.code === 'string') {
+          error.code = body.code;
+        }
         throw error;
       }
 
