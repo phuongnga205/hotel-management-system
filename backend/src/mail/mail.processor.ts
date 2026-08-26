@@ -3,19 +3,11 @@ import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Job } from 'bullmq';
-import * as nodemailer from 'nodemailer';
-import type { Transporter } from 'nodemailer';
-import type SMTPTransport from 'nodemailer/lib/smtp-transport';
 import { DataSource, Repository } from 'typeorm';
 import { EmailLog, EmailStatus } from './entities/email-log.entity';
 import { ReportDispatchStatus } from '../reports/entities/monthly-report-dispatch.entity';
 import { MonthlyReportDispatch } from '../reports/entities/monthly-report-dispatch.entity';
-import {
-  DEFAULT_MAIL_PORT,
-  MAIL_JOB,
-  MAIL_QUEUE,
-  MAIL_RECONCILIATION,
-} from './mail.constants';
+import { MAIL_JOB, MAIL_QUEUE, MAIL_RECONCILIATION } from './mail.constants';
 import { ENVIRONMENT_KEYS } from '../config/environment.constants';
 import {
   MailDeliveryError,
@@ -24,19 +16,25 @@ import {
 import { MailErrorSanitizer } from './mail-error.sanitizer';
 import { RedisUtil } from '../token/redis.util';
 
-interface SendMailJobData {
+export interface SendMailJobData {
   emailLogId: string;
+  retryGeneration: number;
   to: string;
   subject: string;
   text: string;
   html?: string;
 }
 
+/** URL chính thức của Brevo Transactional Email API v3 */
+const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
+
 @Processor(MAIL_QUEUE)
 export class MailProcessor extends WorkerHost {
   private readonly logger = new Logger(MailProcessor.name);
-  private readonly transporter: Transporter<SMTPTransport.SentMessageInfo>;
+  private readonly brevoApiKey: string;
   private readonly mailFrom: string;
+  private readonly senderName: string;
+  private readonly senderEmail: string;
 
   constructor(
     private readonly configService: ConfigService,
@@ -48,33 +46,27 @@ export class MailProcessor extends WorkerHost {
   ) {
     super();
 
-    const host = this.configService.getOrThrow<string>(
-      ENVIRONMENT_KEYS.MAIL_HOST,
+    this.brevoApiKey = this.configService.getOrThrow<string>(
+      ENVIRONMENT_KEYS.BREVO_API_KEY,
     );
-    const user = this.configService.getOrThrow<string>(
-      ENVIRONMENT_KEYS.MAIL_USER,
-    );
-    const pass = this.configService.getOrThrow<string>(
-      ENVIRONMENT_KEYS.MAIL_PASS,
-    );
-    const from = this.configService.getOrThrow<string>(
+    this.mailFrom = this.configService.getOrThrow<string>(
       ENVIRONMENT_KEYS.MAIL_FROM,
     );
 
-    this.mailFrom = from;
-    this.transporter = nodemailer.createTransport({
-      host,
-      port: this.configService.get<number>(
-        ENVIRONMENT_KEYS.MAIL_PORT,
-        DEFAULT_MAIL_PORT,
-      ),
-      secure: false,
-      auth: { user, pass },
-    });
+    // Tách "Hotel Management System <hotel.management.2vnq@gmail.com>"
+    // thành senderName và senderEmail cho đúng format Brevo API.
+    const match = this.mailFrom.match(/^(.+)\s*<(.+)>$/);
+    if (match) {
+      this.senderName = match[1].trim().replace(/^"|"$/g, '');
+      this.senderEmail = match[2].trim();
+    } else {
+      this.senderName = 'Hotel Management System';
+      this.senderEmail = this.mailFrom;
+    }
   }
 
   async process(job: Job<SendMailJobData>): Promise<string> {
-    const { emailLogId, to, subject, text, html } = job.data;
+    const { emailLogId, retryGeneration, to, subject, text, html } = job.data;
 
     // attemptsMade counts *previous* attempts, so this attempt is +1.
     await this.emailLogRepository.update(emailLogId, {
@@ -84,14 +76,44 @@ export class MailProcessor extends WorkerHost {
     let messageId: string;
 
     try {
-      const info = await this.transporter.sendMail({
-        from: this.mailFrom,
-        to,
-        subject,
-        text,
-        html,
+      const response = await fetch(BREVO_API_URL, {
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          'api-key': this.brevoApiKey,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          sender: { name: this.senderName, email: this.senderEmail },
+          to: [{ email: to }],
+          subject,
+          htmlContent: html || `<pre>${text}</pre>`,
+          textContent: text,
+          headers: {
+            'X-Idempotency-Key': `email/${emailLogId}/${retryGeneration}`,
+          },
+        }),
       });
-      messageId = info.messageId;
+
+      const body = (await response.json()) as Record<string, unknown>;
+
+      if (!response.ok || typeof body.messageId !== 'string') {
+        const msg =
+          typeof body.message === 'string'
+            ? body.message
+            : `Brevo API error: HTTP ${response.status}`;
+        const error = new Error(msg) as Error & {
+          statusCode?: number;
+          code?: string;
+        };
+        error.statusCode = response.status;
+        if (typeof body.code === 'string') {
+          error.code = body.code;
+        }
+        throw error;
+      }
+
+      messageId = body.messageId;
     } catch (error) {
       const sanitizedMessage = this.mailErrorSanitizer.toPublicCode(error);
       const maxAttempts = job.opts.attempts ?? MAIL_JOB.MAX_ATTEMPTS;

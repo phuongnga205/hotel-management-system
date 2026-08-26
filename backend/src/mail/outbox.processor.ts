@@ -105,6 +105,7 @@ export class OutboxProcessor {
           MAIL_JOB.SEND_EMAIL,
           {
             emailLogId: emailLog.id,
+            retryGeneration: emailLog.retryGeneration,
             to: payload.to,
             subject: payload.subject,
             text: payload.text,
