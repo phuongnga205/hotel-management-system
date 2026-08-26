@@ -68,6 +68,7 @@ export class MailService {
       MAIL_JOB.SEND_EMAIL,
       {
         emailLogId: emailLog.id,
+        retryGeneration: emailLog.retryGeneration,
         to: emailLog.recipient,
         subject: emailLog.subject,
         text: emailLog.text,
