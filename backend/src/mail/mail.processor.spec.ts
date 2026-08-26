@@ -10,8 +10,6 @@ import { MailDeliveryError } from './errors/mail-delivery.error';
 import { MAIL_RECONCILIATION } from './mail.constants';
 import { Job } from 'bullmq';
 
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-
 describe('MailProcessor', () => {
   let processor: MailProcessor;
   let dataSourceMock: Record<string, jest.Mock>;
@@ -119,36 +117,38 @@ describe('MailProcessor', () => {
 
     expect(result).toBe('<brevo-msg-123>');
 
-    expect(global.fetch).toHaveBeenCalledWith(
-      'https://api.brevo.com/v3/smtp/email',
-      expect.objectContaining({
-        method: 'POST',
-        headers: expect.objectContaining({
-          'api-key': 'xkeysib-test-key',
-          'content-type': 'application/json',
-        }),
-      }),
-    );
+    // Check fetch mock calls details manually to be completely type-safe
+    expect(global.fetch).toHaveBeenCalledTimes(1);
     const fetchMock = global.fetch as jest.MockedFunction<typeof global.fetch>;
     const callArgs = fetchMock.mock.calls[0];
-    if (callArgs && callArgs[1] && typeof callArgs[1] === 'object') {
-      const init = callArgs[1];
-      if (typeof init.body === 'string') {
-        const body = JSON.parse(init.body) as Record<string, unknown>;
-        const headers = body.headers as Record<string, string>;
-        expect(headers['X-Idempotency-Key']).toBe('email/test-email-log-id/1');
-      }
+
+    expect(callArgs[0]).toBe('https://api.brevo.com/v3/smtp/email');
+
+    const init = callArgs[1] as RequestInit;
+    expect(init.method).toBe('POST');
+
+    const headers = init.headers as Record<string, string>;
+    expect(headers['api-key']).toBe('xkeysib-test-key');
+    expect(headers['content-type']).toBe('application/json');
+
+    if (typeof init.body === 'string') {
+      const body = JSON.parse(init.body) as Record<string, unknown>;
+      const bodyHeaders = body.headers as Record<string, string>;
+      expect(bodyHeaders['X-Idempotency-Key']).toBe(
+        'email/test-email-log-id/1',
+      );
     }
 
-    expect(managerMock.update).toHaveBeenCalledWith(
-      EmailLog,
-      { id: 'test-email-log-id' },
-      {
-        status: EmailStatus.SENT,
-        sentAt: expect.any(Date),
-        lastError: null,
-      },
-    );
+    // Check managerMock calls manually to be type-safe without expect.any(Date)
+    expect(managerMock.update).toHaveBeenCalledTimes(2);
+    const updateCall = managerMock.update.mock.calls[0] as unknown[];
+    expect(updateCall[0]).toBe(EmailLog);
+    expect(updateCall[1]).toEqual({ id: 'test-email-log-id' });
+
+    const updateData = updateCall[2] as Partial<EmailLog>;
+    expect(updateData.status).toBe(EmailStatus.SENT);
+    expect(updateData.sentAt).toBeInstanceOf(Date);
+    expect(updateData.lastError).toBeNull();
   });
 
   it('should throw MailDeliveryError when Brevo returns HTTP error', async () => {
@@ -191,14 +191,14 @@ describe('MailProcessor', () => {
     const job = createJobMock({}, 2, 3);
     await expect(processor.process(job)).rejects.toThrow(MailDeliveryError);
 
-    expect(managerMock.update).toHaveBeenCalledWith(
-      EmailLog,
-      { id: 'test-email-log-id' },
-      {
-        status: EmailStatus.FAILED,
-        lastError: 'MOCKED_ERROR_CODE',
-      },
-    );
+    expect(managerMock.update).toHaveBeenCalledTimes(2);
+    const updateCall = managerMock.update.mock.calls[0] as unknown[];
+    expect(updateCall[0]).toBe(EmailLog);
+    expect(updateCall[1]).toEqual({ id: 'test-email-log-id' });
+
+    const updateData = updateCall[2] as Partial<EmailLog>;
+    expect(updateData.status).toBe(EmailStatus.FAILED);
+    expect(updateData.lastError).toBe('MOCKED_ERROR_CODE');
   });
 
   it('should push to reconciliation queue if DB update fails after sending', async () => {
