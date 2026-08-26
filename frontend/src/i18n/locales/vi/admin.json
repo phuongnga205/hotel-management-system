@@ -285,8 +285,17 @@
       "periodDay": "Ngày",
       "periodMonth": "Tháng",
       "periodQuarter": "Quý",
+      "periodYear": "Năm",
       "year": "Năm",
-      "month": "Tháng"
+      "month": "Tháng",
+      "exportExcel": "Xuất Excel",
+      "exporting": "Đang xuất…"
+    },
+    "export": {
+      "breakdownSheet": "Chi tiết",
+      "time": "Thời gian",
+      "revenue": "Doanh thu",
+      "bookings": "Lượt đặt phòng"
     },
     "bookings": {
       "eyebrow": "Phân tích",

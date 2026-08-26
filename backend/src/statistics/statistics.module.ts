@@ -7,6 +7,7 @@ import { TokenModule } from '../token/token.module';
 import { StatisticsController } from './statistics.controller';
 import { StatisticsLogger } from './statistics.logger';
 import { StatisticsService } from './statistics.service';
+import { StatisticsExportService } from './statistics-export.service';
 
 @Module({
   imports: [
@@ -15,6 +16,6 @@ import { StatisticsService } from './statistics.service';
     TokenModule,
   ],
   controllers: [StatisticsController],
-  providers: [StatisticsService, StatisticsLogger],
+  providers: [StatisticsService, StatisticsExportService, StatisticsLogger],
 })
 export class StatisticsModule {}

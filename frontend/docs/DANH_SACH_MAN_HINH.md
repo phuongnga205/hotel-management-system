@@ -104,12 +104,12 @@
 
 | Page component | Route | API sử dụng | Ghi chú |
 |---|---|---|---|
-| `pages/admin/statistics/AdminBookingStatsPage.tsx` | `/admin/statistics/bookings` | `GET /statistics/revenue-bookings` | Tab con của layout Statistics. Có bộ chọn kỳ (`StatisticsPeriodControls`: `period` DAY/MONTH/QUARTER, `year`, `month` khi period=DAY) — đổi giá trị gọi lại API với query mới. |
-| `pages/admin/statistics/AdminRevenueStatsPage.tsx` | `/admin/statistics/revenue` | `GET /statistics/revenue-bookings`, `GET /admin/payments` | Tab con của layout Statistics, cùng bộ chọn kỳ như trên (state riêng, không share với `AdminBookingStatsPage`). Ngoài chart doanh thu, có thêm bảng "Transactions" (`AdminTable`) liệt kê từng giao dịch thanh toán — filter theo `status`/`method` (2 `Dropdown`), phân trang bằng `Pagination` riêng với phần chart phía trên (không share state `page`). Bảng chỉ hiện ít cột (booking, khách, phòng, số tiền, trạng thái) để đỡ chật — bấm vào 1 dòng mở `PaymentDetailModal` (`components/admin/PaymentDetailModal.tsx`) xem đầy đủ thông tin (kèm phương thức, mã giao dịch, thời gian thanh toán/tạo). Không có route/trang riêng cho bảng này — nằm chung `AdminRevenueStatsPage`. |
+| `pages/admin/statistics/AdminBookingStatsPage.tsx` | `/admin/statistics/bookings` | `GET /statistics/revenue-bookings`, `GET /statistics/revenue-bookings/export` | Tab con của layout Statistics. Có bộ chọn kỳ (`StatisticsPeriodControls`: `period` DAY/MONTH/QUARTER/YEAR, `year`, `month` khi period=DAY) — đổi giá trị gọi lại API với query mới. Nút Xuất Excel tải file theo đúng kỳ đang chọn. |
+| `pages/admin/statistics/AdminRevenueStatsPage.tsx` | `/admin/statistics/revenue` | `GET /statistics/revenue-bookings`, `GET /statistics/revenue-bookings/export`, `GET /admin/payments` | Tab con của layout Statistics, cùng bộ chọn kỳ như trên (state riêng, không share với `AdminBookingStatsPage`) và nút Xuất Excel theo kỳ đang chọn. Ngoài chart doanh thu, có thêm bảng "Transactions" (`AdminTable`) liệt kê từng giao dịch thanh toán — filter theo `status`/`method` (2 `Dropdown`), phân trang bằng `Pagination` riêng với phần chart phía trên (không share state `page`). Bảng chỉ hiện ít cột (booking, khách, phòng, số tiền, trạng thái) để đỡ chật — bấm vào 1 dòng mở `PaymentDetailModal` (`components/admin/PaymentDetailModal.tsx`) xem đầy đủ thông tin (kèm phương thức, mã giao dịch, thời gian thanh toán/tạo). Không có route/trang riêng cho bảng này — nằm chung `AdminRevenueStatsPage`. |
 
 > **Đã khớp đúng response BE thật** (`StatisticsModule`, xem
 > `backend/docs/DANH_SACH_API.md` mục 11) — 1 route gộp
-> `GET /statistics/revenue-bookings?period=DAY|MONTH|QUARTER&year=&month=`,
+> `GET /statistics/revenue-bookings?period=DAY|MONTH|QUARTER|YEAR&year=&month=`,
 > trả cả tổng doanh thu lẫn tổng số booking cùng lúc, không có breakdown
 > theo `roomType`/`status`. Vì vậy 2 chart cũ dựa trên breakdown đó (status
 > pie ở trang booking, room-type bar ở trang revenue) đã bỏ, thay bằng chart

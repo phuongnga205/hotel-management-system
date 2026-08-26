@@ -27,7 +27,7 @@ export class StatisticsQueryDto {
   year!: number;
 
   @ApiPropertyOptional({
-    description: 'Required when period is DAY',
+    description: 'Required only when period is DAY',
     minimum: STATISTICS.FIRST_MONTH,
     maximum: STATISTICS.LAST_MONTH,
     example: 8,

@@ -212,6 +212,10 @@ export class StatisticsService {
       );
     }
 
+    if (query.period === StatisticsPeriod.YEAR) {
+      return [String(query.year)];
+    }
+
     return Array.from(
       { length: STATISTICS.QUARTERS_PER_YEAR },
       (_, index) => `${query.year}-Q${index + 1}`,

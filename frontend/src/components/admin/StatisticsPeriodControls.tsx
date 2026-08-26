@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import Dropdown from '../Dropdown'
-import type { StatisticsPeriod, StatisticsQuery } from '../../api/types'
+import type { StatisticsQuery } from '../../api/types'
+import { STATISTICS_PERIOD, type StatisticsPeriod } from '../../constants/statistics'
 
 const YEAR_OPTIONS_COUNT = 4
 const MONTHS_PER_YEAR = 12
@@ -21,9 +22,10 @@ export default function StatisticsPeriodControls({ query, onChange, className = 
   const currentYear = new Date().getFullYear()
 
   const periodOptions = [
-    { value: 'MONTH', label: t('statistics.controls.periodMonth') },
-    { value: 'QUARTER', label: t('statistics.controls.periodQuarter') },
-    { value: 'DAY', label: t('statistics.controls.periodDay') },
+    { value: STATISTICS_PERIOD.DAY, label: t('statistics.controls.periodDay') },
+    { value: STATISTICS_PERIOD.MONTH, label: t('statistics.controls.periodMonth') },
+    { value: STATISTICS_PERIOD.QUARTER, label: t('statistics.controls.periodQuarter') },
+    { value: STATISTICS_PERIOD.YEAR, label: t('statistics.controls.periodYear') },
   ]
   const yearOptions = Array.from({ length: YEAR_OPTIONS_COUNT }, (_, i) => currentYear - i).map((year) => ({
     value: String(year),
@@ -36,17 +38,29 @@ export default function StatisticsPeriodControls({ query, onChange, className = 
 
   return (
     <div className={`flex items-center gap-3 ${className}`}>
-      <Dropdown
-        value={query.period}
-        onChange={(v) => {
-          const period = v as StatisticsPeriod
-          const month = period === 'DAY' ? (query.month ?? new Date().getMonth() + 1) : undefined
-          onChange({ ...query, period, month })
-        }}
-        options={periodOptions}
-        size="sm"
-        className="w-32"
-      />
+      <div className="inline-flex overflow-hidden rounded-lg border border-slate-200 bg-white" role="group" aria-label={t('statistics.controls.period')}>
+        {periodOptions.map((option) => {
+          const period = option.value as StatisticsPeriod
+          const active = query.period === period
+
+          return (
+            <button
+              key={period}
+              type="button"
+              aria-pressed={active}
+              onClick={() => {
+                const month = period === STATISTICS_PERIOD.DAY ? (query.month ?? new Date().getMonth() + 1) : undefined
+                onChange({ ...query, period, month })
+              }}
+              className={`px-3 py-2 text-xs font-semibold transition-colors ${
+                active ? 'bg-navy text-white' : 'text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              {option.label}
+            </button>
+          )
+        })}
+      </div>
       <Dropdown
         value={String(query.year)}
         onChange={(v) => onChange({ ...query, year: Number(v) })}
@@ -54,7 +68,7 @@ export default function StatisticsPeriodControls({ query, onChange, className = 
         size="sm"
         className="w-24"
       />
-      {query.period === 'DAY' && (
+      {query.period === STATISTICS_PERIOD.DAY && (
         <Dropdown
           value={String(query.month ?? 1)}
           onChange={(v) => onChange({ ...query, month: Number(v) })}

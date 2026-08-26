@@ -13,6 +13,13 @@ const statisticsRealApi = {
     const res = await axiosClient.get(API_ENDPOINTS.STATISTICS_REVENUE_BOOKINGS, { params: query })
     return res.data
   },
+  exportRevenueAndBookings: async (query: StatisticsQuery): Promise<Blob> => {
+    const res = await axiosClient.get(API_ENDPOINTS.STATISTICS_REVENUE_BOOKINGS_EXPORT, {
+      params: query,
+      responseType: 'blob',
+    })
+    return res.data
+  },
 }
 
 export const statisticsApi = env.useMock ? statisticsMockApi : statisticsRealApi

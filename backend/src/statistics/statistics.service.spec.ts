@@ -262,4 +262,23 @@ describe('StatisticsService', () => {
     expect(result.buckets).toHaveLength(29);
     expect(result.buckets[28].label).toBe('2024-02-29');
   });
+
+  it('returns one annual bucket for a yearly query', async () => {
+    redis.findOne.mockResolvedValue(null);
+    paymentRepository.createQueryBuilder = jest
+      .fn()
+      .mockReturnValue(createQueryBuilder([]));
+    bookingRepository.createQueryBuilder = jest
+      .fn()
+      .mockReturnValue(createQueryBuilder([]));
+
+    const result = await service.getRevenueAndBookings({
+      period: StatisticsPeriod.YEAR,
+      year: 2026,
+    });
+
+    expect(result.buckets).toEqual([
+      { label: '2026', revenue: '0.00', bookingCount: 0 },
+    ]);
+  });
 });

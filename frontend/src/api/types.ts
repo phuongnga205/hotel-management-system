@@ -439,13 +439,14 @@ export interface AdminCreateUserPayload {
 
 // --- statistics ---
 // Khớp `GET /statistics/revenue-bookings` (backend/src/statistics) — 1 route
-// gộp trả cả doanh thu lẫn số booking, gộp theo ngày/tháng/quý.
-export type StatisticsPeriod = 'DAY' | 'MONTH' | 'QUARTER'
+// gộp trả cả doanh thu lẫn số booking, gộp theo ngày/tháng/quý/năm.
+import type { StatisticsPeriod } from '../constants/statistics'
+export type { StatisticsPeriod } from '../constants/statistics'
 
 export interface StatisticsQuery {
   period: StatisticsPeriod
   year: number
-  /** Bắt buộc khi period = DAY, bỏ qua với MONTH/QUARTER. */
+  /** Bắt buộc khi period = DAY, bỏ qua với MONTH/QUARTER/YEAR. */
   month?: number
 }
 

@@ -13,6 +13,7 @@ import { bookingApi } from '../../api/booking.api'
 import { getErrorMessage } from '../../api/errorMessage'
 import { formatBucketLabel } from '../../utils/statisticsBucket'
 import type { Booking, RevenueBookingsStatistics } from '../../api/types'
+import { STATISTICS_PERIOD } from '../../constants/statistics'
 
 export default function AdminDashboardPage() {
   const { t, i18n } = useTranslation('admin')
@@ -24,7 +25,7 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     let cancelled = false
     Promise.all([
-      statisticsApi.getRevenueAndBookings({ period: 'MONTH', year: new Date().getFullYear() }),
+      statisticsApi.getRevenueAndBookings({ period: STATISTICS_PERIOD.MONTH, year: new Date().getFullYear() }),
       bookingApi.adminList({ page: 1, limit: 5 }),
     ])
       .then(([statsRes, recent]) => {

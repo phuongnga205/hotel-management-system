@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'react-toastify'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import PageHeader from '../../../components/PageHeader'
 import Card from '../../../components/Card'
@@ -15,22 +16,33 @@ import { statisticsApi } from '../../../api/statistics.api'
 import { paymentApi } from '../../../api/payment.api'
 import { getErrorMessage } from '../../../api/errorMessage'
 import { formatBucketLabel, bestRevenueBucket } from '../../../utils/statisticsBucket'
+import { downloadStatisticsFile } from '../../../utils/statisticsExport'
 import type { AdminPayment, PaymentMethod, PaymentStatus, RevenueBookingsStatistics, StatisticsQuery } from '../../../api/types'
+import { STATISTICS_FILTER_ALL, STATISTICS_PERIOD } from '../../../constants/statistics'
 
 const TRANSACTIONS_PER_PAGE = 10
 
-const PAYMENT_STATUS_DOTS: Record<string, string> = { ALL: 'bg-slate-300', PENDING: 'bg-amber-400', SUCCESS: 'bg-emerald-400', FAILED: 'bg-red-400', REFUNDED: 'bg-slate-400' }
-const PAYMENT_STATUSES: PaymentStatus[] = ['PENDING', 'SUCCESS', 'FAILED', 'REFUNDED']
-const PAYMENT_METHODS: PaymentMethod[] = ['CASH', 'BANK_TRANSFER', 'CREDIT_CARD', 'VNPAY']
+const PAYMENT_STATUS = { PENDING: 'PENDING', SUCCESS: 'SUCCESS', FAILED: 'FAILED', REFUNDED: 'REFUNDED' } as const
+const PAYMENT_METHOD = { CASH: 'CASH', BANK_TRANSFER: 'BANK_TRANSFER', CREDIT_CARD: 'CREDIT_CARD', VNPAY: 'VNPAY' } as const
+const PAYMENT_STATUS_DOTS: Record<string, string> = {
+  [STATISTICS_FILTER_ALL]: 'bg-slate-300',
+  [PAYMENT_STATUS.PENDING]: 'bg-amber-400',
+  [PAYMENT_STATUS.SUCCESS]: 'bg-emerald-400',
+  [PAYMENT_STATUS.FAILED]: 'bg-red-400',
+  [PAYMENT_STATUS.REFUNDED]: 'bg-slate-400',
+}
+const PAYMENT_STATUSES: PaymentStatus[] = Object.values(PAYMENT_STATUS)
+const PAYMENT_METHODS: PaymentMethod[] = Object.values(PAYMENT_METHOD)
 
 export default function AdminRevenueStatsPage() {
   const { t } = useTranslation('admin')
-  const [query, setQuery] = useState<StatisticsQuery>({ period: 'MONTH', year: new Date().getFullYear() })
+  const [query, setQuery] = useState<StatisticsQuery>({ period: STATISTICS_PERIOD.MONTH, year: new Date().getFullYear() })
   const [stats, setStats] = useState<RevenueBookingsStatistics | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [exporting, setExporting] = useState(false)
 
-  const [statusFilter, setStatusFilter] = useState('ALL')
-  const [methodFilter, setMethodFilter] = useState('ALL')
+  const [statusFilter, setStatusFilter] = useState<string>(STATISTICS_FILTER_ALL)
+  const [methodFilter, setMethodFilter] = useState<string>(STATISTICS_FILTER_ALL)
   const [txPage, setTxPage] = useState(1)
   const [transactions, setTransactions] = useState<AdminPayment[]>([])
   const [txTotal, setTxTotal] = useState(0)
@@ -39,12 +51,15 @@ export default function AdminRevenueStatsPage() {
   const [selectedPayment, setSelectedPayment] = useState<AdminPayment | null>(null)
 
   useEffect(() => {
+    let active = true
     // eslint-disable-next-line react-hooks/set-state-in-effect
+    setError(null)
     setStats(null)
     statisticsApi
       .getRevenueAndBookings(query)
-      .then(setStats)
-      .catch((err) => setError(getErrorMessage(err, t('common.notFoundGeneric'))))
+      .then((result) => { if (active) setStats(result) })
+      .catch((err) => { if (active) setError(getErrorMessage(err, t('common.notFoundGeneric'))) })
+    return () => { active = false }
   }, [query, t])
 
   useEffect(() => {
@@ -54,15 +69,20 @@ export default function AdminRevenueStatsPage() {
       .adminList({
         page: txPage,
         limit: TRANSACTIONS_PER_PAGE,
-        status: statusFilter === 'ALL' ? undefined : (statusFilter as PaymentStatus),
-        method: methodFilter === 'ALL' ? undefined : (methodFilter as PaymentMethod),
+        status: statusFilter === STATISTICS_FILTER_ALL ? undefined : (statusFilter as PaymentStatus),
+        method: methodFilter === STATISTICS_FILTER_ALL ? undefined : (methodFilter as PaymentMethod),
       })
       .then((res) => { setTransactions(res.items); setTxTotal(res.total) })
       .catch((err) => setTxError(getErrorMessage(err, t('common.notFoundGeneric'))))
       .finally(() => setTxLoading(false))
   }, [txPage, statusFilter, methodFilter, t])
 
-  if (error) return <p className="text-danger text-sm">{error}</p>
+  if (error) return (
+    <div className="space-y-5">
+      <StatisticsPeriodControls query={query} onChange={setQuery} />
+      <p className="text-danger text-sm">{error}</p>
+    </div>
+  )
   if (!stats) return <PageLoader />
 
   const chartData = stats.buckets.map((b) => ({ label: formatBucketLabel(b.label, stats.period), revenue: Number(b.revenue) }))
@@ -79,13 +99,25 @@ export default function AdminRevenueStatsPage() {
   ]
 
   const statusOptions = [
-    { value: 'ALL', label: t('statistics.revenue.statusAll') },
+    { value: STATISTICS_FILTER_ALL, label: t('statistics.revenue.statusAll') },
     ...PAYMENT_STATUSES.map((s) => ({ value: s, label: t(`status.payment.${s}`) })),
   ]
   const methodOptions = [
-    { value: 'ALL', label: t('statistics.revenue.methodAll') },
+    { value: STATISTICS_FILTER_ALL, label: t('statistics.revenue.methodAll') },
     ...PAYMENT_METHODS.map((m) => ({ value: m, label: t(`status.paymentMethod.${m}`) })),
   ]
+
+  const handleExport = async () => {
+    try {
+      setExporting(true)
+      const blob = await statisticsApi.exportRevenueAndBookings(query)
+      downloadStatisticsFile(blob, query)
+    } catch (err) {
+      toast.error(getErrorMessage(err, t('common.notFoundGeneric')))
+    } finally {
+      setExporting(false)
+    }
+  }
 
   return (
     <div className="space-y-5">
@@ -93,9 +125,19 @@ export default function AdminRevenueStatsPage() {
         eyebrow={t('statistics.revenue.eyebrow')}
         title={t('statistics.revenue.title')}
         action={
-          <Link to={ROUTES.ADMIN.STATS_BOOKINGS} className="px-4 py-2 text-xs font-semibold border border-navy text-navy rounded-lg hover:bg-navy hover:text-white transition-colors">
-            {t('statistics.revenue.goToBookings')}
-          </Link>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleExport}
+              disabled={exporting}
+              className="px-4 py-2 text-xs font-semibold border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
+            >
+              {exporting ? t('statistics.controls.exporting') : t('statistics.controls.exportExcel')}
+            </button>
+            <Link to={ROUTES.ADMIN.STATS_BOOKINGS} className="px-4 py-2 text-xs font-semibold border border-navy text-navy rounded-lg hover:bg-navy hover:text-white transition-colors">
+              {t('statistics.revenue.goToBookings')}
+            </Link>
+          </div>
         }
       />
 

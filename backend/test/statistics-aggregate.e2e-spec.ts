@@ -19,6 +19,7 @@ import Redis from 'ioredis';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { DataSource } from 'typeorm';
+import { Workbook } from 'exceljs';
 import { AuthModule } from '../src/auth/auth.module';
 import { BCRYPT_SALT_ROUNDS } from '../src/auth/auth.service';
 import { BookingStatus } from '../src/bookings/enums/booking-status.enum';
@@ -185,6 +186,7 @@ describe('Statistics aggregate HTTP, SQL and Redis (e2e)', () => {
     await redisClient.ping();
 
     await redisClient.del('statistics:revenue-bookings:v1:MONTH:2026:all:UTC');
+    await redisClient.del('statistics:revenue-bookings:v1:YEAR:2026:all:UTC');
 
     const suffix = randomUUID();
     const identitySuffix = suffix.slice(0, TEST_ROOM_UUID_LENGTH);
@@ -336,11 +338,53 @@ describe('Statistics aggregate HTTP, SQL and Redis (e2e)', () => {
     expect(secondBody.isCached).toBe(true);
   });
 
+  it('exports a valid Excel workbook and enforces validation and ADMIN access', async () => {
+    const endpoint = '/api/v1/statistics/revenue-bookings/export';
+    const query = { period: StatisticsPeriod.YEAR, year: 2026 };
+
+    await request(app.getHttpServer()).get(endpoint).query(query).expect(401);
+    await request(app.getHttpServer())
+      .get(endpoint)
+      .set('Authorization', `Bearer ${userToken}`)
+      .query(query)
+      .expect(403);
+    await request(app.getHttpServer())
+      .get(endpoint)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .query({ period: 'INVALID', year: 2026 })
+      .expect(400);
+
+    const response = await request(app.getHttpServer())
+      .get(endpoint)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Accept-Language', 'en')
+      .query(query)
+      .buffer(true)
+      .parse((incoming, callback) => {
+        const chunks: Buffer[] = [];
+        incoming.on('data', (chunk: Buffer) => chunks.push(chunk));
+        incoming.on('end', () => callback(null, Buffer.concat(chunks)));
+      })
+      .expect(200)
+      .expect(
+        'Content-Type',
+        /application\/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet/,
+      );
+    const workbook = new Workbook();
+    await workbook.xlsx.load(response.body as Buffer);
+
+    expect(workbook.getWorksheet('Summary')).toBeDefined();
+    expect(workbook.getWorksheet('Breakdown')?.getCell('A2').value).toBe(
+      '2026',
+    );
+  });
+
   afterAll(async () => {
     if (redisClient) {
       await redisClient.del(
         'statistics:revenue-bookings:v1:MONTH:2026:all:UTC',
       );
+      await redisClient.del('statistics:revenue-bookings:v1:YEAR:2026:all:UTC');
       redisClient.disconnect();
     }
     if (app) await app.close();
